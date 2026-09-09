@@ -12,7 +12,9 @@ const props = defineProps<{
 
 // Le titre du bloc est la seconde pièce de l'identité de ses questions : le même
 // « 1. » revient dans chaque exercice d'une fiche, seul le bloc les distingue.
-const { ids } = provideBloc(() => props.titre)
+const { ids, slug } = provideBloc(() => props.titre)
+
+const route = useRoute()
 
 const progression = useProgression()
 
@@ -48,6 +50,13 @@ const trouvees = computed(() => [...ids].filter(id => progression?.memoire(id)).
         class="shrink-0 tabular-nums"
         :icon="trouvees === ids.size ? 'i-lucide-check' : undefined"
         :label="`${trouvees} / ${ids.size}`"
+      />
+      <TodoBouton
+        v-if="titre && slug"
+        :chemin="route.path"
+        :bloc="slug"
+        :titre="titre"
+        type="exercices"
       />
     </div>
     <p

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { fr } from '@nuxt/ui/locale'
+
 const { seo } = useAppConfig()
 
 const { data: navigation } = await useAsyncData('navigation', () => queryCollectionNavigation('cours'))
@@ -29,7 +31,7 @@ provide('navigation', navigation)
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="fr">
     <NuxtLoadingIndicator />
 
     <AppHeader />

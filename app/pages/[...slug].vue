@@ -46,6 +46,13 @@ const typeInfo = computed(() => coursTypeInfo(page.value?.type))
 
 const headline = computed(() => findPageHeadline(navigation?.value, page.value?.path))
 
+// Une page de cours se lit, elle ne « se fait » pas : seuls les exercices,
+// l'entraînement et les QCM ont leur place dans une liste de choses à faire.
+// Les blocs d'exercice glissés *dans* une page de cours restent ajoutables un
+// par un — ce sont les onze contrôles express de la fiche de trigonométrie.
+const CIBLABLES = ['exercices', 'entrainement', 'qcm']
+const ciblableEnTodo = computed(() => !!page.value?.type && CIBLABLES.includes(page.value.type))
+
 useSeoMeta({
   title: page.value.title,
   description: page.value.description
@@ -83,15 +90,23 @@ useSeoMeta({
             <span class="font-medium text-highlighted tabular-nums">{{ reussies }} / {{ totalQuestions }}</span>
             question{{ totalQuestions > 1 ? 's' : '' }} trouvée{{ totalQuestions > 1 ? 's' : '' }}
           </span>
-          <UButton
-            v-if="reussies"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            icon="i-lucide-eraser"
-            label="Repartir de zéro"
-            @click="oublierProgression"
-          />
+          <div class="flex items-center gap-1">
+            <TodoBouton
+              v-if="ciblableEnTodo"
+              :chemin="routePath"
+              :titre="page.title"
+              :type="page.type"
+            />
+            <UButton
+              v-if="reussies"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              icon="i-lucide-eraser"
+              label="Repartir de zéro"
+              @click="oublierProgression"
+            />
+          </div>
         </div>
         <UProgress
           class="mt-2"

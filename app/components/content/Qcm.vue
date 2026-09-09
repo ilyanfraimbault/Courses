@@ -31,7 +31,7 @@ const identifiant = computed(() =>
 // Les questions du QCM comptent dans la progression de la fiche au même titre
 // que celles d'un exercice : le bloc leur prête son titre pour qu'elles composent
 // leur identité.
-const { ids } = provideBloc(() => props.titre)
+const { ids, slug } = provideBloc(() => props.titre)
 
 const progression = useProgression()
 
@@ -146,6 +146,13 @@ function corrigerEtRemonter() {
         class="shrink-0 tabular-nums"
         :icon="trouvees === ids.size ? 'i-lucide-check' : undefined"
         :label="`${trouvees} / ${ids.size}`"
+      />
+      <TodoBouton
+        v-if="titre && slug"
+        :chemin="route.path"
+        :bloc="slug"
+        :titre="titre"
+        type="qcm"
       />
     </div>
     <p

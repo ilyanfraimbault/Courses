@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { fr } from '@nuxt/ui/locale'
 import type { NuxtError } from '#app'
 
 defineProps<{
@@ -25,7 +26,7 @@ provide('navigation', navigation)
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="fr">
     <AppHeader />
 
     <UError :error="error" />

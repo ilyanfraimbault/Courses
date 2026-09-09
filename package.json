@@ -20,18 +20,21 @@
     "@nuxt/ui": "^4.11.0",
     "@nuxtjs/mdc": "^0.23.1",
     "@vueuse/core": "^14.4.0",
+    "@vueuse/integrations": "^14.4.0",
     "@vueuse/nuxt": "^14.4.0",
     "katex": "^0.16.22",
     "nuxt": "^4.5.2",
     "nuxt-auth-utils": "^0.5.30",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
+    "sortablejs": "^1.15.7",
     "tailwindcss": "^4.3.3",
     "ufo": "^1.6.4",
     "zod": "^4.5.4"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
+    "@types/sortablejs": "^1.15.9",
     "eslint": "^10.10.0",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.11"

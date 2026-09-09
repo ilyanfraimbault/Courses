@@ -20,7 +20,15 @@ export default defineContentConfig({
         icone: z.string().optional(),
         // Rempli au build par le hook `content:file:afterParse` de nuxt.config.ts.
         // Ne pas l'écrire à la main dans un frontmatter : il serait écrasé.
-        questions: z.number().optional()
+        questions: z.number().optional(),
+        // Idem : les blocs de la page, indexés par le slug de leur titre, avec
+        // le nombre de questions de chacun. C'est ce qui donne un dénominateur
+        // à un item de to-do qui vise « Exercice 3 » plutôt que la fiche.
+        blocs: z.record(z.string(), z.object({
+          titre: z.string(),
+          nature: z.enum(['exercice', 'qcm']),
+          questions: z.number()
+        })).optional()
       })
     })
   }

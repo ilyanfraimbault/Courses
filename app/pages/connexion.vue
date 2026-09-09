@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { fr } from '@nuxt/ui/locale'
+
 definePageMeta({ layout: false })
 
 const route = useRoute()
@@ -42,7 +44,7 @@ useSeoMeta({ title: 'Connexion' })
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="fr">
     <div class="min-h-screen flex items-center justify-center p-4">
       <UCard class="w-full max-w-sm">
         <template #header>
