@@ -29,7 +29,8 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     '@nuxt/content',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
+    'nuxt-auth-utils'
   ],
 
   components: [
@@ -66,6 +67,18 @@ export default defineNuxtConfig({
     experimental: {
       sqliteConnector: 'native'
     }
+  },
+
+  runtimeConfig: {
+    // Le mot de passe du site. Aucune valeur par défaut : sans lui, la connexion
+    // renvoie une 500 explicite plutôt que d'accepter la chaîne vide.
+    coursMotDePasse: '',
+    // Répertoire inscriptible et non fichier monté seul : le mode WAL écrit
+    // « -wal » et « -shm » à côté de la base.
+    baseFichier: '.data/cours.sqlite',
+    // À n'activer que derrière un proxy qui réécrit X-Forwarded-For (Caddy).
+    // Exposé en direct, cet en-tête est contrôlé par le client.
+    trustProxy: false
   },
 
   experimental: {

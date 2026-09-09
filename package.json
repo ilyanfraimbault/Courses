@@ -9,7 +9,8 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "verif:api": "node scripts/verifier-api.mjs"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.129",
@@ -21,6 +22,7 @@
     "@vueuse/nuxt": "^14.4.0",
     "katex": "^0.16.22",
     "nuxt": "^4.5.2",
+    "nuxt-auth-utils": "^0.5.30",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
     "tailwindcss": "^4.3.3",
