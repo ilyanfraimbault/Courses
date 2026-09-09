@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "nuxt typecheck",
-    "verif:api": "node scripts/verifier-api.mjs"
+    "verif:api": "node scripts/verifier-api.mjs",
+    "import:resultats": "node scripts/importer-resultats.mjs"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.129",

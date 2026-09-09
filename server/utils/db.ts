@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { dirname } from 'node:path'
 import { mkdirSync } from 'node:fs'
-import { appliquerSchema } from './schema'
+import { appliquerSchema } from './schema.ts'
 
 /**
  * Ouvre la base et met le schéma à jour.

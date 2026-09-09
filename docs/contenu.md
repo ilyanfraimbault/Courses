@@ -83,3 +83,47 @@ du portfolio d'origine, volontairement.
 Frontmatter : `title`, `description`, `type` (`cours` | `exercices` |
 `entrainement` | `qcm`), `annee`, `matiere`, `ordre`, `icone`, `interactif`, et
 `questions` — ce dernier rempli au build, à ne jamais écrire à la main.
+
+## Importer un ancien export
+
+Le format d'export du portfolio d'origine est repris à l'identique, si bien qu'un
+fichier produit là-bas se verse ici tel quel.
+
+```bash
+node scripts/importer-resultats.mjs resultats-2026-09-09.json --simulation  # n'écrit rien
+node scripts/importer-resultats.mjs resultats-2026-09-09.json
+```
+
+En production on passe par la page « mes résultats » : l'image d'exécution ne
+contient que `.output`, pas `scripts/`.
+
+L'import est une **fusion**, jamais un remplacement : rien n'est supprimé, et le
+rejouer n'insère rien. Trois règles gouvernent les conflits.
+
+- Une fiche ne voit son `total` et sa date mis à jour que si l'archive est **plus
+  récente** que ce qu'il y a en base : réimporter une vieille sauvegarde ne
+  rétrograde pas une fiche travaillée depuis.
+- Une question déjà trouvée garde sa **vraie lettre**. L'export ne transporte pas
+  la réponse, seulement la liste des questions réussies : on écrit donc la
+  sentinelle `importe`, et elle ne remplace jamais un `c` gagné à la main.
+- Une tentative de QCM est identifiée par son horodatage à la milliseconde.
+
+Deux formes d'entrée sont acceptées dans `fiches[].questions` : `bloc#label`, la
+forme normale, et l'identité complète `/chemin#bloc#label`. La seconde n'est pas
+théorique — l'export ne retire le préfixe que s'il le reconnaît, si bien qu'une
+clé écrite avant une normalisation de chemin ressort entière. Ce qui n'est
+découpable ni d'une façon ni de l'autre est **compté et signalé**, jamais avalé
+en silence.
+
+### Un piège à connaître
+
+Une identité importée qui ne correspond à aucune question du contenu actuel est
+**supprimée à la première ouverture de la fiche**. Ce n'est pas un défaut : c'est
+l'élagage de l'instantané, celui-là même qui empêche le décompte de gonfler quand
+une question disparaît du cours. Mais si l'export vient d'une version plus
+ancienne du contenu, la progression correspondante est perdue à la visite
+suivante — et sans avertissement.
+
+Pour le vérifier avant d'importer, comparer les identités du fichier à celles que
+le contenu produit : le slug de bloc vient de `slugifier(titre du bloc)`, le
+label est celui écrit dans le frontmatter de la question (`a)`, `1.`, …).
