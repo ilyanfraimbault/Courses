@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      # Node 24 : `node:sqlite` fait partie du runtime et c'est la version que
+      # l'image d'exécution embarque. La faire diverger d'ici ferait passer la
+      # CI sur un runtime que la production n'utilise pas.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run lint
+
+      - run: pnpm run typecheck
+
+      # `nuxt typecheck` peut passer sur des types .nuxt périmés là où le build
+      # échoue : les deux sont nécessaires, pas seulement le premier.
+      - run: pnpm run build

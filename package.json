@@ -1,0 +1,42 @@
+{
+  "name": "cours",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "^1.2.129",
+    "@iconify-json/simple-icons": "^1.2.94",
+    "@nuxt/content": "^3.16.0",
+    "@nuxt/ui": "^4.11.0",
+    "@nuxtjs/mdc": "^0.23.1",
+    "@vueuse/core": "^14.4.0",
+    "@vueuse/nuxt": "^14.4.0",
+    "katex": "^0.16.22",
+    "nuxt": "^4.5.2",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "tailwindcss": "^4.3.3",
+    "ufo": "^1.6.4",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.17.0",
+    "eslint": "^10.10.0",
+    "typescript": "^6.0.3",
+    "vue-tsc": "^3.3.11"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "overrides": {
+      "remark-mdc": "3.9.0"
+    }
+  }
+}
