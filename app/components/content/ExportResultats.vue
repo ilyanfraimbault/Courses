@@ -7,22 +7,11 @@ withDefaults(defineProps<{
   icone: 'i-lucide-download'
 })
 
-const repertoire = useRepertoireFiches()
-
-// Rien n'est lu au rendu serveur : le stockage n'existe pas encore, et une
-// lecture ici ferait diverger l'hydratation d'un site prérendu.
-const resultats = ref<ResultatsExport | null>(null)
+// Rien n'est lu au rendu serveur : les résultats appartiennent à une personne,
+// et les charger là rendrait le HTML de la fiche différent d'un visiteur à
+// l'autre — donc ni cacheable, ni prérendable.
+const { resultats, refus } = useResultats()
 const apercuOuvert = ref(false)
-
-function relire() {
-  resultats.value = rassemblerResultats(repertoire.value)
-}
-
-onMounted(relire)
-
-// Le répertoire arrive par une requête asynchrone : quand il se remplit, les
-// intitulés des fiches doivent rejoindre l'export déjà constitué.
-watch(repertoire, relire)
 
 const json = computed(() => (resultats.value ? JSON.stringify(resultats.value, null, 2) : ''))
 
@@ -69,12 +58,19 @@ function telecharger() {
     </div>
 
     <p class="mt-2! mb-0! text-sm text-muted">
-      Un fichier JSON avec tout ce que ce navigateur a retenu : les scores de chaque passage de QCM,
-      leur date, les questions ratées à chaque fois, et les questions d'exercice qui ont fini par être
-      trouvées. Rien ne quitte ta machine tant que tu ne le donnes pas toi-même.
+      Un fichier JSON avec tout ce qui est enregistré : les scores de chaque passage de QCM, leur
+      date, les questions ratées à chaque fois, et les questions d'exercice qui ont fini par être
+      trouvées. Le fichier se fabrique dans le navigateur : il ne part nulle part tant que tu ne le
+      donnes pas toi-même.
     </p>
 
-    <template v-if="vide">
+    <template v-if="refus">
+      <p class="mt-4 mb-0 text-sm text-dimmed">
+        Connecte-toi pour retrouver tes résultats.
+      </p>
+    </template>
+
+    <template v-else-if="vide">
       <p class="mt-4 mb-0 text-sm text-dimmed">
         Rien à exporter pour l'instant : réponds à une question ou corrige un QCM, et ce bloc se
         remplira.

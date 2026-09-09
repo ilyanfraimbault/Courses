@@ -1,5 +1,5 @@
 import type { InjectionKey, MaybeRefOrGetter, Ref } from 'vue'
-import type { QcmTentative } from './useQcmHistorique'
+import type { QcmTentative } from '~~/shared/types/resultats'
 
 export interface QcmFiche {
   /** Identifiant DOM de la question, cible des liens du récapitulatif. */
@@ -46,10 +46,17 @@ export function provideQcm(identifiant?: MaybeRefOrGetter<string | null>) {
   // Le point de comparaison est figé au chargement, puis ne bouge qu'entre deux
   // passages : sans cela, enregistrer la copie en cours ferait d'elle sa propre
   // référence et toute progression disparaîtrait au moment même de l'afficher.
+  //
+  // L'historique arrivant désormais du serveur, il est encore vide au montage :
+  // on attend donc que la fiche ait répondu. `watchOnce` et non `watch`, pour
+  // que la référence reste figée ensuite — c'est tout l'objet de la manœuvre.
   const reference = ref<QcmTentative | null>(null)
-  onMounted(() => {
-    reference.value = tentatives.value.at(-1) ?? null
-  })
+  const source = useDonneesFiche()
+  if (source) {
+    watchOnce(source.chargee, () => {
+      reference.value = tentatives.value.at(-1) ?? null
+    })
+  }
 
   const api: QcmApi = {
     enregistrer: ({ id, label, bonne }) => {

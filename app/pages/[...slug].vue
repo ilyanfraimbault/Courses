@@ -31,9 +31,14 @@ const { data: surround } = await useAsyncData(`${routePath.value}-surround`, () 
 const { openAll, closeAll } = provideCoursReveal()
 provideCoursExtraits()
 
+// Une seule requête par fiche, dont se servent la progression et les frises des
+// blocs de QCM. On passe le résultat à `provideProgression` plutôt que de le
+// laisser l'injecter : `inject` ne voit pas ce que le même composant fournit.
+const donneesFiche = provideDonneesFiche(routePath)
+
 // Les blocs de questions de la page — exercices comme QCM — viennent s'y compter :
 // c'est ce total qui alimente la barre ci-dessous et celle des cartes de lien.
-const { total: totalQuestions, reussies, pourcentage, oublierProgression } = provideProgression(routePath)
+const { total: totalQuestions, reussies, pourcentage, oublierProgression } = provideProgression(routePath, donneesFiche)
 
 // Cours, exercices du TD et fiche d'entraînement ne se lisent pas de la même
 // façon : la pastille rappelle sur quelle sorte de page on vient d'arriver.

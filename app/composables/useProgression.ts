@@ -1,52 +1,6 @@
 import type { InjectionKey, MaybeRefOrGetter, Ref } from 'vue'
-
-/**
- * Ce qu'une fiche retient d'elle-même entre deux visites. Le `total` y est
- * délibérément recopié : une carte de lien ne connaît pas le contenu de la page
- * qu'elle vise, et c'est la fiche, en s'affichant, qui le lui apprend.
- */
-export interface ProgressionFiche {
-  total: number
-  /** Identité de question → lettre trouvée, ou « auto » pour une auto-évaluation. */
-  faites: Record<string, string>
-  maj: number
-}
-
-/** Bump à changer si la forme évolue : les anciens enregistrements seront ignorés. */
-const VERSION = 'v1'
-
-function cleStockage(chemin: string) {
-  return `progression:${VERSION}:${cheminCanonique(chemin)}`
-}
-
-/**
- * Toutes les lectures et écritures passent par ici. En navigation privée, avec
- * le stockage bloqué ou le quota plein, `localStorage` lève : une fiche sans
- * mémoire reste parfaitement utilisable, donc on avale l'erreur.
- */
-function lire(chemin: string): ProgressionFiche | null {
-  try {
-    const brut = localStorage.getItem(cleStockage(chemin))
-    if (!brut) return null
-    const donnees = JSON.parse(brut)
-    if (!donnees || typeof donnees.total !== 'number' || typeof donnees.faites !== 'object') return null
-    const faites: Record<string, string> = {}
-    for (const [id, reponse] of Object.entries(donnees.faites as Record<string, unknown>)) {
-      if (typeof reponse === 'string') faites[id] = reponse
-    }
-    return { total: donnees.total, faites, maj: typeof donnees.maj === 'number' ? donnees.maj : 0 }
-  } catch {
-    return null
-  }
-}
-
-function ecrire(chemin: string, fiche: ProgressionFiche) {
-  try {
-    localStorage.setItem(cleStockage(chemin), JSON.stringify(fiche))
-  } catch {
-    // Rien à faire : la progression est un confort, pas une donnée à sauver.
-  }
-}
+import type { ResumeFiche } from '~~/shared/types/resultats'
+import type { DonneesFicheApi } from './useDonneesFiche'
 
 export interface ProgressionApi {
   /** Une question se déclare au montage. Une identité nulle n'est pas comptée. */
@@ -62,6 +16,9 @@ export interface ProgressionApi {
 
 export const progressionKey: InjectionKey<ProgressionApi> = Symbol('progression')
 
+/** Assez pour fondre en un seul envoi la correction d'un QCM de vingt questions. */
+const DELAI_ENVOI = 800
+
 /**
  * Progression d'une fiche : combien de ses questions ont fini par être trouvées.
  *
@@ -69,22 +26,24 @@ export const progressionKey: InjectionKey<ProgressionApi> = Symbol('progression'
  * page n'a ainsi qu'un seul endroit où compter, et le décompte vaut aussi bien
  * pour un exercice à correction immédiate que pour un QCM corrigé d'un bloc.
  */
-export function provideProgression(chemin: MaybeRefOrGetter<string>) {
+export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: DonneesFicheApi | null) {
   // Les questions présentes sur la page, et parmi elles celles qui sont trouvées.
   const declarees = reactive(new Set<string>())
   const faites = reactive(new Map<string, string>())
-  const chargee = ref(false)
 
-  // Le rendu serveur n'a pas de `localStorage` : on ne lit qu'au montage, ce qui
-  // évite aussi toute divergence d'hydratation sur un site prérendu. Les enfants
-  // se montent avant le parent, donc les questions sont déjà déclarées ici.
-  onMounted(() => {
-    const enregistre = lire(toValue(chemin))
-    if (enregistre) {
-      for (const [id, reponse] of Object.entries(enregistre.faites)) faites.set(id, reponse)
-    }
-    chargee.value = true
-  })
+  // Vue ne laisse pas un composant injecter ce qu'il vient lui-même de fournir :
+  // `inject` remonte la chaîne des parents. La page appelle les deux `provide`
+  // côte à côte, elle passe donc la source explicitement ; l'injection ne sert
+  // qu'aux appels faits depuis un composant descendant.
+  source ??= useDonneesFiche()
+  const chargee = computed(() => source?.chargee.value ?? false)
+
+  // Les enfants se montent avant le parent : les questions sont déjà déclarées
+  // quand la réponse du serveur arrive.
+  watch(() => source?.donnees.value, (donnees) => {
+    if (!donnees) return
+    for (const [id, reponse] of Object.entries(donnees.faites)) faites.set(id, reponse)
+  }, { immediate: true })
 
   const api: ProgressionApi = {
     declarer: (id) => { if (id) declarees.add(id) },
@@ -100,23 +59,72 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>) {
   const reussies = computed(() => [...declarees].filter(id => faites.has(id)).length)
   const pourcentage = computed(() => total.value ? Math.round(100 * reussies.value / total.value) : 0)
 
-  // On n'écrit qu'une fois la mémoire lue : persister avant reviendrait à effacer
-  // ce qu'on n'a pas encore chargé. Les entrées dont la question a disparu du
-  // contenu sont élaguées au passage, sinon le décompte gonflerait sans fin.
-  watch([chargee, total, () => faites.size], () => {
-    // Une page sans question — un index, un sommaire — n'a rien à mémoriser, et
-    // écrire pour elle sèmerait des clés vides dans le stockage.
-    if (!chargee.value || !total.value) return
+  /** L'instantané à envoyer : ce que la page déclare, et parmi cela ce qui est trouvé. */
+  function instantane() {
     const retenues: Record<string, string> = {}
     for (const id of declarees) {
       const reponse = faites.get(id)
       if (reponse) retenues[id] = reponse
     }
-    ecrire(toValue(chemin), { total: total.value, faites: retenues, maj: Date.now() })
+    return { chemin: cheminCanonique(toValue(chemin)), total: total.value, faites: retenues }
+  }
+
+  const envoyer = useDebounceFn(async () => {
+    try {
+      await $fetch('/api/fiche', { method: 'PUT', body: instantane() })
+    } catch {
+      // La progression est un confort, pas une donnée à sauver à tout prix : on
+      // n'inflige pas un message d'erreur au milieu d'un exercice.
+    }
+  }, DELAI_ENVOI)
+
+  // On n'écrit qu'une fois la mémoire lue : persister avant reviendrait à
+  // effacer ce qu'on n'a pas encore chargé. C'est la garde la plus importante du
+  // fichier — `chargee` ne passe à vrai que sur une lecture réussie, si bien
+  // qu'une session expirée ou une coupure réseau ne peut pas vider la base.
+  // Les entrées dont la question a disparu du contenu sont élaguées au passage,
+  // sinon le décompte gonflerait sans fin.
+  watch([chargee, total, () => faites.size], () => {
+    // Une page sans question — un index, un sommaire — n'a rien à mémoriser, et
+    // écrire pour elle sèmerait des lignes vides dans la base.
+    if (!chargee.value || !total.value) return
+    envoyer()
   })
 
-  function oublierProgression() {
+  // La temporisation gagne des requêtes, mais elle ouvre une fenêtre où quitter
+  // la page perdrait la dernière réponse. `keepalive` laisse le navigateur
+  // terminer l'envoi après le démontage, là où un `fetch` ordinaire est annulé.
+  // On ne prend pas `sendBeacon`, qui n'émet que des POST : il faudrait doubler
+  // la route en POST pour lui, alors que la charge utile — quelques kilo-octets —
+  // tient très largement dans la limite de 64 Ko de `keepalive`.
+  function vider() {
+    if (!chargee.value || !total.value) return
+    try {
+      fetch('/api/fiche', {
+        method: 'PUT',
+        keepalive: true,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(instantane())
+      }).catch(() => {})
+    } catch {
+      // Idem : un envoi manqué n'est pas une raison d'interrompre la navigation.
+    }
+  }
+
+  if (import.meta.client) {
+    useEventListener(document, 'visibilitychange', () => {
+      if (document.visibilityState === 'hidden') vider()
+    })
+    onBeforeUnmount(vider)
+  }
+
+  async function oublierProgression() {
     faites.clear()
+    try {
+      await $fetch('/api/fiche', { method: 'DELETE', query: { chemin: cheminCanonique(toValue(chemin)) } })
+    } catch {
+      // L'oubli en mémoire suffit pour la session en cours.
+    }
   }
 
   return { total, reussies, pourcentage, oublierProgression }
@@ -181,16 +189,40 @@ export function useComptesQuestions() {
 }
 
 /**
+ * L'état de toutes les fiches, chargé une fois par visite.
+ *
+ * Là où le stockage local imposait une lecture par carte de lien, une seule
+ * requête sert désormais les quinze cartes d'un sommaire comme le tableau de
+ * bord. L'état est partagé par `useState`, donc chargé une fois même si dix
+ * composants le demandent.
+ */
+export function useResumeProgression() {
+  const resume = useState<Record<string, ResumeFiche>>('progression-resume', () => ({}))
+  const chargeDemandee = useState('progression-resume-demande', () => false)
+
+  onMounted(async () => {
+    if (chargeDemandee.value) return
+    chargeDemandee.value = true
+    try {
+      resume.value = await $fetch<Record<string, ResumeFiche>>('/api/progression/resume')
+    } catch {
+      // Hors session : les cartes n'affichent pas de progression, ce qui est
+      // exactement l'information juste.
+      chargeDemandee.value = false
+    }
+  })
+
+  return resume
+}
+
+/**
  * Lecture seule de la progression d'une autre fiche, pour les cartes de lien.
  * Tant que la fiche n'a jamais été ouverte, il n'y a rien à afficher — et c'est
  * exactement l'information juste.
  */
 export function useProgressionFiche(chemin: MaybeRefOrGetter<string>) {
-  const fiche = ref<ProgressionFiche | null>(null) as Ref<ProgressionFiche | null>
-
-  onMounted(() => {
-    fiche.value = lire(toValue(chemin))
-  })
+  const resume = useResumeProgression()
+  const fiche = computed(() => resume.value[cheminCanonique(toValue(chemin))] ?? null)
 
   const total = computed(() => fiche.value?.total ?? 0)
   const reussies = computed(() => {
@@ -198,7 +230,7 @@ export function useProgressionFiche(chemin: MaybeRefOrGetter<string>) {
     if (!f) return 0
     // Le total fait foi : une mémoire plus vieille que le contenu ne doit pas
     // afficher « 23 / 20 ».
-    return Math.min(Object.keys(f.faites).length, f.total)
+    return Math.min(f.reussies, f.total)
   })
   const commencee = computed(() => total.value > 0 && reussies.value > 0)
 
