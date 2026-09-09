@@ -1,0 +1,73 @@
+services:
+  app:
+    image: ghcr.io/ilyanfraimbault/courses:${IMAGE_TAG:-latest}
+    # Sans cela, un redéploiement manuel — qui n'a pas d'IMAGE_TAG et retombe
+    # donc sur « latest » — réutiliserait en silence l'image déjà présente.
+    pull_policy: always
+    container_name: courses-app
+    restart: unless-stopped
+    environment:
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: 3000
+      NUXT_BASE_FICHIER: /data/cours.sqlite
+      NUXT_SESSION_PASSWORD: "${NUXT_SESSION_PASSWORD:?32 caractères minimum}"
+      NUXT_COURS_MOT_DE_PASSE: "${NUXT_COURS_MOT_DE_PASSE:?le mot de passe du site}"
+      NUXT_SESSION_COOKIE_SECURE: "true"
+      # Caddy réécrit X-Forwarded-For : on peut s'y fier pour identifier la
+      # source d'une tentative de connexion.
+      NUXT_TRUST_PROXY: "true"
+    volumes:
+      - courses_data:/data
+    # Aucun port publié : Caddy est la seule porte d'entrée.
+    networks:
+      - courses_internal
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: courses-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      COURS_ADRESSE: "${COURS_ADRESSE:?le nom d'hôte servi, par exemple cours.exemple.fr}"
+      ACME_EMAIL: "${ACME_EMAIL:-}"
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+    volumes:
+      # À conserver impérativement : sans ce volume, Caddy redemande un
+      # certificat à chaque démarrage et se fait limiter par Let's Encrypt.
+      - courses_caddy_data:/data
+      - courses_caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - courses_internal
+
+# Le Caddyfile voyage avec le compose plutôt que d'être monté depuis l'hôte :
+# ça supprime toute une classe de pannes « le fichier n'est pas là où il faut
+# sur le serveur ». Caddy substitue les variables de son environnement au
+# chargement, donc changer de domaine ne demande aucune reconstruction d'image.
+configs:
+  caddyfile:
+    content: |
+      {
+        email {$ACME_EMAIL}
+      }
+
+      {$COURS_ADRESSE} {
+        log
+        encode zstd gzip
+        reverse_proxy app:3000
+      }
+
+volumes:
+  courses_data:
+  courses_caddy_data:
+  courses_caddy_config:
+
+networks:
+  courses_internal:
+    driver: bridge

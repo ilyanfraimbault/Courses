@@ -19,9 +19,9 @@ jobs:
 
       - uses: pnpm/action-setup@v6
 
-      # Node 24 : `node:sqlite` fait partie du runtime et c'est la version que
-      # l'image d'exécution embarque. La faire diverger d'ici ferait passer la
-      # CI sur un runtime que la production n'utilise pas.
+      # Node 24 : `node:sqlite` fait partie du runtime, et c'est la version que
+      # l'image d'exécution embarque. La faire diverger ici ferait passer la CI
+      # sur un runtime que la production n'utilise pas.
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -36,3 +36,21 @@ jobs:
       # `nuxt typecheck` peut passer sur des types .nuxt périmés là où le build
       # échoue : les deux sont nécessaires, pas seulement le premier.
       - run: pnpm run build
+
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      # L'image construit avec le Node et le pnpm de son image de base, pas avec
+      # la chaîne épinglée du job ci-dessus : un lockfile qui s'installe dans
+      # l'un peut échouer dans l'autre. D'où ce build, qui ne publie rien.
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha,scope=courses
+          cache-to: type=gha,mode=max,scope=courses

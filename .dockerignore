@@ -1,0 +1,16 @@
+node_modules
+.nuxt
+.output
+.data
+.git
+.github
+.claude
+docs
+scripts
+**/.env
+!**/.env.example
+**/Dockerfile*
+**/compose*.yaml
+*.log
+.DS_Store
+.idea
