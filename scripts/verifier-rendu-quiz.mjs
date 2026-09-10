@@ -129,6 +129,78 @@ await page.waitForTimeout(1500)
 verifier('la touche Entrée enchaîne',
   (await page.locator('.cours-enonce').first().innerText()) !== apres)
 
+console.log('\n— L\'énoncé commun du bloc')
+// On ouvre une séance sur une notion dont les blocs portent tous un énoncé
+// commun : la question « Donner l'affixe du vecteur M₂M₄ » n'a de sens qu'avec
+// les coordonnées écrites en tête de l'exercice.
+await page.setViewportSize({ width: 1280, height: 1100 })
+const seance = await page.evaluate(async () => {
+  const j = async (u, o) => (await fetch(u, { headers: { 'content-type': 'application/json' }, ...o })).json()
+  const catalogue = await j('/api/quiz/catalogue')
+  const notion = catalogue.themes.flatMap(t => t.notions).find(n => n.cle.endsWith('/cours-affixes'))
+  if (!notion) return null
+  const { session } = await j('/api/quiz/session', {
+    method: 'POST', body: JSON.stringify({ notions: [notion.cle], taille: 5 })
+  })
+  return session.id
+})
+if (!seance) {
+  verifier('la notion des affixes existe au catalogue', false)
+} else {
+  await page.goto(BASE + '/quiz/' + seance)
+  await page.locator('.cours-quiz-chapeau').first().waitFor({ timeout: 20000 })
+  await page.waitForTimeout(500)
+  const chapeau = (await page.locator('.cours-quiz-chapeau').first().innerText()).trim()
+  verifier('l\'énoncé commun s\'affiche au-dessus de la question',
+    /repère|figure|M/.test(chapeau), JSON.stringify(chapeau.slice(0, 70)))
+  verifier('il est rendu, formules comprises',
+    await page.locator('.cours-quiz-chapeau .katex').count() > 0)
+  // La question doit rester ce qu'on voit d'abord : plus grande que son chapô.
+  const tailles = await page.evaluate(() => {
+    const px = s => parseFloat(getComputedStyle(s).fontSize)
+    return {
+      chapeau: px(document.querySelector('.cours-quiz-chapeau')),
+      question: px(document.querySelector('.cours-enonce'))
+    }
+  })
+  verifier('la question reste plus grande que son énoncé rappelé',
+    tailles.question > tailles.chapeau, `${tailles.question}px contre ${tailles.chapeau}px`)
+  await page.screenshot({ path: 'quiz-enonce-commun.png', fullPage: true })
+}
+
+console.log('\n— Une question gagnée est cochée sur sa fiche')
+// C'est la demande, et elle se vérifie sur la fiche, pas en base : on gagne une
+// question au quiz, puis on ouvre l'exercice d'où elle vient.
+const gagnee = await page.evaluate(async () => {
+  const j = async (u, o) => (await fetch(u, { headers: { 'content-type': 'application/json' }, ...o })).json()
+  const { session } = await j('/api/quiz/session', { method: 'POST', body: JSON.stringify({ taille: 40 }) })
+  for (let i = 0; i < 40; i++) {
+    const etat = await j(`/api/quiz/session/${session.id}`)
+    if (!etat.question) break
+    const rep = await j(`/api/quiz/session/${session.id}/reponse`, {
+      method: 'POST',
+      body: JSON.stringify({ position: etat.question.position, lettre: etat.question.lettres[0] })
+    })
+    if (rep.correction?.juste) return { chemin: etat.question.fiche.chemin, label: etat.question.label }
+  }
+  return null
+})
+if (!gagnee) {
+  verifier('une question a fini par tomber juste', false)
+} else {
+  await page.goto(BASE + gagnee.chemin)
+  await page.locator('.cours-question').first().waitFor({ timeout: 20000 })
+  // La progression est lue au montage, jamais au rendu serveur : on attend
+  // qu'elle arrive plutôt que de lire trop tôt un « 0 / N » qui n'a rien à dire.
+  await page.locator('.cours-question.border-success').first().waitFor({ timeout: 20000 })
+  const compteur = await page.getByText(/questions? trouvées?/).first().innerText()
+  verifier('la fiche compte la question gagnée au quiz',
+    /\b([1-9]\d*) \/ \d+/.test(compteur), `${compteur.replace(/\s+/g, ' ')} — question ${gagnee.label}`)
+  verifier('la question apparaît acquise dans son exercice',
+    await page.locator('.cours-question.border-success').count() >= 1)
+  await page.screenshot({ path: 'quiz-report-fiche.png', fullPage: false })
+}
+
 console.log('\n— Largeur téléphone')
 await page.setViewportSize({ width: 390, height: 844 })
 await page.waitForTimeout(500)
