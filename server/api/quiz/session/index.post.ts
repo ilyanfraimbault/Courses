@@ -5,6 +5,7 @@ import type { EtatFile, LigneSession } from '../../../utils/quiz-session.ts'
 interface CorpsSession {
   themes?: unknown
   sections?: unknown
+  notions?: unknown
   erreurs?: unknown
   taille?: unknown
 }
@@ -64,6 +65,8 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   const filtre: FiltreQuiz = {
     themes: listeDeChaines(corps?.themes),
     sections: listeDeChaines(corps?.sections),
+    // Un point de cours précis, tel que « Mes domaines » le désigne par lien.
+    notions: listeDeChaines(corps?.notions),
     erreurs: corps?.erreurs === true
   }
 
@@ -75,7 +78,7 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   const db = useBase()
   const banque = await chargerBanque(event)
   const enDette = questionsEnDette(db, uid)
-  const candidats = filtrer(banque.entrees, filtre, enDette)
+  const candidats = filtrer(banque.interrogeables, filtre, enDette)
   if (!candidats.length) {
     throw createError({
       statusCode: 400,

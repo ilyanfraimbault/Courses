@@ -55,6 +55,12 @@ que le bloc relevé et l'identité écrite en base désignent la même chose. En
 contrepartie, `app/utils/cours.ts` doit rester **libre de tout import Nuxt** :
 il est chargé au moment de lire la configuration, hors de toute application.
 
+**Un seul relevé de questions, pas deux.** Le hook du build écrit un champ
+`releve` par page : **toutes** les questions identifiables, et un booléen
+`interrogeable` qui dit lesquelles le quiz sait poser. Le quiz lit la part vraie
+de ce booléen, la progression par domaine lit tout. Deux relevés côte à côte se
+contrediraient le jour où l'un changerait.
+
 **Le quiz emprunte les questions, il n'en écrit aucune.** Ses 432 questions
 sont celles des fiches, découpées dans l'arbre de la page au moment de les
 poser — énoncé, propositions, indice, solution et rappel de cours compris.
@@ -88,7 +94,9 @@ l'intitulé du rappel de cours visé. Les rappels ne formaient pas une
 nomenclature : le même titre apparaissait deux fois, et les questions qui n'en
 visent aucun n'apparaissaient nulle part — 48 des 77 questions de trigonométrie.
 La règle qui garde l'écran honnête : **la somme des cases fait le compte du
-chapitre**, une case « le reste » servant au besoin de solde.
+chapitre**, une case « le reste » servant au besoin de solde. Le point de cours
+survit sous la section, invisible dans la liste : c'est lui que « Mes domaines »
+désigne par lien, et il s'affiche alors nommé.
 
 **Le serveur est maître des règles.** Le plafond de 24 tentatives par QCM,
 l'agrégation d'un chapitre sur ses fiches, l'unicité d'une cible de to-do : tout
@@ -150,6 +158,9 @@ dans `docs/contenu.md`. Aujourd'hui : **473 questions rendues sur 473**.
   ancien export, et pourquoi `remark-mdc` est épinglé.
 - `docs/quiz.md` — le mode quiz : la banque relevée au build, le thème déduit du
   rappel de cours, la file qui rejoue une place ratée, et ce qu'il n'écrit pas.
+- `docs/domaines.md` — la progression rangée par point de cours : d'où viennent
+  les domaines, ce que les deux segments d'une barre veulent dire, et pourquoi
+  le relevé porte les 473 questions et non les seules 432 du quiz.
 - `docs/comptes.md` — comptes, hachage, isolation des données.
 - `docs/deploiement.md` — conteneur, CI/CD, VPS, domaine, sauvegarde.
 - `.claude/pieges.md` — les pièges rencontrés, avec ce qui les a démasqués.

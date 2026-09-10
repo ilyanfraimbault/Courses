@@ -18,9 +18,10 @@ export type FragmentContenu = unknown[]
 export type NatureQuestion = 'exercice' | 'qcm'
 
 /**
- * Une question telle que le relevé du build la connaît : de quoi la **choisir**,
- * jamais de quoi la poser. C'est ce qui tient dans la collection sans la
- * gonfler — l'énoncé, lui, est relu à la demande dans le corps de la fiche.
+ * Une question telle que le relevé du build la connaît : de quoi la **choisir**
+ * et la **classer**, jamais de quoi la poser. C'est ce qui tient dans la
+ * collection sans la gonfler — l'énoncé, lui, est relu à la demande dans le
+ * corps de la fiche.
  */
 export interface QuestionRelevee {
   /** Slug du bloc, seconde pièce de l'identité de la question. */
@@ -32,6 +33,12 @@ export interface QuestionRelevee {
   nature: NatureQuestion
   /** Nombre de propositions effectivement écrites. */
   choix: number
+  /**
+   * Vrai quand la question se corrige toute seule. Le relevé porte **toutes**
+   * les questions identifiables du site, parce que la progression par domaine
+   * les compte toutes ; le quiz, lui, ne tire que dans celles-ci.
+   */
+  interrogeable: boolean
   /** Identifiant de l'extrait de cours visé, s'il y en a un. */
   notion: string | null
   /** Intitulé de cet extrait, qui sert de nom lisible à la notion. */
@@ -73,6 +80,24 @@ export interface SectionCatalogue {
   questions: number
   /** Parmi elles, celles qui sont en dette : ratées et pas encore retrouvées. */
   ratees: number
+  /**
+   * Les points de cours qui vivent dans cette section. Ils ne s'affichent pas
+   * dans la liste — c'est précisément leur ambiguïté qui a fait passer la
+   * sélection au plan du chapitre — mais « Mes domaines » raisonne en points de
+   * cours, et son lien « m'interroger là-dessus » a besoin de les nommer et de
+   * les compter. Un point de cours vit dans une seule section, puisque les deux
+   * viennent de la même `source`.
+   */
+  notions: NotionCatalogue[]
+}
+
+/** Un point de cours : l'intitulé d'un rappel, et ce qu'il pèse. */
+export interface NotionCatalogue {
+  /** « chapitre/identifiant-extrait » : le même identifiant sert dans deux chapitres. */
+  cle: string
+  titre: string
+  questions: number
+  ratees: number
 }
 
 export interface ThemeCatalogue {
@@ -108,9 +133,10 @@ export interface FiltreQuiz {
    */
   erreurs?: boolean
   /**
-   * Hérité : les séances ouvertes quand le second niveau était le rappel de
-   * cours. On continue de les honorer pour qu'une séance en cours au moment
-   * d'une mise en ligne ne se retrouve pas sans candidats.
+   * Des points de cours précis. Ils ne se cochent pas à la main — la liste des
+   * sections a remplacé la leur — mais un lien venu de « Mes domaines » en
+   * désigne un, et les séances ouvertes avant ce changement en portaient. Ils
+   * s'additionnent aux chapitres et aux sections comme le reste.
    */
   notions?: string[]
 }

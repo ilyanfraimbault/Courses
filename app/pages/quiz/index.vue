@@ -19,13 +19,51 @@ const taille = ref(20)
 const lancement = ref(false)
 const erreur = ref<string | null>(null)
 
+/**
+ * Un chapitre ou un point de cours passé en adresse présélectionne le filtre :
+ * c'est par là que « Mes domaines » envoie ici, avec la case déjà cochée.
+ *
+ * Un point de cours ne se coche plus à la main — la liste des sections a
+ * remplacé la leur — mais « Mes domaines » raisonne en points de cours, et son
+ * lien reste le chemin le plus court entre « c'est là que ça coince » et une
+ * séance dessus. Le catalogue les porte donc toujours, rangés sous leur section,
+ * pour qu'on puisse les nommer et les compter sans les afficher en liste.
+ *
+ * Les clés sont confrontées au catalogue avant d'être retenues. Un lien mis en
+ * favori survit ainsi à un cours renommé — il ouvre le quiz sur tout, ce qui est
+ * le comportement par défaut, au lieu de préparer une séance vide.
+ */
+const route = useRoute()
+
+function listeQuery(valeur: unknown): string[] {
+  return (Array.isArray(valeur) ? valeur : [valeur]).filter((v): v is string => typeof v === 'string' && !!v)
+}
+
+const notionsDuCatalogue = computed(() =>
+  (catalogue.value?.themes ?? []).flatMap(t => t.sections.flatMap(s => s.notions)))
+
+watch(catalogue, (c) => {
+  if (!c || filtre.value.themes.length || filtre.value.notions?.length) return
+  const themesConnus = new Set(c.themes.map(t => t.cle))
+  const notionsConnues = new Set(notionsDuCatalogue.value.map(n => n.cle))
+  filtre.value = {
+    themes: listeQuery(route.query.theme).filter(t => themesConnus.has(t)),
+    sections: [],
+    erreurs: false,
+    notions: listeQuery(route.query.notion).filter(n => notionsConnues.has(n))
+  }
+}, { immediate: true })
+
 /** Le compte du filtre, calculé comme le serveur le calculera. */
 const disponibles = computed(() => {
   const c = catalogue.value
   if (!c) return 0
   const erreurs = !!filtre.value.erreurs
   const compte = (e: { questions: number, ratees: number }) => (erreurs ? e.ratees : e.questions)
-  if (!filtre.value.themes.length && !filtre.value.sections.length) return erreurs ? c.ratees : c.total
+  const notions = filtre.value.notions ?? []
+  if (!filtre.value.themes.length && !filtre.value.sections.length && !notions.length) {
+    return erreurs ? c.ratees : c.total
+  }
   let total = 0
   for (const theme of c.themes) {
     if (filtre.value.themes.includes(theme.cle)) {
@@ -33,7 +71,13 @@ const disponibles = computed(() => {
       continue
     }
     for (const section of theme.sections) {
-      if (filtre.value.sections.includes(section.cle)) total += compte(section)
+      if (filtre.value.sections.includes(section.cle)) {
+        total += compte(section)
+        continue
+      }
+      for (const notion of section.notions) {
+        if (notions.includes(notion.cle)) total += compte(notion)
+      }
     }
   }
   return total
@@ -62,6 +106,7 @@ async function commencer() {
       body: {
         themes: filtre.value.themes,
         sections: filtre.value.sections,
+        notions: filtre.value.notions ?? [],
         erreurs: !!filtre.value.erreurs,
         taille: taille.value
       }
@@ -76,7 +121,7 @@ async function commencer() {
 
 /** Reprendre la sélection sur la seule dette, tout le programme confondu. */
 function reviserCeQuiResiste() {
-  filtre.value = { themes: [], sections: [], erreurs: true }
+  filtre.value = { themes: [], sections: [], notions: [], erreurs: true }
 }
 
 async function clore(id: number) {

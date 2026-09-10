@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import type {
   CatalogueQuiz, ExtraitQuiz, FiltreQuiz, FragmentContenu,
-  NatureQuestion, QuestionQuiz, QuestionRelevee, SectionCatalogue, ThemeCatalogue
+  NatureQuestion, NotionCatalogue, QuestionQuiz, QuestionRelevee, SectionCatalogue, ThemeCatalogue
 } from '~~/shared/types/quiz'
 
 /** Bornes du tirage. Au-delà, la file cesse d'être une séance et devient une corvée. */
@@ -61,11 +61,22 @@ interface PageContenu {
   ordre?: number | null
   questions?: number | null
   sections?: Record<string, SectionRelevee> | null
-  quiz?: QuestionRelevee[] | null
+  releve?: QuestionRelevee[] | null
 }
 
 interface Banque {
+  /**
+   * Toutes les questions identifiables du site, questions ouvertes comprises.
+   * C'est la vue dont la progression par domaine a besoin : elle range en
+   * domaines ce que la mémoire sait, et la mémoire ignore, elle, si une question
+   * se corrigeait toute seule.
+   */
   entrees: EntreeBanque[]
+  /**
+   * Celles que le quiz sait poser. C'est **cette** liste que le tirage, les
+   * filtres et le catalogue voient : le reste ne se corrige pas tout seul.
+   */
+  interrogeables: EntreeBanque[]
   /** Chapitre → intitulé, icône et sommaire, relevés sur la page d'index du chapitre. */
   chapitres: Map<string, { titre: string, icone: string | null, chemin: string, ordre: number }>
 }
@@ -133,7 +144,7 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
   if (banque && Date.now() < banque.expire) return banque.valeur
 
   const pages = await collectionCours(event)
-    .select('path', 'title', 'icone', 'ordre', 'questions', 'sections', 'quiz')
+    .select('path', 'title', 'icone', 'ordre', 'questions', 'sections', 'releve')
     .all() as unknown as PageContenu[]
 
   // Le plan de chaque page, pour donner son intitulé à une section. Une section
@@ -147,7 +158,7 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
   const entrees: EntreeBanque[] = []
   for (const page of pages) {
     const chemin = cheminCanonique(page.path)
-    for (const q of page.quiz ?? []) {
+    for (const q of page.releve ?? []) {
       const [pageSection, ancre] = (q.section ?? '').split('#')
       const releve = pageSection && ancre ? plans.get(pageSection)?.[ancre] : undefined
       entrees.push({
@@ -184,7 +195,7 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
     })
   }
 
-  const valeur: Banque = { entrees, chapitres }
+  const valeur: Banque = { entrees, interrogeables: entrees.filter(e => e.interrogeable), chapitres }
   banque = { valeur, expire: Date.now() + PEREMPTION }
   return valeur
 }
@@ -206,9 +217,10 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
 export function filtrer(entrees: EntreeBanque[], filtre: FiltreQuiz, enDette?: Set<string>): EntreeBanque[] {
   const themes = new Set(filtre.themes)
   const sections = new Set(filtre.sections)
-  // Hérité : les séances ouvertes quand le second niveau était le rappel de
-  // cours. Sans cette ligne, une séance en cours au moment d'une mise en ligne
-  // se retrouverait sans candidats et ne pourrait plus se terminer.
+  // Un point de cours précis. Il ne se coche plus à la main, mais « Mes
+  // domaines » en désigne un par lien, et les séances ouvertes avant que la
+  // sélection ne passe au plan du chapitre en portaient : sans cette ligne
+  // elles se retrouveraient sans candidats et ne pourraient plus se terminer.
   const notions = new Set(filtre.notions ?? [])
 
   const choisies = !themes.size && !sections.size && !notions.size
@@ -242,11 +254,21 @@ const RESTE = 'reste'
  * chapitre. Un chiffre qui ne s'additionne pas est pire qu'un chiffre absent.
  */
 export function composerCatalogue(banque: Banque, enDette?: Set<string>): CatalogueQuiz {
-  interface Compte { titre: string, ordre: number, questions: number, ratees: number }
+  interface Compte {
+    titre: string
+    ordre: number
+    questions: number
+    ratees: number
+    /** Les points de cours de la section, pour résoudre un lien venu de « Mes domaines ». */
+    notions: Map<string, NotionCatalogue>
+  }
   const parTheme = new Map<string, Map<string, Compte>>()
   const totaux = new Map<string, { questions: number, ratees: number }>()
 
-  for (const e of banque.entrees) {
+  // Les questions ouvertes n'entrent pas au catalogue : annoncer « 18 questions »
+  // sur une notion dont le quiz ne sait en poser que 12 ferait une séance qui
+  // s'arrête plus tôt que promis.
+  for (const e of banque.interrogeables) {
     const theme = e.theme ?? 'divers'
     const ratee = enDette?.has(e.id) ? 1 : 0
     const total = totaux.get(theme) ?? { questions: 0, ratees: 0 }
@@ -261,17 +283,32 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
       titre: e.section ? e.sectionTitre ?? cle : 'Le reste du chapitre',
       ordre: e.section ? e.sectionOrdre : 1000,
       questions: 0,
-      ratees: 0
+      ratees: 0,
+      notions: new Map<string, NotionCatalogue>()
     }
     compte.questions += 1
     compte.ratees += ratee
+    if (e.notionCle) {
+      const notion = compte.notions.get(e.notionCle)
+        ?? { cle: e.notionCle, titre: e.notionTitre ?? e.notion!, questions: 0, ratees: 0 }
+      notion.questions += 1
+      notion.ratees += ratee
+      compte.notions.set(e.notionCle, notion)
+    }
     sections.set(cle, compte)
   }
 
   const themes: ThemeCatalogue[] = [...totaux].map(([cle, total]) => {
     const chapitre = banque.chapitres.get(cle)
     const sections: SectionCatalogue[] = [...(parTheme.get(cle) ?? new Map<string, Compte>())]
-      .map(([c, s]) => ({ cle: c, titre: s.titre, ordre: s.ordre, questions: s.questions, ratees: s.ratees }))
+      .map(([c, s]) => ({
+        cle: c,
+        titre: s.titre,
+        ordre: s.ordre,
+        questions: s.questions,
+        ratees: s.ratees,
+        notions: [...s.notions.values()].sort((a, b) => a.titre.localeCompare(b.titre, 'fr'))
+      }))
       // L'ordre du plan, pas celui du stock : on révise dans l'ordre où on a
       // appris. Le reste du chapitre ferme la marche, par son rang de mille.
       .sort((a, b) => a.ordre - b.ordre || a.titre.localeCompare(b.titre, 'fr'))
@@ -293,8 +330,11 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
     || a.titre.localeCompare(b.titre, 'fr'))
 
   return {
-    total: banque.entrees.length,
-    ratees: enDette ? banque.entrees.filter(e => enDette.has(e.id)).length : 0,
+    total: banque.interrogeables.length,
+    // La dette se compte, elle aussi, sur les seules questions que le quiz sait
+    // poser : annoncer « 14 à revoir » dont trois sont des questions ouvertes
+    // promettrait une séance plus longue que celle qu'on peut servir.
+    ratees: enDette ? banque.interrogeables.filter(e => enDette.has(e.id)).length : 0,
     themes,
     tailleMin: TAILLE_MIN,
     tailleMax: TAILLE_MAX

@@ -73,10 +73,36 @@ Attendu aujourd'hui : `473 / 473 aucun écart`.
 Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/content`,
 `@nuxtjs/mdc` ou `remark-mdc` — c'est le seul moyen de voir la panne.
 
-Le même hook relève la banque du quiz. Son témoin chiffré à lui — 432 questions
-à choix réparties sur quatre chapitres — est décrit dans `docs/quiz.md`, et il
-vaut d'être relu au même moment : une question qui cesse d'être relevée
-disparaît du quiz sans que rien ne le signale.
+Le même hook relève l'index des questions. Il en a **473**, autant que le
+comptage — chacune vit dans un bloc et porte un repère, donc chacune a une
+identité et peut être rangée dans un domaine. Parmi elles, **432** sont
+interrogeables, réparties sur quatre chapitres : c'est la banque du quiz,
+décrite dans `docs/quiz.md`. Ce second témoin vaut d'être relu au même moment
+qu'un changement de contenu — une question qui cesse d'être relevée disparaît du
+quiz et d'un domaine sans que rien ne le signale.
+
+```bash
+node -e "
+const {DatabaseSync}=require('node:sqlite');
+const db=new DatabaseSync('.data/content/contents.sqlite');
+const rows=db.prepare('SELECT questions, releve FROM _content_cours').all();
+let relevees=0, interrogeables=0, comptees=0, sansRenvoi=0; const notions=new Set();
+for (const r of rows) {
+  comptees += r.questions||0;
+  for (const q of JSON.parse(r.releve||'[]')) {
+    relevees++;
+    if (q.interrogeable) interrogeables++;
+    if (q.notion) notions.add((q.theme||'?')+'/'+q.notion); else sansRenvoi++;
+  }
+}
+console.log({relevees, comptees, interrogeables, notions: notions.size, sansRenvoi});
+"
+```
+
+Attendu aujourd'hui : `{ relevees: 473, comptees: 473, interrogeables: 432,
+notions: 102, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
+signalerait une question hors bloc ou sans repère : elle se rendrait bien, mais
+n'aurait pas d'identité, donc pas de mémoire.
 
 ## Structure
 
@@ -90,8 +116,10 @@ Frontmatter : `title`, `description`, `type` (`cours` | `exercices` |
 quatre champs **remplis au build**, à ne jamais écrire à la main : `questions`
 (le compte de la page), `blocs` (les exercices et QCM, avec leur dénominateur),
 `sections` (les titres de niveau 2 de la page, par ancre — ils nomment les cases
-de la sélection du quiz) et `quiz` (la banque du mode quiz — une entrée par
-question à choix, voir `docs/quiz.md`).
+de la sélection du quiz) et `releve` (une entrée par question, avec son bloc,
+son repère, le point de cours qu'elle vise, sa section et son chapitre — voir
+`docs/quiz.md` pour la banque du quiz qu'on en tire, et `docs/domaines.md` pour
+la progression par point de cours).
 
 Le hook qui les relève, dans `nuxt.config.ts`, importe `slugifier` depuis
 `app/utils/cours.ts` : il n'existe qu'une implémentation, et c'est ce qui

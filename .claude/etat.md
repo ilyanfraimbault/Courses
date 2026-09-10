@@ -31,6 +31,14 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   quiz entre en dette, et n'en sort qu'en étant retrouvée — où que ce soit. Elle
   alimente la sélection « seulement ce que j'ai raté », les compteurs du
   catalogue et le panneau « ce qui résiste ».
+- **Progression par domaine** (`/mes-domaines`) : les 473 questions rangées par
+  point de cours — 103 domaines sous quatre chapitres — avec, sur une même
+  barre, ce qui est tombé juste du premier coup et ce qu'il a fallu reprendre.
+  Le moins acquis en tête, et un bouton par domaine qui ouvre le quiz sur ce
+  point de cours. La sélection du quiz, elle, se fait par plan du chapitre : le
+  point de cours n'y a plus de case, il arrive par ce lien et s'y affiche nommé.
+  Voir `docs/domaines.md`.
+
 - To-do manuelle à trois niveaux — chapitre, fiche, bloc — réordonnable par
   glisser ou par flèches, aux deux niveaux.
 - Tableau de bord « où j'en suis », page « mes résultats », export et import

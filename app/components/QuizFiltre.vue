@@ -28,6 +28,21 @@ const emit = defineEmits<{ 'update:modelValue': [filtre: FiltreQuiz] }>()
 
 const deplies = ref<string[]>([])
 
+/**
+ * Un chapitre dont une notion est cochée s'ouvre tout seul.
+ *
+ * C'est ce qui rend lisible un filtre qu'on n'a pas composé soi-même — un lien
+ * venu de « Mes domaines » arrive avec un point de cours déjà coché. Replié, le
+ * chapitre annoncerait « 4 questions dans la sélection » sans que rien à l'écran
+ * ne dise lesquelles.
+ */
+watch(() => props.modelValue.notions, (notions) => {
+  for (const notion of notions ?? []) {
+    const chapitre = notion.split('/')[0]
+    if (chapitre && !deplies.value.includes(chapitre)) deplies.value.push(chapitre)
+  }
+}, { immediate: true })
+
 function estDeplie(cle: string) {
   return deplies.value.includes(cle)
 }
@@ -66,14 +81,28 @@ function basculerErreurs() {
 }
 
 function tout() {
-  emit('update:modelValue', { themes: [], sections: [], erreurs: false })
+  emit('update:modelValue', { themes: [], sections: [], notions: [], erreurs: false })
 }
+
+function oublierPoints() {
+  modifier({ notions: [] })
+}
+
+/** Les points de cours reçus par lien, retrouvés dans le catalogue pour être nommés. */
+const points = computed(() => {
+  const cles = props.modelValue.notions ?? []
+  if (!cles.length) return []
+  return props.catalogue.themes
+    .flatMap(t => t.sections.flatMap(sec => sec.notions.map(n => ({ ...n, section: sec.titre }))))
+    .filter(n => cles.includes(n.cle))
+})
 
 function sectionsDe(cle: string) {
   return props.catalogue.themes.find(t => t.cle === cle)?.sections ?? []
 }
 
-const rienDeCoche = computed(() => !props.modelValue.themes.length && !props.modelValue.sections.length)
+const rienDeCoche = computed(() =>
+  !props.modelValue.themes.length && !props.modelValue.sections.length && !props.modelValue.notions?.length)
 const vierge = computed(() => rienDeCoche.value && !props.modelValue.erreurs)
 
 /** Ce que vaut une case : son stock, ou sa seule dette en mode « ce que j'ai raté ». */
@@ -98,7 +127,13 @@ const disponibles = computed(() => {
       continue
     }
     for (const section of theme.sections) {
-      if (props.modelValue.sections.includes(section.cle)) total += compte(section)
+      if (props.modelValue.sections.includes(section.cle)) {
+        total += compte(section)
+        continue
+      }
+      for (const notion of section.notions) {
+        if (props.modelValue.notions?.includes(notion.cle)) total += compte(notion)
+      }
     }
   }
   return total
@@ -171,6 +206,39 @@ defineExpose({ disponibles })
         icon="i-lucide-eraser"
         label="Tout le programme"
         @click="tout"
+      />
+    </div>
+
+    <!-- Un point de cours reçu par lien : il n'a pas de case dans la liste — la
+         nomenclature de l'écran est le plan du chapitre — donc il se nomme ici,
+         faute de quoi la sélection annoncerait « 4 questions » sans dire
+         lesquelles. -->
+    <div
+      v-if="points.length"
+      class="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-primary/5 px-3 py-2"
+    >
+      <UIcon
+        name="i-lucide-target"
+        class="size-4 shrink-0 text-primary"
+      />
+      <span class="min-w-0 flex-1 text-sm text-highlighted">
+        <span class="block text-xs text-muted">Point de cours reçu depuis « Mes domaines »</span>
+        <span
+          v-for="point in points"
+          :key="point.cle"
+          class="block"
+        >
+          <strong>{{ point.titre }}</strong>
+          <span class="text-dimmed"> — {{ point.section }}, {{ point.questions }} question{{ point.questions > 1 ? 's' : '' }}</span>
+        </span>
+      </span>
+      <UButton
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        icon="i-lucide-x"
+        label="Retirer"
+        @click="oublierPoints"
       />
     </div>
 

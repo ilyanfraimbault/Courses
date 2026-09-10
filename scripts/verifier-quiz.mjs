@@ -366,6 +366,25 @@ const section = sections.slice().sort((a, b) => b.questions - a.questions)[0]
 r = await api('/api/quiz/session', { method: 'POST', body: { sections: [section.cle], taille: 5 } })
 verifier('séance sur une seule section', r.statut === 201 && r.corps.question.sectionTitre === section.titre,
   `${section.titre} — ${r.corps.session?.taille} places`)
+// Le lien venu de « Mes domaines » : le catalogue n'affiche plus les points de
+// cours, mais il les porte toujours sous leur section. Sans eux, le bouton
+// « m'interroger là-dessus » de cette page ouvrirait une séance sur tout le
+// programme sans rien dire.
+const point = sections.flatMap(sec => sec.notions).sort((a, b) => b.questions - a.questions)[0]
+if (!point) {
+  verifier('le catalogue porte les points de cours', false, 'aucun')
+} else {
+  r = await api('/api/quiz/session', { method: 'POST', body: { notions: [point.cle], taille: 5 } })
+  const surLePoint = []
+  for (let p = 0; p < (r.corps.session?.taille ?? 0); p++) {
+    const q = await api(`/api/quiz/session/${r.corps.session.id}/question?position=${p}`)
+    surLePoint.push(q.corps.question)
+  }
+  verifier('une séance sur un point de cours ne pose que lui',
+    r.statut === 201 && surLePoint.length > 0 && surLePoint.every(q => q.notionTitre === point.titre),
+    `${point.titre} — ${r.corps.session?.taille} places`)
+}
+
 r = await api('/api/quiz/session', { method: 'POST', body: { themes: ['inexistant'], taille: 10 } })
 verifier('un filtre sans question est refusé', r.statut === 400, 'statut ' + r.statut)
 r = await api('/api/quiz/session', { method: 'POST', body: { taille: 999 } })

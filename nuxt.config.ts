@@ -75,13 +75,18 @@ function releverBlocs(noeuds: unknown, sortie: Record<string, BlocReleve> = {}):
 }
 
 /* ---------------------------------------------------------------------------
-   Le relevé de la banque du quiz.
+   Le relevé des questions.
 
-   Le mode quiz n'a pas de questions à lui : il tire dans celles des fiches. Il
-   lui faut donc, sans ouvrir une seule page, savoir quelles questions existent,
-   lesquelles se corrigent toutes seules, et de quoi chacune parle. Ce relevé est
-   cet index — quelques dizaines d'octets par question, l'énoncé restant dans le
-   corps de la fiche, relu à la demande.
+   Deux usages tirent sur le même fil. Le mode quiz n'a pas de questions à lui :
+   il pioche dans celles des fiches, et il lui faut savoir lesquelles se
+   corrigent toutes seules sans ouvrir une seule page. La vue « mes domaines »,
+   elle, veut savoir de quoi chaque question parle pour ranger la progression
+   par point de cours plutôt que par fiche.
+
+   C'est le même relevé — quelques dizaines d'octets par question, l'énoncé
+   restant dans le corps de la fiche, relu à la demande. Il porte **toutes** les
+   questions identifiables, et `interrogeable` dit lesquelles le quiz sait poser.
+   Deux relevés côte à côte se seraient contredits le jour où l'un aurait changé.
    --------------------------------------------------------------------------- */
 
 interface ExtraitReleve {
@@ -95,6 +100,13 @@ interface QuestionRelevee {
   label: string
   nature: string
   choix: number
+  /**
+   * Vrai quand la question se corrige toute seule : une lettre attendue et au
+   * moins deux propositions écrites. Le quiz ne pose que celles-là — une file
+   * qui doit savoir si la réponse était juste ne peut rien faire d'une question
+   * ouverte. La progression par domaine, elle, les compte toutes.
+   */
+  interrogeable: boolean
   notion: string | null
   notionTitre: string | null
   theme: string | null
@@ -200,13 +212,20 @@ function sectionDe(chemin: string | undefined, chapitrePage: string | null, them
 }
 
 /**
- * Relève les questions à choix d'une page, avec ce qu'il faut pour les trier.
+ * Relève les questions d'une page, avec ce qu'il faut pour les trier.
  *
- * Deux décisions méritent d'être écrites.
+ * Trois décisions méritent d'être écrites.
  *
- * **On ne retient que ce qui se corrige seul** : une question sans lettre
- * attendue, ou avec une seule proposition, s'auto-évalue — elle n'a pas sa place
- * dans une file qui doit savoir, elle, si la réponse était juste.
+ * **On ne retient que ce qui porte une identité** : une question hors bloc ou
+ * sans repère n'a pas de clé « chemin#bloc#label », donc pas de mémoire — la
+ * ranger dans un domaine ferait gonfler un dénominateur que rien ne peut
+ * remplir.
+ *
+ * **`interrogeable` sépare les deux usages** plutôt que deux relevés. Une
+ * question sans lettre attendue, ou avec une seule proposition, s'auto-évalue :
+ * elle n'a pas sa place dans une file qui doit savoir si la réponse était juste,
+ * mais elle compte dans la progression d'un domaine comme n'importe quelle
+ * autre.
  *
  * **Le thème vient du cours visé, pas de la page.** Un QCM mélange
  * délibérément les chapitres : le classer par son dossier mettrait ses vingt
@@ -215,7 +234,7 @@ function sectionDe(chemin: string | undefined, chapitrePage: string | null, them
  * une section d'un chapitre : c'est de là que le thème est déduit. Une question
  * sans rappel retombe sur le chapitre de sa fiche.
  */
-function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Record<string, ExtraitReleve>, bloc: BlocReleve & { slug: string } | null = null, sortie: QuestionRelevee[] = [], curseur: { ancre: string | null } = { ancre: null }): QuestionRelevee[] {
+function releverQuestions(noeuds: unknown, chemin: string | undefined, extraits: Record<string, ExtraitReleve>, bloc: BlocReleve & { slug: string } | null = null, sortie: QuestionRelevee[] = [], curseur: { ancre: string | null } = { ancre: null }): QuestionRelevee[] {
   if (!Array.isArray(noeuds)) return sortie
   const chapitrePage = chapitreDe(chemin)
 
@@ -229,11 +248,11 @@ function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Reco
     if (balise === 'h2') curseur.ancre = typeof props.id === 'string' ? props.id : null
 
     if (balise && BALISES_BLOC.has(balise) && typeof props.titre === 'string') {
-      releverQuiz(noeud.slice(2), chemin, extraits, { slug: slugifier(props.titre), titre: props.titre, nature: balise, questions: 0 }, sortie, curseur)
+      releverQuestions(noeud.slice(2), chemin, extraits, { slug: slugifier(props.titre), titre: props.titre, nature: balise, questions: 0 }, sortie, curseur)
       continue
     }
 
-    if (balise && BALISES_QUESTION.has(balise) && bloc && typeof props.label === 'string' && typeof props.bonne === 'string') {
+    if (balise && BALISES_QUESTION.has(balise) && bloc && typeof props.label === 'string') {
       const lettres = new Set<string>()
       for (const enfant of noeud.slice(2)) {
         if (!Array.isArray(enfant) || enfant[0] !== 'template') continue
@@ -241,26 +260,25 @@ function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Reco
         const nom = cle?.slice('v-slot:'.length)
         if (nom && LETTRES.includes(nom)) lettres.add(nom)
       }
-      if (lettres.size >= 2) {
-        const notion = typeof props.cours === 'string' ? props.cours : null
-        const extrait = notion ? extraits[notion] : undefined
-        const theme = chapitreDe(extrait?.source) ?? chapitrePage
-        sortie.push({
-          bloc: bloc.slug,
-          blocTitre: bloc.titre,
-          label: props.label,
-          nature: bloc.nature,
-          choix: lettres.size,
-          notion,
-          notionTitre: extrait?.titre ?? null,
-          theme,
-          section: sectionDe(chemin, chapitrePage, theme, extrait?.source, curseur.ancre)
-        })
-      }
+      const notion = typeof props.cours === 'string' ? props.cours : null
+      const extrait = notion ? extraits[notion] : undefined
+      const theme = chapitreDe(extrait?.source) ?? chapitrePage
+      sortie.push({
+        bloc: bloc.slug,
+        blocTitre: bloc.titre,
+        label: props.label,
+        nature: bloc.nature,
+        choix: lettres.size,
+        interrogeable: typeof props.bonne === 'string' && lettres.size >= 2,
+        notion,
+        notionTitre: extrait?.titre ?? null,
+        theme,
+        section: sectionDe(chemin, chapitrePage, theme, extrait?.source, curseur.ancre)
+      })
       continue
     }
 
-    releverQuiz(noeud.slice(2), chemin, extraits, bloc, sortie, curseur)
+    releverQuestions(noeud.slice(2), chemin, extraits, bloc, sortie, curseur)
   }
 
   return sortie
@@ -343,13 +361,13 @@ export default defineNuxtConfig({
         questions?: number
         blocs?: Record<string, unknown>
         sections?: Record<string, unknown>
-        quiz?: unknown[]
+        releve?: unknown[]
       } | undefined
       if (!contenu?.path?.startsWith('/cours/')) return
       contenu.questions = compterQuestions(contenu.body?.value)
       contenu.blocs = releverBlocs(contenu.body?.value)
       contenu.sections = releverSections(contenu.body?.value)
-      contenu.quiz = releverQuiz(contenu.body?.value, contenu.path, releverExtraits(contenu.body?.value))
+      contenu.releve = releverQuestions(contenu.body?.value, contenu.path, releverExtraits(contenu.body?.value))
     }
   },
 

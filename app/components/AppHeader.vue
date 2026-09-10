@@ -10,6 +10,7 @@ const liens = [
   { label: 'Cours', to: '/cours', icon: 'i-lucide-library' },
   { label: 'Quiz', to: '/quiz', icon: 'i-lucide-zap' },
   { label: 'Ma to-do', to: '/ma-to-do', icon: 'i-lucide-list-checks' },
+  { label: 'Mes domaines', to: '/mes-domaines', icon: 'i-lucide-target' },
   { label: 'Mes résultats', to: '/mes-resultats', icon: 'i-lucide-chart-line' }
 ]
 
