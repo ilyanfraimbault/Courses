@@ -129,6 +129,48 @@ nulles des deux côtés, et le problème disparaît.
 et comparer avec les pages déjà en place. Le message n'apparaissait que sur la
 nouvelle.
 
+## Build
+
+### Un second chemin vers le même module double le bundle serveur
+
+`server/utils/quiz-banque.ts` a d'abord importé `queryCollection` depuis
+`@nuxt/content/server`, pour retrouver la signature à deux arguments de la
+variante serveur. Rollup a alors vu **deux** modules là où il n'y en a qu'un :
+celui-là, et celui que l'auto-import de Nitro désigne par son chemin absolu
+(`…/@nuxt/content/dist/runtime/nitro`). Tout le runtime de Nuxt Content s'est
+retrouvé embarqué deux fois, dump de la base de contenu compris, et le pic
+mémoire du build a franchi les 2 Go.
+
+En local, rien. Le tas par défaut y vaut 8 Go, les trois variantes passent, et
+la sortie ne grossit que d'un mégaoctet — ce n'est pas la taille du bundle qui
+casse, c'est le pic pendant l'assemblage. La CI, elle, plafonne à 2048 Mo et
+meurt sur « JavaScript heap out of memory » au milieu du build Nitro.
+
+**Ce qui l'a démasqué** : rejouer le build en bridant le tas comme le fait la
+CI, sur la branche puis sur `master`, et constater que seule la branche tombe.
+Puis retirer l'import une ligne à la fois.
+
+```bash
+rm -rf .nuxt .output node_modules/.cache .data
+NODE_OPTIONS=--max-old-space-size=2048 pnpm build
+```
+
+À garder en tête pour tout module qu'un auto-import fournit déjà : passer par
+l'auto-import, quitte à retyper la fonction à un seul endroit, plutôt qu'à
+l'importer par un second chemin.
+
+### L'auto-import serveur est vu comme celui du client par le typecheck
+
+`queryCollection` prend l'événement en premier argument côté Nitro, pas côté
+client. Le programme TypeScript de l'**application** relit pourtant les routes
+serveur — c'est ainsi qu'il type `$fetch` — et y résout la variante client :
+`vue-tsc -p .nuxt/tsconfig.server.json` passe, `pnpm typecheck` échoue sur
+« Expected 1 arguments, but got 2 ».
+
+Retyper l'auto-import en un seul endroit règle l'affaire. Importer le module
+pour retrouver la bonne signature la règle aussi — et casse le build, voir
+juste au-dessus.
+
 ## Conteneur et déploiement
 
 ### Le compose traverse deux interpolations
