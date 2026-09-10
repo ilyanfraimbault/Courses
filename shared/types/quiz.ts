@@ -90,6 +90,12 @@ export interface QuestionQuiz {
   fiche: { chemin: string, titre: string, bloc: string, blocTitre: string }
   /** Lettres proposées, dans l'ordre d'affichage. */
   lettres: string[]
+  /**
+   * L'énoncé commun du bloc, quand il y en a un : « Les points lus sur la figure
+   * sont M₁(2,1), M₂(0,3)… ». Sans lui, « Donner l'affixe du vecteur M₂M₄ » ne
+   * veut rien dire — et c'est le cas de 251 des 453 questions du site.
+   */
+  enonceBloc: FragmentContenu | null
   enonce: FragmentContenu
   choix: Record<string, FragmentContenu>
   /** Vrai quand la file repose une question déjà vue, faute de similaire disponible. */

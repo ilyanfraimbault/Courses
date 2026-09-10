@@ -15,6 +15,13 @@ export interface EntreeBanque extends QuestionRelevee {
   chemin: string
   ficheTitre: string
   /**
+   * Nombre de questions de la fiche, compté au build. Il sert de dénominateur
+   * quand le quiz est le premier à écrire quelque chose pour cette fiche : sans
+   * lui, on créerait une ligne à `total = 0` et le tableau de bord compterait
+   * une fiche « commencée » sans savoir sur combien.
+   */
+  ficheQuestions: number
+  /**
    * Clé de la notion, préfixée par le thème : le même identifiant d'extrait sert
    * dans deux chapitres — `cours-quotient` désigne le quotient de fonctions ici,
    * le quotient de complexes ailleurs — et les confondre ferait proposer une
@@ -28,6 +35,7 @@ interface PageContenu {
   title: string
   icone?: string | null
   ordre?: number | null
+  questions?: number | null
   quiz?: QuestionRelevee[] | null
 }
 
@@ -94,7 +102,7 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
   if (banque && Date.now() < banque.expire) return banque.valeur
 
   const pages = await collectionCours(event)
-    .select('path', 'title', 'icone', 'ordre', 'quiz')
+    .select('path', 'title', 'icone', 'ordre', 'questions', 'quiz')
     .all() as unknown as PageContenu[]
 
   const entrees: EntreeBanque[] = []
@@ -106,6 +114,7 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
         id: composerIdentite(chemin, q.bloc, q.label),
         chemin,
         ficheTitre: page.title,
+        ficheQuestions: page.questions ?? 0,
         notionCle: q.notion ? `${q.theme ?? '?'}/${q.notion}` : null
       })
     }
@@ -335,6 +344,7 @@ export interface QuestionLue {
   blocTitre: string
   ficheTitre: string
   lettres: string[]
+  enonceBloc: FragmentContenu | null
   enonce: FragmentContenu
   choix: Record<string, FragmentContenu>
   indice: FragmentContenu | null
@@ -375,6 +385,26 @@ export async function lireQuestion(event: H3Event, entree: EntreeBanque): Promis
   const choix: Record<string, FragmentContenu> = {}
   for (const lettre of lettres) choix[lettre] = parts[lettre]!
 
+  // L'énoncé commun du bloc : ce qui précède sa première question.
+  //
+  // « Donner l'affixe du vecteur M₂M₄ » est insoluble sans « les points lus sur
+  // la figure sont M₁(2,1), M₂(0,3)… », qui est écrit une fois en tête de
+  // l'exercice et vaut pour toutes ses questions. Poser la question sans lui,
+  // c'est demander de deviner. 251 des 453 questions du site sont dans ce cas.
+  //
+  // On s'arrête à la première question : ce qui vient après appartient à une
+  // autre. Aucun `extrait-cours` ne vit dans un bloc — vérifié sur les 111 du
+  // site —, il n'y a donc pas de rappel de cours à écarter au passage.
+  const enonceBloc: FragmentContenu = []
+  for (const enfant of bloc.slice(2)) {
+    if (estNoeud(enfant) && BALISES_QUESTION.has(enfant[0])) break
+    if (estNoeud(enfant) && enfant[0] === 'template') continue
+    // Les blancs entre deux nœuds arrivent en texte : les garder ferait passer
+    // pour un énoncé un bloc qui n'en a pas.
+    if (typeof enfant === 'string' && !enfant.trim()) continue
+    enonceBloc.push(enfant)
+  }
+
   // Le rappel de cours vit ailleurs sur la page, et plusieurs questions le
   // partagent : on le retrouve par son identifiant, exactement comme le bouton
   // « Cours » d'une fiche.
@@ -398,6 +428,7 @@ export async function lireQuestion(event: H3Event, entree: EntreeBanque): Promis
     blocTitre: typeof bloc[1]?.titre === 'string' ? bloc[1].titre : entree.blocTitre,
     ficheTitre: page.title ?? entree.ficheTitre,
     lettres,
+    enonceBloc: enonceBloc.length ? enonceBloc : null,
     enonce: corps(question),
     choix,
     indice: parts.indice ?? null,
@@ -441,6 +472,7 @@ export async function poserQuestion(
         blocTitre: lue.blocTitre
       },
       lettres: lue.lettres,
+      enonceBloc: lue.enonceBloc,
       enonce: lue.enonce,
       choix: lue.choix,
       rejouee,

@@ -84,7 +84,30 @@ useEventListener(document, 'keydown', auClavier)
       />
     </div>
 
-    <div class="cours-enonce mt-5 text-lg sm:text-xl text-highlighted">
+    <!-- L'énoncé commun du bloc, quand il y en a un. Il s'affiche en entier et
+         sans repli : un énoncé qu'il faut déplier pour lire est exactement le
+         défaut qu'on corrige ici. Le traitement reste secondaire — plus petit,
+         en retrait — pour que la question demeure ce qu'on voit d'abord. -->
+    <div
+      v-if="question.enonceBloc"
+      class="cours-quiz-chapeau mt-5"
+    >
+      <p class="cours-panel-title text-dimmed!">
+        <UIcon
+          name="i-lucide-text-quote"
+          class="size-4 shrink-0"
+        />
+        <span>{{ question.fiche.blocTitre }}</span>
+      </p>
+      <div class="cours-panel-body text-sm text-muted">
+        <QuizRendu :noeuds="question.enonceBloc" />
+      </div>
+    </div>
+
+    <div
+      class="cours-enonce text-lg sm:text-xl text-highlighted"
+      :class="question.enonceBloc ? 'mt-4' : 'mt-5'"
+    >
       <QuizRendu :noeuds="question.enonce" />
     </div>
 
