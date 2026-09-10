@@ -18,6 +18,11 @@ interface CorpsReponse {
  * La correction complète part avec le verdict, dans la même réponse : la seule
  * chose qui compte après une faute, c'est de comprendre tout de suite, pas
  * d'attendre un second aller-retour.
+ *
+ * Une question gagnée est en outre reportée sur sa fiche, dans la même
+ * transaction que la file : les deux décrivent le même événement, et n'en
+ * enregistrer qu'un laisserait une question réussie invisible dans son
+ * exercice. Voir `reporterSurLaFiche`.
  */
 export default defineEventHandler(async (event): Promise<{ correction: CorrectionQuiz, session: SessionQuiz }> => {
   const uid = await idUtilisateur(event)
@@ -111,6 +116,7 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
       VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(session_id, ordre) DO NOTHING
     `).run(ligne.id, position, candidate.id, candidate.theme, candidate.notionCle, juste ? 1 : 0, maj)
+    if (juste) reporterSurLaFiche(db, uid, candidate, lettre, maj)
     db.exec('COMMIT')
   } catch (erreur) {
     db.exec('ROLLBACK')
