@@ -28,6 +28,21 @@ export default defineContentConfig({
           titre: z.string(),
           nature: z.enum(['exercice', 'qcm']),
           questions: z.number()
+        })).optional(),
+        // Idem : la banque du quiz. Une entrée par question **à choix** de la
+        // page — de quoi la choisir, jamais de quoi la poser : l'énoncé reste
+        // dans le corps de la fiche, relu à la demande. Sans ce relevé, tirer
+        // quarante questions au hasard demanderait d'ouvrir les vingt-sept
+        // fiches, soit vingt-sept mégaoctets d'arbre à parcourir.
+        quiz: z.array(z.object({
+          bloc: z.string(),
+          blocTitre: z.string(),
+          label: z.string(),
+          nature: z.enum(['exercice', 'qcm']),
+          choix: z.number(),
+          notion: z.string().nullable(),
+          notionTitre: z.string().nullable(),
+          theme: z.string().nullable()
         })).optional()
       })
     })
