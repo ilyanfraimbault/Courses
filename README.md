@@ -4,10 +4,22 @@ Cahier de révisions : fiches de cours, exercices corrigés et QCM, avec suivi d
 progression, to-do et tableau de bord.
 
 ```bash
-cp .env.example .env      # et remplir NUXT_COURS_MOT_DE_PASSE / NUXT_SESSION_PASSWORD
+cp .env.example .env   # et remplir NUXT_CODE_INSCRIPTION / NUXT_SESSION_PASSWORD
 pnpm install
 pnpm dev
 ```
+
+## Documentation
+
+**[.claude/CLAUDE.md](.claude/CLAUDE.md)** — le projet, ses invariants, la façon
+d'y travailler. À lire en premier pour reprendre le travail.
+
+- [.claude/pieges.md](.claude/pieges.md) — les pièges rencontrés, et ce qui les
+  a démasqués. Presque aucun ne lève d'erreur.
+- [.claude/etat.md](.claude/etat.md) — où en est le projet, ce qui reste, la
+  dette, et les choix déjà tranchés.
+
+Pour l'usage courant :
 
 - [docs/contenu.md](docs/contenu.md) — la collection, le comptage des questions,
   l'import d'un ancien export, et pourquoi `remark-mdc` est épinglé.
