@@ -146,12 +146,19 @@ useSeoMeta({ title: 'Où j\'en suis' })
         </div>
       </div>
 
-      <div class="mt-8">
+      <div class="mt-8 flex flex-wrap items-center gap-2">
         <UButton
           to="/cours"
           icon="i-lucide-library"
           label="Ouvrir le sommaire"
           color="neutral"
+          variant="subtle"
+        />
+        <UButton
+          to="/quiz"
+          icon="i-lucide-zap"
+          label="Lancer un quiz"
+          color="primary"
           variant="subtle"
         />
       </div>
