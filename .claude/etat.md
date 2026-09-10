@@ -87,6 +87,13 @@ le Dockerfile comme en CI. Ne pas la faire bouger sans relire les notes de
 version. Tout passe par `server/utils/db.ts` : revenir à `better-sqlite3`
 tiendrait dans ce seul fichier.
 
+**Le build a besoin de 4 Go de tas**, donnés explicitement à l'étape `build` de
+la CI et à l'étage `build` du Dockerfile. Ce n'est pas une dette du quiz seul :
+mesuré, `master` échouait déjà à 1536 Mo. L'assemblage Nitro vivait entre 1536
+et 2048 Mo, sous un plafond de runner à 2048. Si le build regrossit, c'est ce
+chiffre qu'il faudra relever — et le vérifier en bridant le tas, jamais en
+local où il vaut 8 Go par défaut.
+
 **Pas de tests automatisés**, par décision. La CI fait lint, typecheck, build et
 un `docker build` sans publication. Les quatre scripts de vérification
 (`verif:comptes`, `verif:api`, `verif:quiz`, `verif:quiz:rendu`) se lancent à la
