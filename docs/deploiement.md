@@ -23,40 +23,39 @@ effectivement tourner.
 `COURSES_ENV_FILE` doit contenir au minimum :
 
 ```
-NUXT_COURS_MOT_DE_PASSE=…
+NUXT_CODE_INSCRIPTION=…          # le code à donner pour créer un compte
 NUXT_SESSION_PASSWORD=…          # openssl rand -base64 32
 COURS_ADRESSE=srv1355415.hstgr.cloud
 ACME_EMAIL=…
 ```
+
+Laisser `NUXT_CODE_INSCRIPTION` vide **ferme les inscriptions** : c'est le
+défaut voulu, le site vivant sur un domaine public.
 
 **Ce secret ne doit jamais être vide.** L'action Hostinger réécrit
 `/docker/courses/.env` à chaque exécution : un secret vide effacerait la
 configuration du site. C'est pour ça que le job `preflight` échoue bruyamment
 plutôt que de sauter.
 
+## Pourquoi le compose est envoyé et non pointé
+
+L'action `hostinger/deploy-on-vps` ne téléverse pas le fichier compose : elle
+transmet à l'API une **URL** `github.com/<dépôt>/blob/<sha>/compose.yaml`, que
+l'API Hostinger va chercher elle-même, sans authentification. Sur un dépôt privé
+cette URL ne rend pas le fichier mais une page de connexion, et le déploiement
+échoue.
+
+Une clé de déploiement SSH sur le VPS n'y changerait rien : ce n'est pas le VPS
+qui télécharge, c'est l'infrastructure de Hostinger, en HTTPS anonyme.
+
+Le champ `content` de l'API accepte aussi bien le **YAML brut**. Le workflow le
+lui donne donc directement, depuis la copie que le runner a déjà extraite. Ça
+règle le cas du dépôt privé, et ça retire au passage une dépendance à une action
+tierce.
+
 ## Amorçage, à faire une fois
 
-Le dépôt est **privé**, ce qui ajoute deux étapes qu'un dépôt public n'a pas.
-
-**1. Laisser Docker Manager cloner le dépôt.** L'action ne téléverse pas le
-fichier compose : elle donne une URL à Docker Manager, qui clone depuis le VPS.
-Il faut donc une clé de déploiement :
-
-```bash
-ssh root@72.62.29.225
-ssh-keygen -t ed25519 -f /root/.ssh/courses_deploy -N ''
-cat >> /root/.ssh/config <<'EOF'
-Host github.com
-  IdentityFile /root/.ssh/courses_deploy
-  IdentitiesOnly yes
-EOF
-cat /root/.ssh/courses_deploy.pub
-```
-
-Coller la clé publique dans **Settings → Deploy keys** du dépôt, en lecture
-seule.
-
-**2. Autoriser le VPS à tirer l'image.** Le paquet GHCR hérite de la visibilité
+**Autoriser le VPS à tirer l'image.** Le paquet GHCR hérite de la visibilité
 privée du dépôt. Avec un jeton personnel de portée `read:packages` seulement :
 
 ```bash
@@ -66,14 +65,15 @@ echo "$PAT" | docker login ghcr.io -u ilyanfraimbault --password-stdin
 L'identifiant persiste dans `/root/.docker/config.json`. **Ne pas rendre le
 paquet public** : l'image contient le contenu des cours.
 
-**3. Créer le projet.** Le plus sûr est de le monter à la main une première
-fois, de vérifier que Caddy obtient son certificat, puis de laisser la CI
-reprendre :
+**Créer le projet.** Facultatif : le premier déploiement le crée. Le monter à la
+main permet toutefois de voir Caddy obtenir son certificat avant de confier la
+suite à la CI :
 
 ```bash
 mkdir -p /docker/courses && cd /docker/courses
-curl -fsSL https://raw.githubusercontent.com/ilyanfraimbault/Courses/master/compose.yaml -o docker-compose.yml
-vim .env          # le même contenu que COURSES_ENV_FILE
+# le dépôt est privé : copier le compose depuis un poste qui y a accès
+vim docker-compose.yml
+vim .env          # le même contenu que COURSES_ENV_FILE, plus IMAGE_TAG=latest
 docker compose up -d
 docker compose logs -f caddy
 ```

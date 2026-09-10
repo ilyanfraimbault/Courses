@@ -75,16 +75,46 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # On envoie le **contenu** du compose, pas un lien vers lui.
+      #
+      # `hostinger/deploy-on-vps` transmet une URL github.com/…/blob/<sha>/… que
+      # l'API Hostinger va chercher elle-même, anonymement. Ce dépôt est privé :
+      # cette URL ne rend pas le fichier, elle rend une page de connexion. Une
+      # clé de déploiement sur le VPS n'y changerait rien, puisque ce n'est pas
+      # le VPS qui télécharge. Le champ `content` de l'API accepte aussi le YAML
+      # brut — c'est ce qu'on lui donne, depuis la copie déjà extraite ici.
       - name: Déployer sur le VPS
-        uses: hostinger/deploy-on-vps@v2
-        with:
-          api-key: ${{ secrets.HOSTINGER_API_KEY }}
-          virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
-          project-name: courses
-          docker-compose-path: compose.yaml
-          environment-variables: |
-            ${{ secrets.COURSES_ENV_FILE }}
-            IMAGE_TAG=${{ github.sha }}
+        env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+          VM_ID: ${{ vars.HOSTINGER_VM_ID }}
+          ENV_FILE: ${{ secrets.COURSES_ENV_FILE }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          environnement="$(printf '%s\nIMAGE_TAG=%s\n' "$ENV_FILE" "$IMAGE_TAG")"
+
+          corps="$(jq -n \
+            --arg project_name 'courses' \
+            --rawfile content compose.yaml \
+            --arg environment "$environnement" \
+            '{project_name: $project_name, content: $content, environment: $environment}')"
+
+          reponse="$(curl -sS --max-time 60 -w '\n%{http_code}' -X POST \
+            -H "Authorization: Bearer ${HOSTINGER_API_KEY}" \
+            -H 'Content-Type: application/json' \
+            -d "$corps" \
+            "https://developers.hostinger.com/api/vps/v1/virtual-machines/${VM_ID}/docker")"
+
+          statut="$(printf '%s' "$reponse" | tail -n1)"
+          contenu="$(printf '%s' "$reponse" | sed '$d')"
+
+          if [ "$statut" -lt 200 ] || [ "$statut" -ge 300 ]; then
+            echo "::error::l'API Hostinger a répondu ${statut}"
+            printf '%s\n' "$contenu"
+            exit 1
+          fi
+          echo "Déploiement accepté par l'API (${statut}). Reste à vérifier qu'il a pris."
 
       # L'action ci-dessus rend la main dès que l'API a *accepté* la requête,
       # avant que Docker Manager ait touché à l'hôte. Sans cette vérification,
