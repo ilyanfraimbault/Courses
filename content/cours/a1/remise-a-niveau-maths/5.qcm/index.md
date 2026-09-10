@@ -1,12 +1,12 @@
 ---
 title: QCM et plan de révision
-description: Six QCM de vingt questions couvrant les quatre chapitres, dont deux qui mélangent tout et une rafale consacrée aux dérivées, et un plan de six jours pour arriver prêt au QCM du vendredi 11 septembre.
+description: Sept QCM de vingt questions couvrant les quatre chapitres, dont deux qui mélangent tout, une rafale consacrée aux dérivées et une réplique du sujet initial, et un plan de six jours pour arriver prêt au QCM du vendredi 11 septembre.
 annee: A1
 matiere: Remise à niveau en maths
 icone: i-lucide-circle-check-big
 ---
 
-Six QCM de vingt questions : **deux qui mélangent tout** — le diagnostic du départ et le blanc de la veille —, trois qui reprennent un chapitre à la fois pour la révision, et une **rafale de dérivées**, le format qui est tombé le plus lourdement au QCM de test. On répond à **tout**, on clique sur **Corriger**, et seulement là chaque question ratée ouvre son indice, sa solution détaillée et le rappel de cours exact qui manquait. Rien ne se révèle avant : c'est ce qui rend la note honnête.
+Sept QCM de vingt questions : **deux qui mélangent tout** — le diagnostic du départ et le blanc de la veille —, trois qui reprennent un chapitre à la fois pour la révision, une **rafale de dérivées** — le format qui est tombé le plus lourdement au QCM de test — et une **réplique du sujet initial**, calquée sur lui créneau par créneau. On répond à **tout**, on clique sur **Corriger**, et seulement là chaque question ratée ouvre son indice, sa solution détaillée et le rappel de cours exact qui manquait. Rien ne se révèle avant : c'est ce qui rend la note honnête.
 
 ::rappel{titre="À quoi ressemble le sujet" icone="i-lucide-file-text"}
 Le QCM de test donne la forme de l'épreuve, et elle est **très stéréotypée**. Sur vingt questions, une bonne douzaine tenaient dans une seule phrase :
@@ -21,7 +21,7 @@ Trois conséquences concrètes :
 2. **L'ensemble de définition est écrit dans l'énoncé**, et il n'est pas décoratif : sur $\arcsin$, $\arccos$ ou un logarithme, c'est lui qui désigne la bonne réponse.
 3. **Les quatre propositions se ressemblent volontairement.** Elles ne sont pas au hasard : chacune correspond à une erreur identifiée — un $u'$ oublié, un signe moins perdu, une fonction non transformée. Reconnaître l'erreur derrière un distracteur vaut mieux que recalculer.
 
-Les six QCM de cette page reprennent cette formulation mot pour mot, et **relèvent la part des complexes**, qui devrait être plus fournie que dans le test.
+Les sept QCM de cette page reprennent cette formulation mot pour mot, et **relèvent la part des complexes**, qui devrait être plus fournie que dans le test.
 ::
 
 ::rappel{titre="Une heure pour vingt questions : trois minutes chacune" icone="i-lucide-hourglass"}
@@ -71,7 +71,7 @@ Concrètement, après chaque correction :
 Trois questions ratées deux fois de suite sur le même thème valent mieux qu'un chapitre relu en diagonale : elles disent exactement quoi relire.
 ::
 
-## Les six QCM
+## Les sept QCM
 
 ::carte-lien{to="/cours/a1/remise-a-niveau-maths/qcm/general" titre="QCM 1 — Un peu de tout" description="Vingt questions mélangées sur les quatre chapitres, sans annonce de thème — le diagnostic, à faire en premier sans rien réviser" type="qcm" meta="20 questions · 1 h"}
 ::
@@ -89,6 +89,9 @@ Trois questions ratées deux fois de suite sur le même thème valent mieux qu'u
 ::
 
 ::carte-lien{to="/cours/a1/remise-a-niveau-maths/qcm/blanc" titre="QCM 6 — Le QCM blanc" description="Vingt questions mélangées, dans la composition et la formulation du sujet de test — à garder pour la veille" type="qcm" meta="20 questions · 1 h"}
+::
+
+::carte-lien{to="/cours/a1/remise-a-niveau-maths/qcm/replique" titre="QCM 7 — La réplique du sujet initial" description="Le sujet initial calqué créneau par créneau — même ordre, mêmes thèmes, mêmes distracteurs — avec d'autres valeurs, pour le repasser sans en connaître les réponses" type="qcm" meta="20 questions · 1 h"}
 ::
 
 ## Ce que le QCM va tester, chapitre par chapitre
