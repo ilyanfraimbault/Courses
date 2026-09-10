@@ -73,6 +73,11 @@ Attendu aujourd'hui : `453 / 453 aucun écart`.
 Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/content`,
 `@nuxtjs/mdc` ou `remark-mdc` — c'est le seul moyen de voir la panne.
 
+Le même hook relève la banque du quiz. Son témoin chiffré à lui — 412 questions
+à choix réparties sur quatre chapitres — est décrit dans `docs/quiz.md`, et il
+vaut d'être relu au même moment : une question qui cesse d'être relevée
+disparaît du quiz sans que rien ne le signale.
+
 ## Structure
 
 Une seule collection, `cours`, dont la source est `cours/**/*.md`. Le chemin
@@ -82,7 +87,16 @@ du portfolio d'origine, volontairement.
 
 Frontmatter : `title`, `description`, `type` (`cours` | `exercices` |
 `entrainement` | `qcm`), `annee`, `matiere`, `ordre`, `icone`, `interactif`, et
-`questions` — ce dernier rempli au build, à ne jamais écrire à la main.
+trois champs **remplis au build**, à ne jamais écrire à la main : `questions`
+(le compte de la page), `blocs` (les exercices et QCM, avec leur dénominateur)
+et `quiz` (la banque du mode quiz — une entrée par question à choix, voir
+`docs/quiz.md`).
+
+Le hook qui les relève, dans `nuxt.config.ts`, importe `slugifier` depuis
+`app/utils/cours.ts` : il n'existe qu'une implémentation, et c'est ce qui
+garantit que le bloc relevé au build et l'identité écrite en base désignent la
+même chose. En contrepartie, `app/utils/cours.ts` doit rester libre de tout
+import Nuxt.
 
 ## Importer un ancien export
 

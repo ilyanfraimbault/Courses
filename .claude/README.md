@@ -11,4 +11,4 @@ assistant.
   tranchés.
 
 La documentation destinée à l'usage courant est dans `docs/` : `contenu.md`,
-`comptes.md`, `deploiement.md`.
+`quiz.md`, `comptes.md`, `deploiement.md`.
