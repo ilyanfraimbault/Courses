@@ -40,12 +40,30 @@ export interface QcmResultat {
   tentatives: { date: string, justes: number, total: number, ratees: string[] }[]
 }
 
+/** Un item de to-do, tel qu'il voyage dans un export. */
+export interface TodoResultat {
+  chemin: string
+  /** Slug du bloc visé, ou absent pour la fiche entière. */
+  bloc?: string | null
+  titre: string
+  type?: string | null
+  note?: string | null
+  /** Vrai si l'item est coché. */
+  fait?: boolean
+}
+
 export interface ResultatsExport {
   format: typeof FORMAT_RESULTATS
   version: number
   exporte_le: string
   fiches: FicheResultat[]
   qcm: QcmResultat[]
+  /**
+   * La to-do, dans son ordre. Facultative : un export produit avant que le
+   * format la transporte reste lisible, et c'est pourquoi la version ne bouge
+   * pas — un champ qu'on peut ignorer n'est pas une rupture.
+   */
+  todo?: TodoResultat[]
 }
 
 /** Ce qu'une fiche renvoie au client : sa progression et son historique de QCM. */

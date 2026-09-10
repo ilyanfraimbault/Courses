@@ -1,4 +1,4 @@
-import type { FicheResultat, QcmResultat, ResultatsExport } from '~~/shared/types/resultats'
+import type { FicheResultat, QcmResultat, ResultatsExport, TodoResultat } from '~~/shared/types/resultats'
 import { FORMAT_RESULTATS, VERSION_RESULTATS } from '~~/shared/types/resultats'
 
 /**
@@ -56,11 +56,21 @@ export default defineEventHandler(async (event): Promise<ResultatsExport> => {
     })
   }
 
+  const todo: TodoResultat[] = listerTodo(db, uid).map(t => ({
+    chemin: t.chemin,
+    bloc: t.bloc,
+    titre: t.titre,
+    type: t.type,
+    note: t.note,
+    fait: !!t.fait_le
+  }))
+
   return {
     format: FORMAT_RESULTATS,
     version: VERSION_RESULTATS,
     exporte_le: new Date().toISOString(),
     fiches,
-    qcm
+    qcm,
+    todo
   }
 })

@@ -7,6 +7,7 @@ export interface RapportImport {
   fiches: { vues: number, ecrites: number }
   questions: { vues: number, inserees: number, dejaPresentes: number, ignorees: number }
   tentatives: { vues: number, inserees: number, dejaPresentes: number }
+  todo: { vues: number, inserees: number, dejaPresentes: number }
   /** Détail des entrées qu'on n'a pas su découper, pour ne rien perdre en silence. */
   avertissements: string[]
 }
@@ -66,6 +67,7 @@ export function importerResultats(
     fiches: { vues: 0, ecrites: 0 },
     questions: { vues: 0, inserees: 0, dejaPresentes: 0, ignorees: 0 },
     tentatives: { vues: 0, inserees: 0, dejaPresentes: 0 },
+    todo: { vues: 0, inserees: 0, dejaPresentes: 0 },
     avertissements: []
   }
 
@@ -150,6 +152,39 @@ export function importerResultats(
         if (Number(res.changes) > 0) rapport.tentatives.inserees += 1
         else rapport.tentatives.dejaPresentes += 1
       }
+    }
+
+    // La to-do se range à la suite de celle qui existe déjà : l'import complète,
+    // il ne réordonne pas. L'index d'unicité rend le rejeu inoffensif.
+    const { rang: depart } = db
+      .prepare('SELECT COALESCE(MAX(rang), 0) AS rang FROM todo WHERE utilisateur_id = ?')
+      .get(uid) as { rang: number }
+
+    const existeTodo = db.prepare(
+      'SELECT 1 FROM todo WHERE utilisateur_id = ? AND chemin = ? AND COALESCE(bloc, \'\') = COALESCE(?, \'\')'
+    )
+    const insererTodo = db.prepare(`
+      INSERT INTO todo (utilisateur_id, chemin, bloc, titre, type, rang, note, fait_le, cree_le)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (utilisateur_id, chemin, COALESCE(bloc, '')) DO NOTHING
+    `)
+
+    let rang = depart
+    for (const t of donnees.todo ?? []) {
+      if (!t?.chemin || !t.titre) continue
+      rapport.todo.vues += 1
+      const chemin = cheminCanonique(t.chemin)
+      const bloc = t.bloc || null
+      if (existeTodo.get(uid, chemin, bloc)) {
+        rapport.todo.dejaPresentes += 1
+        continue
+      }
+      rang += 1
+      insererTodo.run(
+        uid, chemin, bloc, t.titre, t.type ?? null, rang,
+        t.note ?? null, t.fait ? Date.now() : null, Date.now()
+      )
+      rapport.todo.inserees += 1
     }
 
     db.exec(options.simulation ? 'ROLLBACK' : 'COMMIT')

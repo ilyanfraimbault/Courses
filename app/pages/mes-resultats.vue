@@ -55,6 +55,7 @@ async function importer(evenement: Event) {
       fiches: { ecrites: number }
       questions: { inserees: number, dejaPresentes: number, ignorees: number }
       tentatives: { inserees: number, dejaPresentes: number }
+      todo: { inserees: number, dejaPresentes: number }
       avertissements: string[]
     }>('/api/resultats/import', { method: 'POST', body: JSON.parse(await fichier.text()) })
 
@@ -62,7 +63,8 @@ async function importer(evenement: Event) {
       title: 'Import terminé',
       description: `${rapport.questions.inserees} questions ajoutées, `
         + `${rapport.questions.dejaPresentes} déjà connues, `
-        + `${rapport.tentatives.inserees} passages de QCM ajoutés.`
+        + `${rapport.tentatives.inserees} passages de QCM ajoutés`
+        + (rapport.todo.inserees ? `, ${rapport.todo.inserees} items de to-do.` : '.')
         + (rapport.questions.ignorees ? ` ${rapport.questions.ignorees} entrées illisibles.` : ''),
       icon: 'i-lucide-check',
       color: rapport.questions.ignorees ? 'warning' : 'success'

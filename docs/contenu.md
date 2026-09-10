@@ -97,6 +97,12 @@ node scripts/importer-resultats.mjs resultats-2026-09-09.json
 En production on passe par la page « mes résultats » : l'image d'exécution ne
 contient que `.output`, pas `scripts/`.
 
+L'export transporte aussi la **to-do**, dans son ordre et avec les cases
+cochées. Le champ est facultatif et la version du format ne bouge pas : un
+export produit avant qu'il existe reste lisible, puisqu'un champ qu'on peut
+ignorer n'est pas une rupture. À l'import, la to-do se range **à la suite** de
+celle qui existe déjà — l'import complète, il ne réordonne pas.
+
 L'import est une **fusion**, jamais un remplacement : rien n'est supprimé, et le
 rejouer n'insère rien. Trois règles gouvernent les conflits.
 

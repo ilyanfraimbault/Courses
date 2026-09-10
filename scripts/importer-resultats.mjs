@@ -55,6 +55,8 @@ console.log(`questions   : ${rapport.questions.inserees} insérées, `
   + (rapport.questions.ignorees ? `, ${rapport.questions.ignorees} illisibles` : ''))
 console.log(`tentatives  : ${rapport.tentatives.inserees} insérées, `
   + `${rapport.tentatives.dejaPresentes} déjà présentes, sur ${rapport.tentatives.vues} vues`)
+console.log(`to-do       : ${rapport.todo.inserees} insérées, `
+  + `${rapport.todo.dejaPresentes} déjà présentes, sur ${rapport.todo.vues} vues`)
 for (const a of rapport.avertissements.slice(0, 20)) console.log('  ⚠', a)
 if (rapport.avertissements.length > 20) {
   console.log(`  … et ${rapport.avertissements.length - 20} autres`)
