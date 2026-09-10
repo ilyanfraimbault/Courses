@@ -1,8 +1,9 @@
 # Le projet, en bref
 
-Cahier de révisions personnel : fiches de cours, exercices corrigés et QCM, avec
-suivi de progression, to-do et tableau de bord. Nuxt 4, Nuxt UI, Nuxt Content,
-SQLite, déployé en conteneur sur un VPS Hostinger.
+Cahier de révisions personnel : fiches de cours, exercices corrigés et QCM, un
+mode quiz qui pioche dans toutes leurs questions, avec suivi de progression,
+to-do et tableau de bord. Nuxt 4, Nuxt UI, Nuxt Content, SQLite, déployé en
+conteneur sur un VPS Hostinger.
 
 Le contenu est en **français**, l'interface est en français, et **le code aussi**
 — noms de variables, de fonctions, de composants, messages d'erreur. Suivre cet
@@ -48,8 +49,18 @@ par bloc ferait douze allers-retours au montage.
 **L'identité d'une question est `chemin#bloc#label`.** Le `bloc` est
 `slugifier(titre du bloc)`, le `label` est celui écrit dans le frontmatter
 (`a)`, `1.`). Elle doit survivre à un rebuild, d'où le refus d'un `useId()`.
-Le même `slugifier` est réimplémenté dans `nuxt.config.ts` pour le relevé des
-blocs au build : **les deux doivent bouger ensemble**.
+`nuxt.config.ts` **importe** `slugifier` depuis `app/utils/cours.ts` pour son
+relevé au build : il n'en existe qu'une implémentation, et c'est ce qui garantit
+que le bloc relevé et l'identité écrite en base désignent la même chose. En
+contrepartie, `app/utils/cours.ts` doit rester **libre de tout import Nuxt** :
+il est chargé au moment de lire la configuration, hors de toute application.
+
+**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 412 questions
+sont celles des fiches, découpées dans l'arbre de la page au moment de les
+poser — énoncé, propositions, indice, solution et rappel de cours compris.
+Corriger un cours corrige le quiz. Le thème d'une question vient du rappel de
+cours qu'elle vise, pas de la page où elle vit : un QCM mélange les chapitres
+exprès. Voir `docs/quiz.md`.
 
 **Le serveur est maître des règles.** Le plafond de 24 tentatives par QCM,
 l'agrégation d'un chapitre sur ses fiches, l'unicité d'une cible de to-do : tout
@@ -95,6 +106,8 @@ Vérifications qui demandent un serveur en marche et une base vierge :
 pnpm dev
 node scripts/verifier-comptes.mjs   # inscription, connexion, isolation entre comptes
 node scripts/verifier-api.mjs       # progression, QCM, to-do, export
+pnpm verif:quiz                     # banque, filtres, file du quiz, isolation
+pnpm verif:quiz:rendu               # le quiz dans un vrai navigateur (Playwright)
 ```
 
 Elles ne sont pas dans la CI : elles ont besoin d'une base réelle, et leur rôle
@@ -107,6 +120,8 @@ dans `docs/contenu.md`. Aujourd'hui : **453 questions rendues sur 453**.
 
 - `docs/contenu.md` — la collection, le comptage des questions, l'import d'un
   ancien export, et pourquoi `remark-mdc` est épinglé.
+- `docs/quiz.md` — le mode quiz : la banque relevée au build, le thème déduit du
+  rappel de cours, la file qui rejoue une place ratée, et ce qu'il n'écrit pas.
 - `docs/comptes.md` — comptes, hachage, isolation des données.
 - `docs/deploiement.md` — conteneur, CI/CD, VPS, domaine, sauvegarde.
 - `.claude/pieges.md` — les pièges rencontrés, avec ce qui les a démasqués.

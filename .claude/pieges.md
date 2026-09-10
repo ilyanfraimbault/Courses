@@ -44,6 +44,19 @@ profit de l'`index.md` ; retirer le chemin du nœud parent ne supprime pas le
 lien engendré, il en ajoute un second. Le slot `link-title` de
 `UContentNavigation` s'applique à l'entête d'accordéon, **pas** au lien d'index.
 
+### Un fragment d'arbre se rend avec `ContentRenderer`, mais pas d'un seul coup
+
+Le mode quiz découpe des morceaux du corps d'une fiche — un énoncé, une
+proposition, une solution — et les fait rendre par `ContentRenderer`, à qui on
+passe `{ body: { type: 'minimark', value: fragment } }`. Ça marche, formules
+KaTeX comprises, puisqu'elles sont déjà mises en forme au build.
+
+Mais **le contenu n'apparaît pas au même tick que le composant** : les
+composants de prose sont résolus en asynchrone. Un contrôle qui lit le texte dès
+que les boutons de réponse existent le trouve vide, et conclut à tort que le
+rendu est cassé. Attendre le contenu lui-même (`.cours-enonce p`,
+`.cours-enonce .katex`), pas son conteneur.
+
 ### `navigation.title` sert deux fois
 
 Il nomme l'entrée dans la barre latérale **et** l'entête d'accordéon du dossier.
@@ -99,6 +112,22 @@ Chaque glisser réussi change la mise en page. Mesurer juste avant de tirer, dan
 le même appel, et convertir : les coordonnées de l'outil sont dans le repère de
 la capture, pas en pixels CSS — facteur `800 / window.innerWidth` quand la
 capture fait 800 de large.
+
+## Hydratation
+
+### Ne pas brancher l'affichage sur `pending`
+
+Sur la page de préparation du quiz, un `v-if="pending && !donnees"` autour d'un
+indicateur de chargement suffisait à faire dire à Vue « Hydration completed but
+contains mismatches » à chaque visite : avec `useLazyFetch(…, { server: false })`,
+`pending` ne vaut pas la même chose au rendu serveur et à l'hydratation.
+
+Brancher l'affichage sur **les données** (`v-if="donnees" … v-else`), qui sont
+nulles des deux côtés, et le problème disparaît.
+
+**Ce qui l'a démasqué** : lire les erreurs de console page par page, connecté,
+et comparer avec les pages déjà en place. Le message n'apparaissait que sur la
+nouvelle.
 
 ## Conteneur et déploiement
 

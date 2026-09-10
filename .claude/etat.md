@@ -18,6 +18,12 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 - Comptes multiples (pseudo + mot de passe haché en scrypt), inscription par
   code, isolation des données vérifiée entre deux comptes.
 - Progression et historique de QCM en base, synchronisés entre appareils.
+- **Mode quiz** : une question à la fois, tirée dans les 412 questions à choix
+  du site, filtrable par chapitre ou par point de cours (89 notions nommées).
+  Une faute renvoie la place à la fin de la file avec une *autre* question du
+  même point de cours ; la séance ne finit que lorsque tout est acquis. Séances
+  reprises d'un appareil à l'autre, historique et panneau « ce qui résiste ».
+  Voir `docs/quiz.md`.
 - To-do manuelle à trois niveaux — chapitre, fiche, bloc — réordonnable par
   glisser ou par flèches, aux deux niveaux.
 - Tableau de bord « où j'en suis », page « mes résultats », export et import
@@ -82,8 +88,22 @@ version. Tout passe par `server/utils/db.ts` : revenir à `better-sqlite3`
 tiendrait dans ce seul fichier.
 
 **Pas de tests automatisés**, par décision. La CI fait lint, typecheck, build et
-un `docker build` sans publication. Les deux scripts de vérification
-(`verif:comptes`, `verif:api`) se lancent à la main.
+un `docker build` sans publication. Les quatre scripts de vérification
+(`verif:comptes`, `verif:api`, `verif:quiz`, `verif:quiz:rendu`) se lancent à la
+main. Le dernier a besoin de Playwright, qui n'est pas une dépendance du
+projet : `PLAYWRIGHT_MODULE=$(npm root -g)/playwright/index.mjs` désigne une
+installation globale, `import()` ne suivant pas `NODE_PATH`.
+
+**Le quiz n'entre pas dans l'export JSON.** `resultats-cours` transporte les
+fiches, les QCM et la to-do, pas les séances de quiz. Le format est partagé avec
+le portfolio d'origine ; l'y ajouter serait un champ facultatif de plus, à faire
+le jour où une sauvegarde des séances aura de la valeur.
+
+**Une question gagnée au quiz ne coche pas sa question sur la fiche.** C'est
+délibéré, et la raison est écrite dans `docs/quiz.md` : `PUT /api/fiche` écrit
+un instantané de la fiche entière, dont le quiz ne connaît ni le total ni les
+autres questions. Le relier proprement demanderait une route d'écriture par
+question, à faire si le besoin se confirme.
 
 ## Choix qu'il vaut mieux ne pas rejouer
 
@@ -99,6 +119,14 @@ Ils ont été tranchés, avec leurs raisons :
   domaine public.
 - **La to-do est manuelle**, pas déduite de la progression. C'est un choix
   d'Ilyan : la liste dit ce qu'il a décidé de reprendre.
+- **Le quiz corrige au serveur, pas au client.** La bonne réponse ne part pas
+  avec la question : c'est ce qui empêche de la lire dans la charge utile, et ça
+  met la file, les reprises et la fin de séance au même endroit que le reste des
+  règles. Le coût est un aller-retour par réponse ; le préchargement de la
+  question suivante le rend invisible.
+- **Le thème d'une question de quiz vient du rappel de cours qu'elle vise**, pas
+  de son dossier. Une table de correspondance écrite à la main vieillirait en
+  silence ; la `source` d'un `extrait-cours`, non.
 - **Le réordonnancement se fait à l'intérieur d'un chapitre**, et les chapitres
   se déplacent entre eux. Le groupe est déduit du contenu, pas choisi : déplacer
   une ligne d'un chapitre à l'autre n'aurait pas de sens.
