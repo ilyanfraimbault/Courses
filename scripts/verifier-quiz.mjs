@@ -1,0 +1,189 @@
+/**
+ * Vérification manuelle du mode quiz, de bout en bout.
+ *
+ * Elle crée deux comptes jetables, joue une séance jusqu'au bout en se trompant
+ * exprès, et regarde ce que la file devient. On ne vérifie pas un substitut :
+ * les questions posées sont de vraies questions du contenu, et la reprise qui
+ * revient à la fin est réellement demandée au serveur.
+ *
+ * Elle n'est pas dans la CI : elle a besoin d'un serveur qui tourne et d'une
+ * base réelle, et son rôle est d'être relancée quand on touche à la banque, au
+ * tirage ou aux routes du quiz.
+ *
+ *   pnpm dev            # dans un terminal, avec .env en place
+ *   node scripts/verifier-quiz.mjs
+ *
+ * `QUIZ_BASE` change l'adresse visée, pour la lancer contre un build de
+ * production plutôt que contre le serveur de développement.
+ */
+const BASE = process.env.QUIZ_BASE ?? 'http://localhost:3000'
+const CODE = process.env.NUXT_CODE_INSCRIPTION ?? 'code-de-classe'
+
+let cookie = ''
+const echecs = []
+
+function verifier(nom, condition, detail = '') {
+  console.log(`${condition ? '  ok  ' : ' ÉCHEC'} ${nom}${detail ? ' — ' + detail : ''}`)
+  if (!condition) echecs.push(nom)
+}
+
+async function api(chemin, options = {}) {
+  const r = await fetch(BASE + chemin, {
+    ...options,
+    headers: { 'content-type': 'application/json', cookie, ...(options.headers ?? {}) },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  })
+  for (const c of r.headers.getSetCookie?.() ?? []) cookie = c.split(';')[0]
+  try {
+    return { statut: r.status, corps: await r.json() }
+  } catch {
+    return { statut: r.status, corps: null }
+  }
+}
+
+const pseudo = 'quiz-' + Math.random().toString(36).slice(2, 8)
+
+console.log('\n— Compte jetable')
+let r = await api('/api/auth/register', { method: 'POST', body: { pseudo, motDePasse: 'motdepasse-de-verification', code: CODE } })
+verifier('inscription', r.statut === 200 || r.statut === 201, 'statut ' + r.statut)
+if (r.statut >= 400) {
+  console.log('\nInscription impossible : vérifier NUXT_CODE_INSCRIPTION.')
+  process.exit(1)
+}
+
+console.log('\n— Catalogue')
+r = await api('/api/quiz/catalogue')
+const catalogue = r.corps
+verifier('catalogue servi', r.statut === 200)
+verifier('la banque porte 412 questions', catalogue.total === 412, 'total = ' + catalogue.total)
+verifier('quatre chapitres', catalogue.themes.length === 4,
+  catalogue.themes.map(t => `${t.titre} (${t.questions})`).join(', '))
+verifier('les thèmes couvrent toute la banque',
+  catalogue.themes.reduce((n, t) => n + t.questions, 0) === catalogue.total)
+const notions = catalogue.themes.flatMap(t => t.notions)
+verifier('les notions portent un nom lisible',
+  notions.length >= 80 && notions.every(n => n.titre && !/^(qcm|cours|x)-/.test(n.titre)),
+  notions.length + ' notions')
+
+console.log('\n— Une séance sur un seul chapitre')
+r = await api('/api/quiz/session', { method: 'POST', body: { themes: ['trigonometrie'], taille: 10 } })
+verifier('séance créée', r.statut === 201, 'statut ' + r.statut)
+let session = r.corps.session
+const premiere = r.corps.question
+verifier('dix places tirées', session.taille === 10 && session.file.length === 10)
+verifier('la bonne réponse ne part pas avec la question', !JSON.stringify(premiere).includes('"bonne"'))
+
+const tirees = []
+for (let p = 0; p < session.taille; p++) {
+  const q = await api(`/api/quiz/session/${session.id}/question?position=${p}`)
+  tirees.push(q.corps.question)
+}
+verifier('les dix places sont dans le chapitre demandé', tirees.every(q => q.theme === 'trigonometrie'))
+verifier('aucun doublon dans le tirage', new Set(tirees.map(q => q.id)).size === tirees.length)
+
+console.log('\n— On répond à la première question')
+r = await api(`/api/quiz/session/${session.id}/reponse`, { method: 'POST', body: { position: 0, lettre: premiere.lettres[0] } })
+verifier('réponse acceptée', r.statut === 200, 'statut ' + r.statut)
+const correction = r.corps.correction
+session = r.corps.session
+verifier('la correction porte la solution rédigée', Array.isArray(correction.solution) && correction.solution.length > 0)
+verifier('la correction porte le rappel de cours visé', !!correction.extrait?.titre, correction.extrait?.titre ?? 'aucun')
+verifier('le verdict correspond à la lettre donnée', correction.juste === (correction.donnee === correction.bonne))
+
+if (correction.juste) {
+  verifier('une réponse juste n\'allonge pas la file', session.longueur === 10)
+  verifier('la place est acquise', session.acquises === 1)
+} else {
+  verifier('une faute allonge la file', session.longueur === 11, 'longueur = ' + session.longueur)
+  verifier('la place manquée revient à la fin', session.file.at(-1).place === 1)
+  const reprise = await api(`/api/quiz/session/${session.id}/question?position=10`)
+  verifier('la reprise n\'est pas la question ratée', reprise.corps.question.id !== premiere.id)
+  verifier('la reprise reste dans le chapitre', reprise.corps.question.theme === 'trigonometrie')
+}
+
+r = await api(`/api/quiz/session/${session.id}/reponse`, { method: 'POST', body: { position: 0, lettre: premiere.lettres[0] } })
+verifier('répondre deux fois à la même place rend une 409', r.statut === 409, 'statut ' + r.statut)
+
+console.log('\n— On va au bout, en se trompant')
+// On répond toujours « la première proposition » : les places tombent juste
+// quand la bonne lettre est la première, et les autres reviennent. C'est le
+// pire cas raisonnable, et il doit finir.
+const vues = new Set(tirees.map(q => q.id))
+let tours = 0
+while (tours++ < 300) {
+  const etat = await api(`/api/quiz/session/${session.id}`)
+  session = etat.corps.session
+  if (session.finie || !etat.corps.question) break
+  const avant = session.longueur
+  const rep = await api(`/api/quiz/session/${session.id}/reponse`, {
+    method: 'POST',
+    body: { position: etat.corps.question.position, lettre: etat.corps.question.lettres[0] }
+  })
+  if (rep.statut !== 200) {
+    verifier('réponse acceptée en cours de séance', false, 'statut ' + rep.statut)
+    break
+  }
+  session = rep.corps.session
+  if (session.longueur > avant) {
+    const ajoutee = await api(`/api/quiz/session/${session.id}/question?position=${avant}`)
+    const q = ajoutee.corps.question
+    if (q) {
+      if (vues.has(q.id) && !q.rejouee) echecs.push('question déjà vue réintroduite sans le dire')
+      vues.add(q.id)
+    }
+  }
+}
+verifier('la séance finit par se terminer', session.finie === true,
+  `${session.poses} questions posées pour ${session.taille} places`)
+verifier('toutes les places sont acquises', session.acquises === session.taille, `${session.acquises} / ${session.taille}`)
+verifier('jamais deux fois la même question sans le dire', !echecs.includes('question déjà vue réintroduite sans le dire'))
+
+console.log('\n— Historique')
+r = await api('/api/quiz/historique')
+verifier('la séance est dans l\'historique', r.corps.sessions.some(s => s.id === session.id))
+verifier('aucune séance en cours', r.corps.encours === null)
+verifier('« ce qui résiste » est renseigné',
+  session.fautes === 0 || r.corps.resistent.length > 0, r.corps.resistent.length + ' notions')
+verifier('les notions résistantes portent leur nom du contenu',
+  r.corps.resistent.every(n => n.titre && !n.titre.includes('/')), r.corps.resistent[0]?.titre ?? '—')
+
+console.log('\n— Cadrage par utilisateur')
+const cookieA = cookie
+cookie = ''
+await api('/api/auth/register', {
+  method: 'POST',
+  body: { pseudo: pseudo + '-b', motDePasse: 'motdepasse-de-verification', code: CODE }
+})
+r = await api(`/api/quiz/session/${session.id}`)
+verifier('la séance d\'un autre compte est introuvable', r.statut === 404, 'statut ' + r.statut)
+r = await api('/api/quiz/historique')
+verifier('historique vierge pour un compte neuf', r.corps.sessions.length === 0)
+cookie = cookieA
+
+const anonyme = await fetch(BASE + '/api/quiz/catalogue')
+verifier('le catalogue exige une session', anonyme.status === 401, 'statut ' + anonyme.status)
+
+console.log('\n— Filtres')
+const notion = notions.sort((a, b) => b.questions - a.questions)[0]
+r = await api('/api/quiz/session', { method: 'POST', body: { notions: [notion.cle], taille: 5 } })
+verifier('séance sur une seule notion', r.statut === 201 && r.corps.question.notionTitre === notion.titre,
+  `${notion.titre} — ${r.corps.session?.taille} places`)
+r = await api('/api/quiz/session', { method: 'POST', body: { themes: ['inexistant'], taille: 10 } })
+verifier('un filtre sans question est refusé', r.statut === 400, 'statut ' + r.statut)
+r = await api('/api/quiz/session', { method: 'POST', body: { taille: 999 } })
+verifier('une taille hors bornes est refusée', r.statut === 400, 'statut ' + r.statut)
+
+console.log('\n— Étalement du tirage')
+r = await api('/api/quiz/session', { method: 'POST', body: { taille: 40 } })
+const grande = r.corps.session
+const repartition = {}
+for (let p = 0; p < grande.taille; p++) {
+  const q = await api(`/api/quiz/session/${grande.id}/question?position=${p}`)
+  repartition[q.corps.question.theme] = (repartition[q.corps.question.theme] ?? 0) + 1
+}
+console.log('       ' + JSON.stringify(repartition))
+verifier('les quatre chapitres sont représentés', Object.keys(repartition).length === 4)
+verifier('aucun chapitre n\'écrase les autres', Math.max(...Object.values(repartition)) <= 14)
+
+console.log(`\n${echecs.length ? '✗ ' + echecs.length + ' échec(s) : ' + echecs.join(', ') : '✓ tout est passé'}`)
+process.exit(echecs.length ? 1 : 0)
