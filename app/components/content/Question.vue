@@ -48,6 +48,10 @@ function choisir(lettre: string) {
     progression?.reussir(identite.value, lettre)
     return
   }
+  // Une seule faute par question et par visite, quel que soit le nombre de
+  // mauvaises lettres essayées : c'est la question qui n'est pas sue, pas chaque
+  // clic. Les suivantes ne rajoutent rien à ce que la première a déjà dit.
+  if (!errones.value.length) progression?.rater(identite.value)
   if (!errones.value.includes(lettre)) errones.value = [...errones.value, lettre]
   // Se tromper ouvre la piste, jamais la réponse : on relit et on retente.
   if (hasIndice.value) showIndice.value = true

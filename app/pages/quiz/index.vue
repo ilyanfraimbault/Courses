@@ -14,7 +14,7 @@ const { data: historique, refresh: relireHistorique } = await useLazyFetch<Histo
   server: false
 })
 
-const filtre = ref<FiltreQuiz>({ themes: [], notions: [] })
+const filtre = ref<FiltreQuiz>({ themes: [], sections: [], erreurs: false })
 const taille = ref(20)
 const lancement = ref(false)
 const erreur = ref<string | null>(null)
@@ -23,15 +23,17 @@ const erreur = ref<string | null>(null)
 const disponibles = computed(() => {
   const c = catalogue.value
   if (!c) return 0
-  if (!filtre.value.themes.length && !filtre.value.notions.length) return c.total
+  const erreurs = !!filtre.value.erreurs
+  const compte = (e: { questions: number, ratees: number }) => (erreurs ? e.ratees : e.questions)
+  if (!filtre.value.themes.length && !filtre.value.sections.length) return erreurs ? c.ratees : c.total
   let total = 0
   for (const theme of c.themes) {
     if (filtre.value.themes.includes(theme.cle)) {
-      total += theme.questions
+      total += compte(theme)
       continue
     }
-    for (const notion of theme.notions) {
-      if (filtre.value.notions.includes(notion.cle)) total += notion.questions
+    for (const section of theme.sections) {
+      if (filtre.value.sections.includes(section.cle)) total += compte(section)
     }
   }
   return total
@@ -57,7 +59,12 @@ async function commencer() {
   try {
     const { session } = await $fetch<{ session: SessionQuiz, question: QuestionQuiz | null }>('/api/quiz/session', {
       method: 'POST',
-      body: { themes: filtre.value.themes, notions: filtre.value.notions, taille: taille.value }
+      body: {
+        themes: filtre.value.themes,
+        sections: filtre.value.sections,
+        erreurs: !!filtre.value.erreurs,
+        taille: taille.value
+      }
     })
     await navigateTo(`/quiz/${session.id}`)
   } catch (e) {
@@ -67,11 +74,9 @@ async function commencer() {
   }
 }
 
-/** Reprendre la sélection sur ce qui a effectivement coûté des points. */
+/** Reprendre la sélection sur la seule dette, tout le programme confondu. */
 function reviserCeQuiResiste() {
-  const notions = (historique.value?.resistent ?? []).map(n => n.cle)
-  if (!notions.length) return
-  filtre.value = { themes: [], notions }
+  filtre.value = { themes: [], sections: [], erreurs: true }
 }
 
 async function clore(id: number) {
@@ -140,7 +145,8 @@ useSeoMeta({ title: 'Quiz' })
           Sur quoi ?
         </h2>
         <p class="mt-1 mb-0 text-sm text-muted">
-          Un chapitre entier, ou quelques points de cours précis. Ce qui est coché s'additionne.
+          Un chapitre entier, ou quelques parties de son cours. Ce qui est coché s'additionne, et le
+          nombre écrit à droite est celui des questions disponibles derrière la case.
         </p>
 
         <!-- L'affichage ne se branche que sur les données, jamais sur l'état de
@@ -247,21 +253,28 @@ useSeoMeta({ title: 'Quiz' })
           />
         </div>
         <p class="mt-1 mb-3 text-sm text-muted">
-          Les points de cours qui ont coûté le plus de fautes, toutes séances confondues.
+          Ce que tu as raté et pas encore retrouvé, par partie du cours — exercices, QCM et quiz
+          confondus. Une question s'en retire dès qu'elle tombe juste, où que ce soit.
         </p>
         <div class="flex flex-col gap-2">
           <div
-            v-for="notion in historique.resistent"
-            :key="notion.cle"
-            class="flex items-center gap-3 rounded-lg border border-default px-3 py-2"
+            v-for="section in historique.resistent"
+            :key="section.cle"
+            class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-default px-3 py-2"
           >
             <UIcon
               name="i-lucide-alert-circle"
               class="size-4 shrink-0 text-error"
             />
-            <span class="min-w-0 flex-1 text-sm text-highlighted">{{ notion.titre }}</span>
+            <span class="min-w-0 flex-1 text-sm text-highlighted">
+              {{ section.titre }}
+              <span
+                v-if="section.themeTitre"
+                class="text-dimmed"
+              >— {{ section.themeTitre }}</span>
+            </span>
             <span class="shrink-0 text-xs text-muted tabular-nums">
-              {{ notion.fautes }} faute{{ notion.fautes > 1 ? 's' : '' }} sur {{ notion.posees }}
+              {{ section.enDette }} à revoir · {{ section.fautes }} faute{{ section.fautes > 1 ? 's' : '' }}
             </span>
           </div>
         </div>

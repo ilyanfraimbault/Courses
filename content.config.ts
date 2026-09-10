@@ -29,6 +29,14 @@ export default defineContentConfig({
           nature: z.enum(['exercice', 'qcm']),
           questions: z.number()
         })).optional(),
+        // Idem : le plan de la page, ses titres de niveau 2 par ancre. C'est ce
+        // qui donne son intitulé à une section du quiz — « 4. Les valeurs
+        // remarquables » — sans avoir à recalculer une ancre que le parseur a
+        // déjà posée.
+        sections: z.record(z.string(), z.object({
+          titre: z.string(),
+          ordre: z.number()
+        })).optional(),
         // Idem : la banque du quiz. Une entrée par question **à choix** de la
         // page — de quoi la choisir, jamais de quoi la poser : l'énoncé reste
         // dans le corps de la fiche, relu à la demande. Sans ce relevé, tirer
@@ -42,7 +50,10 @@ export default defineContentConfig({
           choix: z.number(),
           notion: z.string().nullable(),
           notionTitre: z.string().nullable(),
-          theme: z.string().nullable()
+          theme: z.string().nullable(),
+          // « /chemin/de/la/page#ancre » : la section du cours dont la question
+          // relève, second niveau de la sélection du quiz.
+          section: z.string().nullable()
         })).optional()
       })
     })

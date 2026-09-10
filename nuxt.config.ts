@@ -6,7 +6,7 @@
 // désignent la même chose. Ce fichier n'importe donc pas une copie de
 // `slugifier`, il importe **la** fonction — voir l'avertissement en tête de
 // `app/utils/cours.ts`, qui doit rester libre de tout import Nuxt.
-import { slugifier } from './app/utils/cours'
+import { cheminCanonique, slugifier } from './app/utils/cours'
 
 /** Les trois balises qui posent une question, quel que soit le format de la fiche. */
 const BALISES_QUESTION = new Set(['exo-question', 'qcm-question', 'question'])
@@ -98,6 +98,43 @@ interface QuestionRelevee {
   notion: string | null
   notionTitre: string | null
   theme: string | null
+  section: string | null
+}
+
+/** Une section du plan d'une page : son ancre, son intitulé, son rang. */
+interface SectionRelevee {
+  titre: string
+  ordre: number
+}
+
+/** Le texte nu d'un nœud, ses enfants inline compris. */
+function texteDe(noeud: unknown): string {
+  if (typeof noeud === 'string') return noeud
+  if (!Array.isArray(noeud)) return ''
+  return noeud.slice(2).map(texteDe).join('')
+}
+
+/**
+ * Le plan d'une page : les titres de niveau 2, par ancre.
+ *
+ * C'est ce qui donne son intitulé à une section du quiz. L'ancre est celle que
+ * le parseur a déjà posée sur le titre — la même que celle qu'un
+ * `extrait-cours` vise dans sa `source` — et non une ancre recalculée : deux
+ * façons de découper le même titre finiraient par diverger, et une sélection ne
+ * trouverait plus ses questions.
+ */
+function releverSections(noeuds: unknown, sortie: Record<string, SectionRelevee> = {}): Record<string, SectionRelevee> {
+  if (!Array.isArray(noeuds)) return sortie
+  for (const noeud of noeuds) {
+    if (!Array.isArray(noeud)) continue
+    if (noeud[0] === 'h2') {
+      const id = (noeud[1] as { id?: string } | undefined)?.id
+      const titre = texteDe(noeud).trim()
+      if (id && titre && !sortie[id]) sortie[id] = { titre, ordre: Object.keys(sortie).length }
+    }
+    releverSections(noeud.slice(2), sortie)
+  }
+  return sortie
 }
 
 /**
@@ -131,6 +168,38 @@ function chapitreDe(chemin: string | undefined): string | null {
 }
 
 /**
+ * La section du cours dont une question relève, « /chemin/de/la/page#ancre ».
+ *
+ * C'est le second niveau de la sélection du quiz, et il vise une case du **plan
+ * du chapitre** plutôt que l'intitulé d'un rappel de cours : deux rappels écrits
+ * dans deux fiches différentes portent souvent le même titre, et une sélection
+ * où le même intitulé apparaît deux fois ne veut rien dire.
+ *
+ * Deux sources, dans cet ordre :
+ *
+ * 1. **l'ancre du rappel visé.** `source="/…/trigonometrie/cours#_4-les-valeurs-remarquables"`
+ *    nomme la section aussi bien que le chapitre ;
+ * 2. **le titre de niveau 2 qui précède la question dans sa propre page.** Les
+ *    contrôles express insérés au fil d'un cours ne visent aucun rappel — ils
+ *    sont *dans* la section dont ils parlent. C'est ainsi que les 48 questions
+ *    de la page de cours de trigonométrie, jusque-là inaccessibles autrement
+ *    qu'en cochant le chapitre entier, rejoignent les sections que les
+ *    exercices et les QCM visent déjà.
+ *
+ * Le repli n'a lieu que si la question **appartient** au chapitre de sa page :
+ * une question de QCM qui vise le cours des fonctions usuelles ne doit pas
+ * classer « Partie B » du QCM parmi les sections de ce chapitre. À défaut, la
+ * question reste sans section et le catalogue la range dans le reste du
+ * chapitre.
+ */
+function sectionDe(chemin: string | undefined, chapitrePage: string | null, theme: string | null, source: string | undefined, ancreCourante: string | null): string | null {
+  const [pageSource, ancreSource] = (source ?? '').split('#')
+  if (pageSource && ancreSource) return `${cheminCanonique(pageSource)}#${ancreSource}`
+  if (chemin && ancreCourante && theme && theme === chapitrePage) return `${cheminCanonique(chemin)}#${ancreCourante}`
+  return null
+}
+
+/**
  * Relève les questions à choix d'une page, avec ce qu'il faut pour les trier.
  *
  * Deux décisions méritent d'être écrites.
@@ -146,7 +215,7 @@ function chapitreDe(chemin: string | undefined): string | null {
  * une section d'un chapitre : c'est de là que le thème est déduit. Une question
  * sans rappel retombe sur le chapitre de sa fiche.
  */
-function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Record<string, ExtraitReleve>, bloc: BlocReleve & { slug: string } | null = null, sortie: QuestionRelevee[] = []): QuestionRelevee[] {
+function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Record<string, ExtraitReleve>, bloc: BlocReleve & { slug: string } | null = null, sortie: QuestionRelevee[] = [], curseur: { ancre: string | null } = { ancre: null }): QuestionRelevee[] {
   if (!Array.isArray(noeuds)) return sortie
   const chapitrePage = chapitreDe(chemin)
 
@@ -155,8 +224,12 @@ function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Reco
     const balise = typeof noeud[0] === 'string' ? noeud[0] : null
     const props = (noeud[1] ?? {}) as Record<string, unknown>
 
+    // Le parcours suit l'ordre du document : le dernier titre de niveau 2
+    // rencontré est celui sous lequel la question se trouve.
+    if (balise === 'h2') curseur.ancre = typeof props.id === 'string' ? props.id : null
+
     if (balise && BALISES_BLOC.has(balise) && typeof props.titre === 'string') {
-      releverQuiz(noeud.slice(2), chemin, extraits, { slug: slugifier(props.titre), titre: props.titre, nature: balise, questions: 0 }, sortie)
+      releverQuiz(noeud.slice(2), chemin, extraits, { slug: slugifier(props.titre), titre: props.titre, nature: balise, questions: 0 }, sortie, curseur)
       continue
     }
 
@@ -171,6 +244,7 @@ function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Reco
       if (lettres.size >= 2) {
         const notion = typeof props.cours === 'string' ? props.cours : null
         const extrait = notion ? extraits[notion] : undefined
+        const theme = chapitreDe(extrait?.source) ?? chapitrePage
         sortie.push({
           bloc: bloc.slug,
           blocTitre: bloc.titre,
@@ -179,13 +253,14 @@ function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Reco
           choix: lettres.size,
           notion,
           notionTitre: extrait?.titre ?? null,
-          theme: chapitreDe(extrait?.source) ?? chapitrePage
+          theme,
+          section: sectionDe(chemin, chapitrePage, theme, extrait?.source, curseur.ancre)
         })
       }
       continue
     }
 
-    releverQuiz(noeud.slice(2), chemin, extraits, bloc, sortie)
+    releverQuiz(noeud.slice(2), chemin, extraits, bloc, sortie, curseur)
   }
 
   return sortie
@@ -267,11 +342,13 @@ export default defineNuxtConfig({
         body?: { value?: unknown }
         questions?: number
         blocs?: Record<string, unknown>
+        sections?: Record<string, unknown>
         quiz?: unknown[]
       } | undefined
       if (!contenu?.path?.startsWith('/cours/')) return
       contenu.questions = compterQuestions(contenu.body?.value)
       contenu.blocs = releverBlocs(contenu.body?.value)
+      contenu.sections = releverSections(contenu.body?.value)
       contenu.quiz = releverQuiz(contenu.body?.value, contenu.path, releverExtraits(contenu.body?.value))
     }
   },

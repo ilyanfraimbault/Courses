@@ -20,12 +20,17 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 - Progression et historique de QCM en base, synchronisés entre appareils.
 - **Mode quiz** : une question à la fois — avec l'énoncé commun de son bloc —
   tirée dans les 432 questions à choix du site, filtrable par chapitre ou par
-  point de cours (94 notions nommées). Une question gagnée est cochée sur sa
-  fiche.
+  **section du cours** (34 cases, qui couvrent chaque chapitre sans reste). Une
+  question gagnée est cochée sur sa fiche.
   Une faute renvoie la place à la fin de la file avec une *autre* question du
   même point de cours ; la séance ne finit que lorsque tout est acquis. Séances
   reprises d'un appareil à l'autre, historique et panneau « ce qui résiste ».
-  Voir `docs/quiz.md`.
+  L'ordre des propositions est brassé à chaque place, et le tirage préfère ce
+  qui est en dette, puis ce qui n'a jamais été posé. Voir `docs/quiz.md`.
+- **Mémoire des fautes** : une question ratée sur une fiche, dans un QCM ou au
+  quiz entre en dette, et n'en sort qu'en étant retrouvée — où que ce soit. Elle
+  alimente la sélection « seulement ce que j'ai raté », les compteurs du
+  catalogue et le panneau « ce qui résiste ».
 - To-do manuelle à trois niveaux — chapitre, fiche, bloc — réordonnable par
   glisser ou par flèches, aux deux niveaux.
 - Tableau de bord « où j'en suis », page « mes résultats », export et import

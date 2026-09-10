@@ -23,6 +23,12 @@ interface CorpsReponse {
  * transaction que la file : les deux décrivent le même événement, et n'en
  * enregistrer qu'un laisserait une question réussie invisible dans son
  * exercice. Voir `reporterSurLaFiche`.
+ *
+ * La même transaction tient la **dette** : une faute inscrit la question dans
+ * `faute`, une bonne réponse l'éteint. C'est ce qui donne son contenu à la
+ * sélection « ce que j'ai raté », et c'est symétrique du report sur la fiche —
+ * un quiz réussi solde ce qui avait été raté dans un exercice, et
+ * réciproquement.
  */
 export default defineEventHandler(async (event): Promise<{ correction: CorrectionQuiz, session: SessionQuiz }> => {
   const uid = await idUtilisateur(event)
@@ -63,7 +69,9 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
 
   const banque = await chargerBanque(event)
   const candidate = trouverEntree(banque, entree.question)
-  const posee = candidate ? await poserQuestion(event, banque, candidate, position, !!entree.rejouee) : null
+  const posee = candidate
+    ? await poserQuestion(event, banque, candidate, position, !!entree.rejouee, `${id}:${position}`)
+    : null
   if (!candidate || !posee) {
     // La question a disparu du contenu depuis le tirage : on retire la place
     // plutôt que de bloquer la séance sur une question qui n'existe plus.
@@ -95,7 +103,11 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
     // voit jamais deux fois la même question ». Elle ne peut être rompue que
     // lorsque le filtre est épuisé, et le client le dit alors franchement.
     const dejaVues = new Set(etat.entrees.map(e => e.question))
-    const similaire = choisirSimilaire(filtrer(banque.entrees, lireFiltre(ligne.filtre)), candidate, dejaVues)
+    // La dette est relue ici et non au tirage : une séance « ce que j'ai raté »
+    // ouverte il y a une heure ne doit pas piocher sa reprise dans la dette
+    // d'alors, et sans elle le filtre ne rendrait aucun candidat.
+    const candidats = filtrer(banque.entrees, lireFiltre(ligne.filtre), questionsEnDette(db, uid))
+    const similaire = choisirSimilaire(candidats, candidate, dejaVues)
     etat.entrees.push({
       question: similaire.entree.id,
       place: entree.place,
@@ -112,11 +124,17 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
   try {
     ecrireEtat(db, ligne, etat, maj)
     db.prepare(`
-      INSERT INTO quiz_reponse (session_id, ordre, question, theme, notion, juste, t)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO quiz_reponse (session_id, ordre, question, theme, notion, section, juste, t)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(session_id, ordre) DO NOTHING
-    `).run(ligne.id, position, candidate.id, candidate.theme, candidate.notionCle, juste ? 1 : 0, maj)
-    if (juste) reporterSurLaFiche(db, uid, candidate, lettre, maj)
+    `).run(ligne.id, position, candidate.id, candidate.theme, candidate.notionCle, candidate.section, juste ? 1 : 0, maj)
+    const cible = [{ chemin: candidate.chemin, bloc: candidate.bloc, label: candidate.label }]
+    if (juste) {
+      reporterSurLaFiche(db, uid, candidate, lettre, maj)
+      rattraperFautes(db, uid, cible, maj)
+    } else {
+      enregistrerFautes(db, uid, cible, maj)
+    }
     db.exec('COMMIT')
   } catch (erreur) {
     db.exec('ROLLBACK')

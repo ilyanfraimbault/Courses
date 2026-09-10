@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import type {
   CatalogueQuiz, ExtraitQuiz, FiltreQuiz, FragmentContenu,
-  NatureQuestion, QuestionQuiz, QuestionRelevee, ThemeCatalogue
+  NatureQuestion, QuestionQuiz, QuestionRelevee, SectionCatalogue, ThemeCatalogue
 } from '~~/shared/types/quiz'
 
 /** Bornes du tirage. Au-delà, la file cesse d'être une séance et devient une corvée. */
@@ -28,6 +28,30 @@ export interface EntreeBanque extends QuestionRelevee {
    * question de complexes à qui vient de rater une dérivée.
    */
   notionCle: string | null
+  /** Intitulé de la section du cours, résolu sur la page qui porte l'ancre. */
+  sectionTitre: string | null
+  /** Rang de la section dans le plan de sa page, pour ordonner le catalogue. */
+  sectionOrdre: number
+}
+
+/**
+ * Le repos d'une question : au-delà, on la considère comme oubliée et digne
+ * d'être reposée. En deçà, le tirage lui préfère du neuf — réciter une réponse
+ * lue avant-hier ne prouve rien.
+ */
+export const REPOS = 14 * 24 * 60 * 60 * 1000
+
+/**
+ * Le rang d'un candidat au tirage : plus il est bas, plus la question passe
+ * devant. C'est la seule chose que le tirage sait de l'histoire de
+ * l'utilisateur, et elle lui vient du dehors — la banque, elle, n'appartient à
+ * personne.
+ */
+export type RangCandidat = (entree: EntreeBanque) => number
+
+interface SectionRelevee {
+  titre: string
+  ordre: number
 }
 
 interface PageContenu {
@@ -36,6 +60,7 @@ interface PageContenu {
   icone?: string | null
   ordre?: number | null
   questions?: number | null
+  sections?: Record<string, SectionRelevee> | null
   quiz?: QuestionRelevee[] | null
 }
 
@@ -92,6 +117,12 @@ function collectionCours(event: H3Event): RequeteCours {
   return interroger(event, 'cours')
 }
 
+/** Une ancre rendue à peu près lisible, faute de mieux : « _4-les-valeurs » → « 4 les valeurs ». */
+function lisible(ancre: string): string {
+  const texte = ancre.replace(/^_/, '').replace(/-/g, ' ').trim()
+  return texte ? texte.charAt(0).toUpperCase() + texte.slice(1) : ancre
+}
+
 /** Le dernier segment d'un chemin : « /cours/a1/…/trigonometrie » → « trigonometrie ». */
 function dernierSegment(chemin: string): string {
   const segments = chemin.split('/').filter(Boolean)
@@ -102,20 +133,36 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
   if (banque && Date.now() < banque.expire) return banque.valeur
 
   const pages = await collectionCours(event)
-    .select('path', 'title', 'icone', 'ordre', 'questions', 'quiz')
+    .select('path', 'title', 'icone', 'ordre', 'questions', 'sections', 'quiz')
     .all() as unknown as PageContenu[]
+
+  // Le plan de chaque page, pour donner son intitulé à une section. Une section
+  // est nommée « /chemin/de/la/page#ancre » : elle appartient donc souvent à une
+  // **autre** page que celle où la question est écrite — une question de QCM
+  // relève d'une section du cours. D'où cette table, qui rassemble les plans de
+  // toutes les pages avant de résoudre quoi que ce soit.
+  const plans = new Map<string, Record<string, SectionRelevee>>()
+  for (const page of pages) plans.set(cheminCanonique(page.path), page.sections ?? {})
 
   const entrees: EntreeBanque[] = []
   for (const page of pages) {
     const chemin = cheminCanonique(page.path)
     for (const q of page.quiz ?? []) {
+      const [pageSection, ancre] = (q.section ?? '').split('#')
+      const releve = pageSection && ancre ? plans.get(pageSection)?.[ancre] : undefined
       entrees.push({
         ...q,
         id: composerIdentite(chemin, q.bloc, q.label),
         chemin,
         ficheTitre: page.title,
         ficheQuestions: page.questions ?? 0,
-        notionCle: q.notion ? `${q.theme ?? '?'}/${q.notion}` : null
+        notionCle: q.notion ? `${q.theme ?? '?'}/${q.notion}` : null,
+        // Une ancre qui ne se résout pas est un titre renommé sans que les
+        // `source` qui le visaient aient suivi. On garde la section quand même,
+        // sous une forme lisible : la faire disparaître du catalogue rendrait
+        // ses questions introuvables sans rien signaler.
+        sectionTitre: releve?.titre ?? (ancre ? lisible(ancre) : null),
+        sectionOrdre: releve?.ordre ?? 999
       })
     }
   }
@@ -142,60 +189,151 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
   return valeur
 }
 
-/** Les questions retenues par un filtre. Un filtre vide de tout côté prend tout. */
-export function filtrer(entrees: EntreeBanque[], filtre: FiltreQuiz): EntreeBanque[] {
+/**
+ * Les questions retenues par un filtre.
+ *
+ * Deux axes, qui ne se comportent pas pareil.
+ *
+ * **Les chapitres et les sections s'additionnent** au lieu de se croiser :
+ * cocher un chapitre puis une section d'un autre chapitre demande les deux, pas
+ * leur intersection — qui serait vide, et qui rendrait la case à cocher
+ * incompréhensible. Rien de coché des deux côtés prend tout.
+ *
+ * **La dette, elle, se croise** : « ce que j'ai raté » restreint ce qui a été
+ * choisi au-dessus, et prend toute la dette quand rien n'est coché. C'est ce
+ * qu'on attend d'une case « seulement » — et l'écran l'écrit ainsi.
+ */
+export function filtrer(entrees: EntreeBanque[], filtre: FiltreQuiz, enDette?: Set<string>): EntreeBanque[] {
   const themes = new Set(filtre.themes)
-  const notions = new Set(filtre.notions)
-  if (!themes.size && !notions.size) return entrees
-  // Les deux listes s'additionnent au lieu de se croiser : cocher un chapitre
-  // puis une notion d'un autre chapitre demande les deux, pas leur intersection
-  // — qui serait vide, et qui rendrait la case à cocher incompréhensible.
-  return entrees.filter(e =>
-    (e.theme && themes.has(e.theme)) || (e.notionCle && notions.has(e.notionCle)))
+  const sections = new Set(filtre.sections)
+  // Hérité : les séances ouvertes quand le second niveau était le rappel de
+  // cours. Sans cette ligne, une séance en cours au moment d'une mise en ligne
+  // se retrouverait sans candidats et ne pourrait plus se terminer.
+  const notions = new Set(filtre.notions ?? [])
+
+  const choisies = !themes.size && !sections.size && !notions.size
+    ? entrees
+    : entrees.filter(e =>
+        (e.theme && themes.has(e.theme))
+        || (e.section && sections.has(e.section))
+        || (e.notionCle && notions.has(e.notionCle)))
+
+  if (!filtre.erreurs) return choisies
+  return enDette ? choisies.filter(e => enDette.has(e.id)) : []
 }
 
-/** Le catalogue : les thèmes, leurs notions, et de quoi les compter. */
-export function composerCatalogue(banque: Banque): CatalogueQuiz {
-  const parTheme = new Map<string, Map<string, { titre: string, questions: number }>>()
-  const totaux = new Map<string, number>()
+/** La case du catalogue où tombent les questions sans section. */
+const RESTE = 'reste'
+
+/**
+ * Le catalogue : les chapitres, leurs sections, et de quoi les compter.
+ *
+ * Le second niveau suit le **plan du chapitre** et non l'intitulé du rappel de
+ * cours visé. Les rappels ne formaient pas une nomenclature : deux d'entre eux,
+ * écrits dans deux fiches, portent souvent le même titre, si bien que le même
+ * intitulé apparaissait deux fois dans la liste sans rien pour les distinguer —
+ * six fois dans les chapitres « fonctions dérivées » et « complexes ». Et les
+ * questions qui ne visent aucun rappel n'apparaissaient nulle part : sur les 77
+ * questions de trigonométrie, 29 seulement étaient atteignables autrement qu'en
+ * cochant le chapitre entier.
+ *
+ * D'où deux règles ici : une section par case du plan, et **une case de reste**
+ * par chapitre, pour que la somme des sections fasse toujours le compte du
+ * chapitre. Un chiffre qui ne s'additionne pas est pire qu'un chiffre absent.
+ */
+export function composerCatalogue(banque: Banque, enDette?: Set<string>): CatalogueQuiz {
+  interface Compte { titre: string, ordre: number, questions: number, ratees: number }
+  const parTheme = new Map<string, Map<string, Compte>>()
+  const totaux = new Map<string, { questions: number, ratees: number }>()
 
   for (const e of banque.entrees) {
     const theme = e.theme ?? 'divers'
-    totaux.set(theme, (totaux.get(theme) ?? 0) + 1)
-    if (!e.notionCle) continue
-    const notions = parTheme.get(theme) ?? new Map()
-    parTheme.set(theme, notions)
-    const entree = notions.get(e.notionCle) ?? { titre: e.notionTitre ?? e.notion!, questions: 0 }
-    entree.questions += 1
-    notions.set(e.notionCle, entree)
+    const ratee = enDette?.has(e.id) ? 1 : 0
+    const total = totaux.get(theme) ?? { questions: 0, ratees: 0 }
+    total.questions += 1
+    total.ratees += ratee
+    totaux.set(theme, total)
+
+    const sections = parTheme.get(theme) ?? new Map<string, Compte>()
+    parTheme.set(theme, sections)
+    const cle = e.section ?? `${theme}#${RESTE}`
+    const compte = sections.get(cle) ?? {
+      titre: e.section ? e.sectionTitre ?? cle : 'Le reste du chapitre',
+      ordre: e.section ? e.sectionOrdre : 1000,
+      questions: 0,
+      ratees: 0
+    }
+    compte.questions += 1
+    compte.ratees += ratee
+    sections.set(cle, compte)
   }
 
-  const themes: ThemeCatalogue[] = [...totaux].map(([cle, questions]) => {
+  const themes: ThemeCatalogue[] = [...totaux].map(([cle, total]) => {
     const chapitre = banque.chapitres.get(cle)
+    const sections: SectionCatalogue[] = [...(parTheme.get(cle) ?? new Map<string, Compte>())]
+      .map(([c, s]) => ({ cle: c, titre: s.titre, ordre: s.ordre, questions: s.questions, ratees: s.ratees }))
+      // L'ordre du plan, pas celui du stock : on révise dans l'ordre où on a
+      // appris. Le reste du chapitre ferme la marche, par son rang de mille.
+      .sort((a, b) => a.ordre - b.ordre || a.titre.localeCompare(b.titre, 'fr'))
+      .map(({ ordre: _ordre, ...section }) => section)
+
     return {
       cle,
       titre: chapitre?.titre ?? cle,
       icone: chapitre?.icone ?? null,
       chemin: chapitre?.chemin ?? null,
-      questions,
-      notions: [...(parTheme.get(cle) ?? new Map())]
-        .map(([c, n]) => ({ cle: c, titre: n.titre, questions: n.questions }))
-        .sort((a, b) => b.questions - a.questions || a.titre.localeCompare(b.titre, 'fr'))
+      questions: total.questions,
+      ratees: total.ratees,
+      sections
     }
   })
 
-  // L'ordre des chapitres est celui du cours, pas celui de leur stock : on
-  // révise dans l'ordre où on a appris.
   themes.sort((a, b) =>
     (banque.chapitres.get(a.cle)?.ordre ?? 999) - (banque.chapitres.get(b.cle)?.ordre ?? 999)
     || a.titre.localeCompare(b.titre, 'fr'))
 
   return {
     total: banque.entrees.length,
+    ratees: enDette ? banque.entrees.filter(e => enDette.has(e.id)).length : 0,
     themes,
     tailleMin: TAILLE_MIN,
     tailleMax: TAILLE_MAX
   }
+}
+
+/**
+ * Mélange **déterministe** : la même graine rend toujours le même ordre.
+ *
+ * Il sert à brasser les propositions d'une question. Le déterminisme n'est pas
+ * un luxe : la même question est lue au moins deux fois — une fois pour
+ * l'afficher, une fois pour la corriger, et souvent une troisième au
+ * préchargement. Un mélange tiré à chaque lecture ferait changer l'ordre des
+ * propositions sous les doigts entre le moment où on lit et celui où on clique.
+ *
+ * L'algorithme est un mulberry32 amorcé par un FNV-1a de la graine : cinq
+ * lignes, aucune dépendance, et une suite assez brassée pour quatre
+ * propositions.
+ */
+function melangerAvecGraine<T>(liste: T[], graine: string): T[] {
+  let etat = 0x811c9dc5
+  for (let i = 0; i < graine.length; i++) {
+    etat = Math.imul(etat ^ graine.charCodeAt(i), 0x01000193) >>> 0
+  }
+  const suivant = () => {
+    etat = (etat + 0x6d2b79f5) >>> 0
+    let t = etat
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+  const copie = [...liste]
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(suivant() * (i + 1))
+    const tampon = copie[i]!
+    copie[i] = copie[j]!
+    copie[j] = tampon
+  }
+  return copie
 }
 
 function melanger<T>(liste: T[]): T[] {
@@ -218,8 +356,15 @@ function melanger<T>(liste: T[]): T[] {
  * niveaux : un thème après l'autre, et dans chacun une notion après l'autre.
  * Les groupes épuisés sortent du tour, si bien qu'un thème pauvre ne bloque pas
  * le tirage : il donne ce qu'il a, les autres complètent.
+ *
+ * `rang` décide de l'ordre **à l'intérieur** d'un groupe : d'abord ce qu'on a
+ * raté et pas encore retrouvé, puis ce qu'on n'a jamais vu, puis ce qui a eu le
+ * temps d'être oublié. Sans lui, une banque de quatre cent trente-deux
+ * questions finirait par reposer avant-hier ce qu'on a vu hier, et une séance
+ * n'apprendrait plus qu'à reconnaître des énoncés. Le mélange a lieu **avant**
+ * le tri, et le tri est stable : à rang égal, l'ordre reste aléatoire.
  */
-export function tirer(candidats: EntreeBanque[], taille: number): EntreeBanque[] {
+export function tirer(candidats: EntreeBanque[], taille: number, rang?: RangCandidat): EntreeBanque[] {
   const parTheme = new Map<string, Map<string, EntreeBanque[]>>()
   for (const e of candidats) {
     const theme = e.theme ?? 'divers'
@@ -229,8 +374,13 @@ export function tirer(candidats: EntreeBanque[], taille: number): EntreeBanque[]
     notions.set(cle, [...(notions.get(cle) ?? []), e])
   }
 
+  // Les groupes se vident par la fin (`pop`), d'où le tri décroissant : le rang
+  // le plus bas se retrouve en dernier, et sort le premier.
+  const ordonner = (liste: EntreeBanque[]) =>
+    rang ? melanger(liste).sort((a, b) => rang(b) - rang(a)) : melanger(liste)
+
   const themes = melanger([...parTheme].map(([, notions]) =>
-    melanger([...notions.values()].map(liste => melanger(liste)))))
+    melanger([...notions.values()].map(ordonner))))
 
   const tirees: EntreeBanque[] = []
   let curseurTheme = 0
@@ -257,8 +407,9 @@ export function tirer(candidats: EntreeBanque[], taille: number): EntreeBanque[]
  *
  * On ne repose jamais la même : réciter la réponse qu'on vient de lire ne prouve
  * rien. On cherche donc, dans l'ordre, une question **du même point de cours**,
- * puis du même exercice, puis du même chapitre, puis n'importe laquelle du
- * filtre — et toujours une qu'on n'a pas encore vue dans cette session.
+ * puis du même exercice, puis de la même **section du cours**, puis du même
+ * chapitre, puis n'importe laquelle du filtre — et toujours une qu'on n'a pas
+ * encore vue dans cette session.
  *
  * Le palier « même bloc » ne vaut que pour un **exercice** : ses questions
  * portent sur un même sujet par construction, et la voisine de la question
@@ -283,6 +434,7 @@ export function choisirSimilaire(
     manquee.nature === 'exercice'
       ? libres.filter(e => e.chemin === manquee.chemin && e.bloc === manquee.bloc)
       : [],
+    manquee.section ? libres.filter(e => e.section === manquee.section) : [],
     manquee.theme ? libres.filter(e => e.theme === manquee.theme) : [],
     libres
   ]
@@ -451,7 +603,8 @@ export async function poserQuestion(
   banque: Banque,
   entree: EntreeBanque,
   position: number,
-  rejouee: boolean
+  rejouee: boolean,
+  graine: string
 ): Promise<{ question: QuestionQuiz, lue: QuestionLue } | null> {
   const lue = await lireQuestion(event, entree)
   if (!lue) return null
@@ -463,6 +616,7 @@ export async function poserQuestion(
       label: lue.label,
       theme: entree.theme,
       themeTitre: entree.theme ? banque.chapitres.get(entree.theme)?.titre ?? null : null,
+      sectionTitre: entree.sectionTitre,
       notionTitre: entree.notionTitre,
       nature: entree.nature,
       fiche: {
@@ -471,7 +625,13 @@ export async function poserQuestion(
         bloc: entree.bloc,
         blocTitre: lue.blocTitre
       },
-      lettres: lue.lettres,
+      // Les propositions partent dans un ordre **tiré**, propre à cette place de
+      // cette séance. Une question posée dans le cours l'est toujours dans
+      // l'ordre où elle est écrite, et la bonne réponse d'un exercice donné
+      // finit par se retenir comme « c'est la c » plutôt que par son contenu.
+      // Le client, lui, ne voit que des repères de position : la lettre écrite
+      // dans la fiche ne transparaît nulle part.
+      lettres: melangerAvecGraine(lue.lettres, `${graine}:${entree.id}`),
       enonceBloc: lue.enonceBloc,
       enonce: lue.enonce,
       choix: lue.choix,

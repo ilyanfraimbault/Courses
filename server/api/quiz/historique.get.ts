@@ -1,17 +1,23 @@
-import type { HistoriqueQuiz, NotionResistante, ResumeSessionQuiz } from '~~/shared/types/quiz'
+import type { HistoriqueQuiz, ResumeSessionQuiz, SectionResistante } from '~~/shared/types/quiz'
 import type { LigneSession } from '../../utils/quiz-session.ts'
 
 /** Assez pour voir une tendance, pas assez pour noyer la page. */
 const MAX_SESSIONS = 20
-const MAX_NOTIONS = 12
+const MAX_SECTIONS = 12
 
 /**
  * Les séances passées, et ce qui résiste.
  *
- * « Ce qui résiste » se lit dans `quiz_reponse` et non dans les files : une
- * notion ratée trois fois sur quatre séances ne se voit qu'en agrégeant, et
- * agréger trente JSON désérialisés pour l'apprendre serait absurde quand SQL
- * le fait en une ligne.
+ * « Ce qui résiste » se lit dans la table des **fautes** et non dans les
+ * réponses de quiz. C'est un élargissement voulu : le quiz n'est qu'un des trois
+ * endroits où l'on se trompe, et de loin le moins fréquenté. Une notion ratée
+ * trois fois dans les exercices et jamais au quiz résistait autant, sans que
+ * rien ne le dise.
+ *
+ * L'agrégation par section se fait ici, en mémoire, et non en SQL : la section
+ * d'une question vit dans le contenu, pas en base — la recopier à l'écriture la
+ * figerait, et un chapitre réorganisé afficherait des sections périmées des mois
+ * plus tard.
  */
 export default defineEventHandler(async (event): Promise<HistoriqueQuiz> => {
   const uid = await idUtilisateur(event)
@@ -38,41 +44,55 @@ export default defineEventHandler(async (event): Promise<HistoriqueQuiz> => {
       commencee_le: ligne.commencee_le,
       maj: ligne.maj,
       filtre,
-      themes: filtre.themes.length || filtre.notions.length
-        ? [
-            ...filtre.themes.map(t => banque.chapitres.get(t)?.titre ?? t),
-            ...filtre.notions.map(n => n.split('/').slice(1).join('/'))
-          ]
-        : ['Tout le programme']
+      themes: intitules(filtre)
     }
+  }
+
+  /**
+   * Ce sur quoi la séance portait, en clair. Les clés de section sont des
+   * chemins avec une ancre : c'est la banque qui sait les nommer, et une clé
+   * qui ne s'y trouve plus vaut mieux affichée telle quelle qu'escamotée.
+   */
+  function intitules(filtre: ResumeSessionQuiz['filtre']): string[] {
+    const noms = [
+      ...filtre.themes.map(t => banque.chapitres.get(t)?.titre ?? t),
+      ...filtre.sections.map(s => banque.entrees.find(e => e.section === s)?.sectionTitre ?? s),
+      ...(filtre.notions ?? []).map(n => n.split('/').slice(1).join('/'))
+    ]
+    if (filtre.erreurs) return noms.length ? [...noms, 'ce qui restait en dette'] : ['Ce que j\'ai raté']
+    return noms.length ? noms : ['Tout le programme']
   }
 
   const sessions = lignes.map(resumer)
 
-  const resistent: NotionResistante[] = (db.prepare(`
-    SELECT r.notion AS notion, r.theme AS theme,
-           COUNT(*) AS posees, SUM(1 - r.juste) AS fautes
-    FROM quiz_reponse r
-    JOIN quiz_session s ON s.id = r.session_id
-    WHERE s.utilisateur_id = ? AND r.notion IS NOT NULL
-    GROUP BY r.notion
-    HAVING fautes > 0
-    ORDER BY fautes DESC, posees DESC
-    LIMIT ?
-  `).all(uid, MAX_NOTIONS) as unknown as { notion: string, theme: string | null, posees: number, fautes: number }[])
-    .map((l) => {
-      // L'intitulé lisible vit dans le contenu, pas en base : le recopier à
-      // l'écriture le figerait, et une notion renommée dans le cours
-      // s'afficherait encore sous son ancien nom des mois plus tard.
-      const entree = banque.entrees.find(e => e.notionCle === l.notion)
-      return {
-        cle: l.notion,
-        titre: entree?.notionTitre ?? l.notion.split('/').slice(1).join('/'),
-        theme: l.theme,
-        posees: l.posees,
-        fautes: l.fautes
-      }
-    })
+  const dettes = db.prepare(`
+    SELECT chemin, bloc, label, compte FROM faute
+    WHERE utilisateur_id = ? AND rattrapee IS NULL
+  `).all(uid) as unknown as { chemin: string, bloc: string, label: string, compte: number }[]
+
+  const parSection = new Map<string, SectionResistante>()
+  for (const dette of dettes) {
+    // Une question ratée puis disparue du contenu n'a plus de section à
+    // laquelle se rattacher : on la laisse de côté plutôt que d'inventer une
+    // rubrique que rien ne peut plus faire réviser.
+    const entree = banque.entrees.find(e => e.id === composerIdentite(dette.chemin, dette.bloc, dette.label))
+    if (!entree?.section) continue
+    const section = parSection.get(entree.section) ?? {
+      cle: entree.section,
+      titre: entree.sectionTitre ?? entree.section,
+      theme: entree.theme,
+      themeTitre: entree.theme ? banque.chapitres.get(entree.theme)?.titre ?? null : null,
+      enDette: 0,
+      fautes: 0
+    }
+    section.enDette += 1
+    section.fautes += dette.compte
+    parSection.set(entree.section, section)
+  }
+
+  const resistent = [...parSection.values()]
+    .sort((a, b) => b.enDette - a.enDette || b.fautes - a.fautes || a.titre.localeCompare(b.titre, 'fr'))
+    .slice(0, MAX_SECTIONS)
 
   return {
     sessions,

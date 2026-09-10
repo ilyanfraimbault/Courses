@@ -24,6 +24,12 @@ const props = defineProps<{
   fige?: boolean
   /** Libellé du groupe, pour les lecteurs d'écran. */
   intitule?: string
+  /**
+   * Repère à afficher à la place de la lettre. Le quiz brasse l'ordre des
+   * propositions : les lettres de la fiche y arrivent dans le désordre, et les
+   * montrer telles quelles écrirait « c, a, d, b » dans la marge.
+   */
+  etiquettes?: Record<string, string>
 }>()
 
 const emit = defineEmits<{ choisir: [lettre: string] }>()
@@ -74,7 +80,7 @@ function habillage(lettre: string) {
         class="size-4 shrink-0 mt-1"
         :class="habillage(lettre).teinte"
       />
-      <span class="shrink-0 font-medium text-muted uppercase">{{ lettre }}</span>
+      <span class="shrink-0 font-medium text-muted uppercase">{{ etiquettes?.[lettre] ?? lettre }}</span>
       <span class="min-w-0 flex-1 cours-qcm-choix">
         <slot :lettre="lettre" />
       </span>

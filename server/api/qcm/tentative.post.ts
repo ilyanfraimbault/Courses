@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
   if (typeof c.bloc !== 'string' || !c.bloc) {
     throw createError({ statusCode: 400, statusMessage: 'bloc manquant' })
   }
+  const bloc = c.bloc
   if (typeof c.justes !== 'number' || typeof c.total !== 'number') {
     throw createError({ statusCode: 400, statusMessage: 'justes et total sont requis' })
   }
@@ -43,6 +44,13 @@ export default defineEventHandler(async (event) => {
       VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(utilisateur_id, chemin, bloc, t) DO NOTHING
     `).run(uid, chemin, c.bloc, t, c.justes, c.total, JSON.stringify(ratees))
+
+    // Les questions ratées de la copie entrent dans la dette. Une question
+    // laissée blanche en fait partie : le QCM la compte déjà comme ratée, et
+    // c'est bien une question qu'on n'a pas su faire. La bonne réponse, elle,
+    // éteint la dette par l'autre chemin — la progression de la fiche, que le
+    // QCM alimente comme un exercice.
+    enregistrerFautes(db, uid, ratees.map(label => ({ chemin, bloc, label })), t)
 
     db.prepare(`
       DELETE FROM qcm_tentative
