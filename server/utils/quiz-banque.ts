@@ -582,19 +582,29 @@ export async function lireQuestion(event: H3Event, entree: EntreeBanque): Promis
   // « Donner l'affixe du vecteur M₂M₄ » est insoluble sans « les points lus sur
   // la figure sont M₁(2,1), M₂(0,3)… », qui est écrit une fois en tête de
   // l'exercice et vaut pour toutes ses questions. Poser la question sans lui,
-  // c'est demander de deviner. 251 des 453 questions du site sont dans ce cas.
+  // c'est demander de deviner.
+  //
+  // Tous les entêtes ne sont pas des énoncés pour autant : un palier
+  // d'entraînement s'ouvre sur la méthode à suivre, et la rappeler au-dessus de
+  // chaque question reviendrait à souffler la réponse. Le bloc le dit lui-même,
+  // par `entete="introduction"` — un attribut explicite plutôt qu'une
+  // heuristique, parce qu'une heuristique qui se trompe rend une question
+  // insoluble sans le dire. L'absence d'attribut vaut « c'est un énoncé » :
+  // c'est le défaut sûr, l'oubli ne coûte alors qu'un peu de bruit.
   //
   // On s'arrête à la première question : ce qui vient après appartient à une
   // autre. Aucun `extrait-cours` ne vit dans un bloc — vérifié sur les 111 du
   // site —, il n'y a donc pas de rappel de cours à écarter au passage.
   const enonceBloc: FragmentContenu = []
-  for (const enfant of bloc.slice(2)) {
-    if (estNoeud(enfant) && BALISES_QUESTION.has(enfant[0])) break
-    if (estNoeud(enfant) && enfant[0] === 'template') continue
-    // Les blancs entre deux nœuds arrivent en texte : les garder ferait passer
-    // pour un énoncé un bloc qui n'en a pas.
-    if (typeof enfant === 'string' && !enfant.trim()) continue
-    enonceBloc.push(enfant)
+  if (bloc[1]?.entete !== 'introduction') {
+    for (const enfant of bloc.slice(2)) {
+      if (estNoeud(enfant) && BALISES_QUESTION.has(enfant[0])) break
+      if (estNoeud(enfant) && enfant[0] === 'template') continue
+      // Les blancs entre deux nœuds arrivent en texte : les garder ferait passer
+      // pour un énoncé un bloc qui n'en a pas.
+      if (typeof enfant === 'string' && !enfant.trim()) continue
+      enonceBloc.push(enfant)
+    }
   }
 
   // Le rappel de cours vit ailleurs sur la page, et plusieurs questions le

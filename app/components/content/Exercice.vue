@@ -8,6 +8,18 @@ const props = defineProps<{
   icone?: string
   /** Repère de difficulté affiché à côté du titre, par exemple « ★★☆☆☆ ». */
   badge?: string
+  /**
+   * Nature du texte placé en tête du bloc, avant ses questions. Il n'a aucun
+   * effet ici — la fiche l'affiche tel quel dans tous les cas — mais le mode
+   * quiz le lit : il rappelle un **énoncé** au-dessus de chaque question qu'il
+   * en tire, et laisse une **introduction** à sa fiche.
+   *
+   * Sans attribut, c'est un énoncé. C'est le défaut sûr : oublier de marquer une
+   * introduction ne coûte qu'un peu de bruit dans le quiz, alors que se tromper
+   * dans l'autre sens rendrait la question insoluble sans le dire. Voir
+   * `docs/quiz.md`.
+   */
+  entete?: 'enonce' | 'introduction'
 }>()
 
 // Le titre du bloc est la seconde pièce de l'identité de ses questions : le même
