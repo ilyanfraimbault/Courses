@@ -58,12 +58,12 @@ fetch_projects() {
   printf '%s' "$body"
 }
 
-# "image<TAB>state<TAB>health" for each container of PROJECT_NAME.
+# "name<TAB>image<TAB>state<TAB>health" for each container of PROJECT_NAME.
 containers_of_project() {
   jq -r --arg project "$PROJECT_NAME" '
     (map(select(.name == $project)) | first) as $p
     | if $p == null then empty
-      else $p.containers[]? | [.image, .state, .health] | @tsv
+      else $p.containers[]? | [.name, .image, .state, .health] | @tsv
       end
   ' <<< "$1"
 }
@@ -83,25 +83,42 @@ printf '  %s\n' "${images[@]}"
 
 # One pass over the container list. Echoes a line per problem; silence means
 # the environment is running what was deployed.
+#
+# Two distinct checks, and the second one matters more than it looks:
+#
+#   1. every ghcr.io image named by the compose file runs EXPECTED_TAG. This is
+#      what proves the rollout actually replaced the code.
+#   2. EVERY container of the project is up and healthy — including the ones
+#      built from third-party images. Checking only our own images once let a
+#      deploy go green while the reverse proxy, the single public entry point,
+#      was crash-looping: the application was healthy, unreachable, and nothing
+#      said so.
 inspect() {
-  local listing="$1" image lines ref state health
+  local listing="$1" image lines name ref state health
+
   for image in "${images[@]}"; do
-    lines="$(grep -F "${image}:" <<< "$listing" || true)"
+    lines="$(awk -F'\t' -v img="${image}:" 'index($2, img) == 1' <<< "$listing" || true)"
     if [ -z "$lines" ]; then
       echo "${image}: no container running"
       continue
     fi
-    while IFS=$'\t' read -r ref state health; do
+    while IFS=$'\t' read -r name ref state health; do
       [ -n "$ref" ] || continue
       if [ "$ref" != "${image}:${EXPECTED_TAG}" ]; then
-        echo "${ref}: still running, expected ${image}:${EXPECTED_TAG}"
-      elif [ "$state" != "running" ]; then
-        echo "${ref}: ${state}"
-      elif [ -n "$health" ] && [ "$health" != "healthy" ]; then
-        echo "${ref}: ${health}"
+        echo "${name} runs ${ref}, expected ${image}:${EXPECTED_TAG}"
       fi
     done <<< "$lines"
   done
+
+  while IFS=$'\t' read -r name ref state health; do
+    [ -n "$name" ] || continue
+    if [ "$state" != "running" ]; then
+      echo "${name} (${ref}): ${state}"
+    elif [ -n "$health" ] && [ "$health" != "healthy" ]; then
+      echo "${name} (${ref}): ${health}"
+    fi
+  done <<< "$listing"
+
   # Problems go to stdout; the status must stay 0 or `set -e` would turn the
   # assignment below into an exit.
   return 0

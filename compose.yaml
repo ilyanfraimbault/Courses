@@ -51,14 +51,22 @@ services:
 # ça supprime toute une classe de pannes « le fichier n'est pas là où il faut
 # sur le serveur ». Caddy substitue les variables de son environnement au
 # chargement, donc changer de domaine ne demande aucune reconstruction d'image.
+#
+# Les « $$ » ne sont pas une coquille. Ce bloc traverse **deux** interpolations :
+# celle de Compose, puis celle de Caddy. Écrit « {$COURS_ADRESSE} », Compose
+# reconnaît « $COURS_ADRESSE » et le remplace en laissant les accolades, ce qui
+# donne à Caddy l'adresse littérale « {srv1355415.hstgr.cloud} » — qui ne
+# qualifie pour aucun certificat, et Caddy redémarre en boucle. « $$ » dit à
+# Compose de ne pas y toucher et de rendre un « $ » simple, que Caddy substitue
+# à son tour.
 configs:
   caddyfile:
     content: |
       {
-        email {$ACME_EMAIL}
+        email {$$ACME_EMAIL}
       }
 
-      {$COURS_ADRESSE} {
+      {$$COURS_ADRESSE} {
         log
         encode zstd gzip
         reverse_proxy app:3000

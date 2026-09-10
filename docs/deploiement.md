@@ -107,9 +107,37 @@ immuable est aussi ce qui rend la vérification possible — on peut demander à
 l'API si le conteneur tourne bien *ce* commit.
 
 `.github/scripts/verify-rollout.sh` interroge l'API toutes les 15 secondes
-jusqu'à dix minutes, et exige que chaque conteneur bâti sur une image `ghcr.io`
-du compose tourne le tag attendu, soit `running` et soit `healthy`. Il est repris
-tel quel du dépôt TrueMain : c'est ce qui empêche un déploiement vert de mentir.
+jusqu'à dix minutes, et vérifie deux choses distinctes :
+
+1. chaque image `ghcr.io` nommée par le compose tourne le tag attendu — c'est ce
+   qui prouve que le déploiement a bien remplacé le code ;
+2. **tous** les conteneurs du projet sont en marche et sains, y compris ceux
+   bâtis sur des images tierces.
+
+Le second point vaut d'être expliqué. Il n'y était pas au départ, et un
+déploiement est passé au vert pendant que Caddy — la seule porte d'entrée
+publique — redémarrait en boucle : l'application était saine, injoignable, et
+rien ne le disait.
+
+## Deux interpolations, pas une
+
+Le bloc `configs.caddyfile.content` du compose traverse **deux** substitutions :
+celle de Docker Compose, puis celle de Caddy. Écrite `{$COURS_ADRESSE}`,
+l'adresse est reconnue par Compose, qui remplace la variable et laisse les
+accolades : Caddy reçoit alors `{srv1355415.hstgr.cloud}`, une adresse qui ne
+qualifie pour aucun certificat, et redémarre indéfiniment.
+
+D'où les `$$` du fichier : Compose les rend sous la forme d'un `$` simple sans
+rien interpréter, et Caddy fait sa propre substitution au chargement.
+
+Attention en vérifiant : `docker compose config` réaffiche `$$` tel quel, il ne
+permet donc pas de trancher. Pour voir ce qui atterrit vraiment :
+
+```bash
+docker compose up -d caddy
+docker exec courses-caddy cat /etc/caddy/Caddyfile
+docker exec courses-caddy caddy validate --config /etc/caddy/Caddyfile
+```
 
 ## Sauvegarde
 
