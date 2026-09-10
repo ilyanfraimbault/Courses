@@ -159,7 +159,11 @@ export interface QuestionQuiz {
   /**
    * L'énoncé commun du bloc, quand il y en a un : « Les points lus sur la figure
    * sont M₁(2,1), M₂(0,3)… ». Sans lui, « Donner l'affixe du vecteur M₂M₄ » ne
-   * veut rien dire — et c'est le cas de 251 des 453 questions du site.
+   * veut rien dire — et c'est le cas de 210 des 432 questions à choix du site.
+   *
+   * Nul quand le bloc déclare `entete="introduction"` : son entête est alors une
+   * introduction pédagogique, pas un énoncé, et la rappeler soufflerait la
+   * méthode.
    */
   enonceBloc: FragmentContenu | null
   enonce: FragmentContenu

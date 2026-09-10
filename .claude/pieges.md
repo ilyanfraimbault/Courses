@@ -76,6 +76,24 @@ manquait : la présence de l'énoncé du bloc, et sa part sur un large tirage.
 À retenir pour toute reprise de contenu hors de son contexte : ce qui rend une
 question compréhensible n'est pas toujours dans la question.
 
+### Une question hors d'un bloc perd trois fonctions, sans un mot
+
+Le QCM 7 a vécu vingt questions durant sans son `:::qcm{}` englobant. La page
+s'affichait parfaitement : vingt questions, leurs propositions, leurs formules.
+Mais sans bloc, il n'y a ni conteneur pour fournir le barème — **aucun bouton
+« Corriger »** —, ni titre à prêter aux questions pour composer leur identité —
+**aucune progression enregistrée** —, ni relevé pour le quiz — **vingt questions
+absentes de la banque**.
+
+Trois fonctions perdues d'un coup, et rien ne le signale : le compte de
+questions de la page était juste, puisqu'il ne dépend pas des blocs.
+
+**Ce qui l'a démasqué** : un total qui ne collait pas. 473 questions rendues
+mais 412 seulement dans la banque du quiz — c'est l'écart entre deux comptes qui
+a mis sur la piste, jamais une erreur. Le témoin est désormais dans
+`docs/contenu.md` : une page qui compte des questions doit avoir au moins un
+bloc.
+
 ### `navigation.title` sert deux fois
 
 Il nomme l'entrée dans la barre latérale **et** l'entête d'accordéon du dossier.

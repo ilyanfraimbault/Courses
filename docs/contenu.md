@@ -104,6 +104,29 @@ notions: 102, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
 signalerait une question hors bloc ou sans repère : elle se rendrait bien, mais
 n'aurait pas d'identité, donc pas de mémoire.
 
+## Une question doit vivre dans un bloc
+
+Une question écrite hors d'un `::exercice` ou d'un `::qcm` **s'affiche
+normalement** et ne sert à rien : sans bloc pour lui prêter son titre, elle n'a
+pas d'identité, donc pas de progression ; sans conteneur, pas de bouton
+« Corriger » ; et le quiz ne la relève pas. Trois fonctions perdues, zéro
+message. C'est arrivé au QCM 7, resté vingt questions durant sans son bloc.
+
+Le témoin est le relevé `blocs` : une page qui compte des questions doit en
+avoir au moins un.
+
+```bash
+node -e "
+const {DatabaseSync}=require('node:sqlite');
+const db=new DatabaseSync('.data/content/contents.sqlite');
+const orphelines = db.prepare('SELECT path, questions, blocs FROM _content_cours').all()
+  .filter(r => (r.questions ?? 0) > 0 && Object.keys(JSON.parse(r.blocs || '{}')).length === 0);
+console.log(orphelines.length ? 'HORS BLOC : ' + orphelines.map(r => r.path).join(', ') : 'aucune question hors bloc');
+"
+```
+
+Attendu : `aucune question hors bloc`.
+
 ## Structure
 
 Une seule collection, `cours`, dont la source est `cours/**/*.md`. Le chemin

@@ -70,9 +70,11 @@ exprès. Voir `docs/quiz.md`.
 
 **Une question ne se pose jamais sans l'énoncé commun de son bloc.** « Donner
 l'affixe du vecteur M₂M₄ » est insoluble sans les coordonnées, écrites une fois
-en tête de l'exercice — et 251 des 473 questions du site sont dans ce cas. Le
-quiz rappelle donc cet énoncé au-dessus de chaque question, en entier et sans
-repli.
+en tête de l'exercice. Le quiz rappelle donc cet énoncé au-dessus de chaque
+question, en entier et sans repli. Un bloc dont l'entête est une introduction
+pédagogique plutôt qu'un énoncé le déclare — `entete="introduction"` — et
+**l'absence d'attribut vaut « énoncé »** : c'est le sens sûr, l'oubli ne coûte
+alors qu'un peu de bruit. Jamais de déduction automatique là-dessus.
 
 **Une question gagnée au quiz est cochée sur sa fiche**, dans la même
 transaction. Le report n'emprunte pas `PUT /api/fiche`, dont l'instantané
