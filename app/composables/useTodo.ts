@@ -134,3 +134,88 @@ export function useBlocsFiches() {
 
   return data
 }
+
+export interface CibleCatalogue {
+  /** Identité de la cible, « chemin#bloc » ou « chemin » pour une fiche entière. */
+  cle: string
+  chemin: string
+  bloc: string | null
+  titre: string
+  type: string | null
+  questions: number
+  /** La fiche d'où vient un bloc, pour le situer sans ambiguïté. */
+  contexte: string
+}
+
+export interface GroupeCatalogue {
+  chapitre: string
+  cibles: CibleCatalogue[]
+}
+
+/** Ce qui peut entrer dans une to-do : ni les pages de cours, ni les sommaires. */
+const TYPES_CIBLABLES = ['exercices', 'entrainement', 'qcm']
+
+/**
+ * Le catalogue de tout ce qu'on peut mettre en to-do, **groupé par chapitre**.
+ *
+ * Une liste plate de quatre-vingts entrées, aux intitulés tous bâtis sur le même
+ * modèle — « Exercice 4 », « Palier 5 » — ne se parcourt pas : rien n'y dit de quel
+ * chapitre vient quoi. Le chapitre est donc rendu explicite, et chaque bloc
+ * porte le nom de sa fiche.
+ */
+export function useCatalogueCibles() {
+  const { data } = useAsyncData('cours-catalogue', async () => {
+    const lignes = await queryCollection('cours')
+      .select('path', 'title', 'type', 'questions', 'blocs')
+      .all()
+
+    // Les sommaires de chapitre donnent leur nom aux groupes.
+    const titreDe = new Map<string, string>()
+    for (const l of lignes) titreDe.set(cheminCanonique(l.path), l.title ?? '')
+
+    const groupes = new Map<string, GroupeCatalogue>()
+
+    for (const l of lignes) {
+      const chemin = cheminCanonique(l.path)
+      const segments = chemin.split('/').filter(Boolean)
+      const cheminChapitre = '/' + segments.slice(0, -1).join('/')
+      const chapitre = titreDe.get(cheminChapitre) || segments.at(-2) || 'Cours'
+
+      const blocs = (l.blocs ?? {}) as Record<string, { titre: string, nature: string, questions: number }>
+      const ciblable = !!l.type && TYPES_CIBLABLES.includes(l.type)
+      if (!ciblable && !Object.keys(blocs).length) continue
+
+      const groupe = groupes.get(chapitre) ?? { chapitre, cibles: [] }
+      groupes.set(chapitre, groupe)
+
+      // La fiche entière, quand elle se « fait » — une page de cours se lit.
+      if (ciblable) {
+        groupe.cibles.push({
+          cle: chemin,
+          chemin,
+          bloc: null,
+          titre: `${l.title} — toute la fiche`,
+          type: l.type ?? null,
+          questions: l.questions ?? 0,
+          contexte: l.title ?? chemin
+        })
+      }
+
+      for (const [slug, bloc] of Object.entries(blocs)) {
+        groupe.cibles.push({
+          cle: `${chemin}#${slug}`,
+          chemin,
+          bloc: slug,
+          titre: bloc.titre,
+          type: bloc.nature === 'qcm' ? 'qcm' : 'exercices',
+          questions: bloc.questions,
+          contexte: l.title ?? chemin
+        })
+      }
+    }
+
+    return [...groupes.values()].filter(g => g.cibles.length)
+  }, { default: () => [] as GroupeCatalogue[] })
+
+  return data
+}

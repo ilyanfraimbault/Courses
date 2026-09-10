@@ -3,7 +3,7 @@ import { useSortable, moveArrayElement } from '@vueuse/integrations/useSortable'
 
 definePageMeta({ layout: 'cours' })
 
-const { items, marquer, supprimer, reordonner, ajouter } = useTodo()
+const { items, marquer, supprimer, reordonner } = useTodo()
 const comptes = useComptesQuestions()
 const fiches = useBlocsFiches()
 const toast = useToast()
@@ -56,40 +56,7 @@ async function deplacer(id: number, sens: -1 | 1) {
   }
 }
 
-/**
- * Tout ce qu'on peut mettre en to-do : les fiches faisables, et leurs blocs.
- *
- * Le champ de nature s'appelle `nature` et non `type` : `UInputMenu` réserve
- * `type` pour distinguer ses entrées de ses séparateurs.
- */
-const cibles = computed(() => {
-  const sortie: { label: string, chemin: string, bloc: string | null, titre: string, nature: string | null, groupe: string }[] = []
-  for (const f of fiches.value) {
-    const groupe = f.chemin.split('/').filter(Boolean).slice(-2, -1)[0] ?? 'cours'
-    if (f.type && ['exercices', 'entrainement', 'qcm'].includes(f.type)) {
-      sortie.push({ label: `${f.titre} — toute la fiche`, chemin: f.chemin, bloc: null, titre: f.titre ?? f.chemin, nature: f.type, groupe })
-    }
-    for (const [slug, bloc] of Object.entries(f.blocs)) {
-      sortie.push({
-        label: `${bloc.titre} · ${f.titre}`,
-        chemin: f.chemin,
-        bloc: slug,
-        titre: bloc.titre,
-        nature: bloc.nature === 'qcm' ? 'qcm' : 'exercices',
-        groupe
-      })
-    }
-  }
-  return sortie
-})
-
-const choix = ref()
-watch(choix, async (c) => {
-  if (!c) return
-  await ajouter({ chemin: c.chemin, bloc: c.bloc, titre: c.titre, type: c.nature })
-  toast.add({ title: 'Ajouté à la to-do', description: c.titre, icon: 'i-lucide-list-checks' })
-  choix.value = undefined
-})
+const catalogueOuvert = ref(false)
 
 useSeoMeta({ title: 'Ma to-do' })
 </script>
@@ -102,27 +69,33 @@ useSeoMeta({ title: 'Ma to-do' })
     />
 
     <UPageBody>
-      <UInputMenu
-        v-model="choix"
-        :items="cibles"
-        by="label"
-        label-key="label"
-        placeholder="Ajouter un exercice, un QCM ou une fiche…"
-        icon="i-lucide-plus"
+      <UButton
+        :icon="catalogueOuvert ? 'i-lucide-chevron-down' : 'i-lucide-plus'"
+        :label="catalogueOuvert ? 'Fermer le catalogue' : 'Ajouter des exercices, des QCM ou des fiches'"
+        :color="catalogueOuvert ? 'neutral' : 'primary'"
+        :variant="catalogueOuvert ? 'subtle' : 'solid'"
         size="lg"
-        class="w-full"
+        block
+        @click="catalogueOuvert = !catalogueOuvert"
       />
+
+      <div
+        v-if="catalogueOuvert"
+        class="mt-4 rounded-lg border border-default p-4"
+      >
+        <TodoCatalogue />
+      </div>
 
       <p
         v-if="!items.length"
         class="mt-6 text-sm text-muted"
       >
-        Rien pour l'instant. Ajoute une fiche ci-dessus, ou clique sur
+        Rien pour l'instant. Ouvre le catalogue ci-dessus, ou clique sur
         <UIcon
           name="i-lucide-list-plus"
           class="inline size-4 align-text-bottom"
         />
-        à côté d'un exercice pour l'y mettre.
+        à côté d'un exercice depuis une fiche.
       </p>
 
       <ul

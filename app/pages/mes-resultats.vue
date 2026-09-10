@@ -41,14 +41,16 @@ function telecharger() {
 }
 
 const importEnCours = ref(false)
+const collageOuvert = ref(false)
+const colle = ref('')
 
 /**
- * Dépôt d'un ancien export. C'est le chemin praticable en production : l'image
- * d'exécution ne contient que `.output`, pas le script en ligne de commande.
+ * Verse un export déjà lu. Les deux entrées — le fichier et le collage — passent
+ * par ici : le sélecteur de fichier échoue parfois selon le navigateur ou la
+ * façon dont le fichier a été enregistré, et un champ de texte n'a aucune de ces
+ * dépendances.
  */
-async function importer(evenement: Event) {
-  const fichier = (evenement.target as HTMLInputElement).files?.[0]
-  if (!fichier) return
+async function verser(brut: string) {
   importEnCours.value = true
   try {
     const rapport = await $fetch<{
@@ -57,7 +59,7 @@ async function importer(evenement: Event) {
       tentatives: { inserees: number, dejaPresentes: number }
       todo: { inserees: number, dejaPresentes: number }
       avertissements: string[]
-    }>('/api/resultats/import', { method: 'POST', body: JSON.parse(await fichier.text()) })
+    }>('/api/resultats/import', { method: 'POST', body: JSON.parse(brut) })
 
     toast.add({
       title: 'Import terminé',
@@ -67,19 +69,38 @@ async function importer(evenement: Event) {
         + (rapport.todo.inserees ? `, ${rapport.todo.inserees} items de to-do.` : '.')
         + (rapport.questions.ignorees ? ` ${rapport.questions.ignorees} entrées illisibles.` : ''),
       icon: 'i-lucide-check',
-      color: rapport.questions.ignorees ? 'warning' : 'success'
+      color: rapport.questions.ignorees ? 'warning' : 'success',
+      duration: 8000
     })
+    colle.value = ''
+    collageOuvert.value = false
     await relire()
   } catch (erreur) {
+    const e = erreur as { statusMessage?: string, message?: string }
     toast.add({
       title: 'Import refusé',
-      description: (erreur as { statusMessage?: string })?.statusMessage ?? 'Fichier illisible.',
+      description: e?.statusMessage ?? e?.message ?? 'Fichier illisible.',
       icon: 'i-lucide-triangle-alert',
-      color: 'error'
+      color: 'error',
+      duration: 10000
     })
   } finally {
     importEnCours.value = false
-    ;(evenement.target as HTMLInputElement).value = ''
+  }
+}
+
+/**
+ * Dépôt d'un ancien export. C'est le chemin praticable en production : l'image
+ * d'exécution ne contient que `.output`, pas le script en ligne de commande.
+ */
+async function importer(evenement: Event) {
+  const champ = evenement.target as HTMLInputElement
+  const fichier = champ.files?.[0]
+  if (!fichier) return
+  try {
+    await verser(await fichier.text())
+  } finally {
+    champ.value = ''
   }
 }
 
@@ -124,13 +145,41 @@ useSeoMeta({ title: 'Mes résultats' })
           :loading="importEnCours"
           @click="($refs.fichier as HTMLInputElement).click()"
         />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-clipboard-paste"
+          label="Coller le JSON"
+          @click="collageOuvert = !collageOuvert"
+        />
         <input
           ref="fichier"
           type="file"
-          accept="application/json,.json"
+          accept="application/json,.json,text/plain"
           class="hidden"
           @change="importer"
         >
+      </div>
+
+      <div
+        v-if="collageOuvert"
+        class="mt-4"
+      >
+        <UTextarea
+          v-model="colle"
+          :rows="8"
+          class="w-full font-mono"
+          placeholder="Colle ici le contenu du fichier JSON…"
+          :disabled="importEnCours"
+        />
+        <UButton
+          class="mt-2"
+          label="Importer ce contenu"
+          icon="i-lucide-upload"
+          :loading="importEnCours"
+          :disabled="!colle.trim()"
+          @click="verser(colle)"
+        />
       </div>
 
       <template v-if="fiches.length">
