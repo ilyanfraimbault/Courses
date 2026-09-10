@@ -13,14 +13,14 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 
 ## Ce qui fonctionne
 
-- Les 27 fiches, 453 questions, KaTeX, cercle trigonométrique, tableaux de
+- Les 28 fiches, 473 questions, KaTeX, cercle trigonométrique, tableaux de
   variations — tout le contenu du portfolio, aux mêmes URLs.
 - Comptes multiples (pseudo + mot de passe haché en scrypt), inscription par
   code, isolation des données vérifiée entre deux comptes.
 - Progression et historique de QCM en base, synchronisés entre appareils.
 - **Mode quiz** : une question à la fois — avec l'énoncé commun de son bloc —
-  tirée dans les 412 questions à choix du site, filtrable par chapitre ou par
-  point de cours (89 notions nommées). Une question gagnée est cochée sur sa
+  tirée dans les 432 questions à choix du site, filtrable par chapitre ou par
+  point de cours (94 notions nommées). Une question gagnée est cochée sur sa
   fiche.
   Une faute renvoie la place à la fin de la file avec une *autre* question du
   même point de cours ; la séance ne finit que lorsque tout est acquis. Séances

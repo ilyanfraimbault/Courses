@@ -24,7 +24,7 @@ Pour l'usage courant :
 
 - [docs/contenu.md](docs/contenu.md) — la collection, le comptage des questions,
   l'import d'un ancien export, et pourquoi `remark-mdc` est épinglé.
-- [docs/quiz.md](docs/quiz.md) — le mode quiz : d'où viennent ses 412 questions,
+- [docs/quiz.md](docs/quiz.md) — le mode quiz : d'où viennent ses 432 questions,
   comment la file rejoue une place ratée, et ce qu'il n'écrit pas.
 - [docs/comptes.md](docs/comptes.md) — comptes, mots de passe, isolation des
   données entre utilisateurs.

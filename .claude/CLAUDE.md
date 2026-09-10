@@ -55,7 +55,7 @@ que le bloc relevé et l'identité écrite en base désignent la même chose. En
 contrepartie, `app/utils/cours.ts` doit rester **libre de tout import Nuxt** :
 il est chargé au moment de lire la configuration, hors de toute application.
 
-**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 412 questions
+**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 432 questions
 sont celles des fiches, découpées dans l'arbre de la page au moment de les
 poser — énoncé, propositions, indice, solution et rappel de cours compris.
 Corriger un cours corrige le quiz. Le thème d'une question vient du rappel de
@@ -64,7 +64,7 @@ exprès. Voir `docs/quiz.md`.
 
 **Une question ne se pose jamais sans l'énoncé commun de son bloc.** « Donner
 l'affixe du vecteur M₂M₄ » est insoluble sans les coordonnées, écrites une fois
-en tête de l'exercice — et 251 des 453 questions du site sont dans ce cas. Le
+en tête de l'exercice — et 251 des 473 questions du site sont dans ce cas. Le
 quiz rappelle donc cet énoncé au-dessus de chaque question, en entier et sans
 repli.
 
@@ -127,7 +127,7 @@ Elles ne sont pas dans la CI : elles ont besoin d'une base réelle, et leur rôl
 est d'être relancées quand on touche au schéma ou aux routes.
 
 Le contrôle qui compte pour le contenu — rendu contre comptage du build — est
-dans `docs/contenu.md`. Aujourd'hui : **453 questions rendues sur 453**.
+dans `docs/contenu.md`. Aujourd'hui : **473 questions rendues sur 473**.
 
 ## Où lire la suite
 

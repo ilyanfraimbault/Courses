@@ -62,7 +62,7 @@ console.log('\n— Catalogue')
 r = await api('/api/quiz/catalogue')
 const catalogue = r.corps
 verifier('catalogue servi', r.statut === 200)
-verifier('la banque porte 412 questions', catalogue.total === 412, 'total = ' + catalogue.total)
+verifier('la banque porte 432 questions', catalogue.total === 432, 'total = ' + catalogue.total)
 verifier('quatre chapitres', catalogue.themes.length === 4,
   catalogue.themes.map(t => `${t.titre} (${t.questions})`).join(', '))
 verifier('les thèmes couvrent toute la banque',
@@ -187,7 +187,7 @@ if (!affixes) {
 }
 
 // Et sur un large tirage, la proportion doit rester dans la bande attendue :
-// 251 des 453 questions du site vivent sous un énoncé commun. Zéro dirait que le
+// 251 des 473 questions du site vivent sous un énoncé commun. Zéro dirait que le
 // relevé est cassé, cent qu'il ramasse ce qui ne lui appartient pas.
 r = await api('/api/quiz/session', { method: 'POST', body: { taille: 60 } })
 const large = r.corps.session

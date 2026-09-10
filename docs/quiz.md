@@ -16,12 +16,12 @@ au bout de N questions : elle se termine quand les N **places** sont acquises.
 Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 `qcm_tentative`, une séance de quiz dans `quiz_session`.
 
-## La banque : 412 questions, aucune écrite pour le quiz
+## La banque : 432 questions, aucune écrite pour le quiz
 
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
-les exercices du TD, les fiches d'entraînement, les révisions et les six QCM.
-Sur les 453 questions du site, **412** sont exploitables — celles qui portent
-une lettre attendue et au moins deux propositions. Les 41 autres sont des
+les exercices du TD, les fiches d'entraînement, les révisions et les sept QCM.
+Sur les 473 questions du site, **432** sont exploitables — celles qui portent
+une lettre attendue et au moins deux propositions. Les 21 autres sont des
 questions ouvertes, qui s'auto-évaluent : une file qui doit savoir si la réponse
 était juste ne peut rien en faire.
 
@@ -36,7 +36,7 @@ resynchroniser.
 Beaucoup de questions ne portent pas tout leur énoncé. « Donner l'affixe du
 vecteur $\overrightarrow{M_2M_4}$ » n'a de sens qu'avec « les points lus sur la
 figure sont $M_1(2,1)$, $M_2(0,3)$… », écrit **une fois** en tête de l'exercice
-et valable pour toutes ses questions. C'est le cas de **251 des 453** questions
+et valable pour toutes ses questions. C'est le cas de **251 des 473** questions
 du site.
 
 Le quiz relit donc, avec chaque question, l'énoncé commun de son bloc — tout ce
@@ -79,7 +79,7 @@ console.log(n, t);
 "
 ```
 
-Attendu aujourd'hui : `412 { 'fonctions-usuelles': 61, 'fonctions-variable-reelle': 145, 'nombres-complexes': 129, trigonometrie: 77 }`.
+Attendu aujourd'hui : `432 { trigonometrie: 77, 'fonctions-variable-reelle': 153, 'fonctions-usuelles': 69, 'nombres-complexes': 133 }`.
 
 Un thème `null` dans ce relevé signalerait une question que le catalogue ne
 saurait pas classer — aujourd'hui il n'y en a aucune.
@@ -104,7 +104,7 @@ rappel retombe sur le chapitre de sa fiche. Rien n'est écrit à la main : une
 table de correspondance vieillirait en silence, la `source` non.
 
 Le **nom** de la notion est l'intitulé de ce même extrait — « Dérivées : le
-mécanisme des composées » —, ce qui donne 89 notions nommées sous les quatre
+mécanisme des composées » —, ce qui donne 94 notions nommées sous les quatre
 chapitres, et un second niveau de sélection sans un octet de métadonnée en plus.
 
 Deux chapitres peuvent employer le même identifiant d'extrait — `cours-quotient`
@@ -258,7 +258,7 @@ QUIZ_BASE=http://localhost:3210 NUXT_CODE_INSCRIPTION=essai pnpm verif:quiz
 
 Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 
-- 412 questions dans la banque, réparties sur quatre chapitres et 89 notions
+- 432 questions dans la banque, réparties sur quatre chapitres et 94 notions
   nommées, sans reste ;
 - la bonne réponse n'est pas dans la charge utile d'une question ;
 - une faute allonge la file d'une entrée qui porte le numéro de la place ratée ;

@@ -35,8 +35,8 @@ genre de régression qu'on ne voit pas en relisant un diff.
 Mesuré sur ce dépôt, sur la fiche `fonctions-usuelles/exercices` : avec 3.11.1,
 **10 questions rendues sur 40** et 61 formules KaTeX sur 286 ; avec 3.9.0, 40 sur
 40 et 286 sur 286 — soit la parité exacte avec le rendu du portfolio en
-production, qui tourne lui aussi en 3.9.0. Sur l'ensemble des 27 fiches, 3.9.0
-donne 453 questions rendues pour 453 comptées.
+production, qui tourne lui aussi en 3.9.0. Sur l'ensemble des 28 fiches, 3.9.0
+donne 473 questions rendues pour 473 comptées.
 
 La borne exacte d'apparition du défaut (3.10 ou 3.11) n'a pas été cherchée :
 3.9.0 est la dernière version dont le rendu est vérifié en production.
@@ -68,12 +68,12 @@ const rows=db.prepare('SELECT path, questions FROM _content_cours ORDER BY path'
 "
 ```
 
-Attendu aujourd'hui : `453 / 453 aucun écart`.
+Attendu aujourd'hui : `473 / 473 aucun écart`.
 
 Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/content`,
 `@nuxtjs/mdc` ou `remark-mdc` — c'est le seul moyen de voir la panne.
 
-Le même hook relève la banque du quiz. Son témoin chiffré à lui — 412 questions
+Le même hook relève la banque du quiz. Son témoin chiffré à lui — 432 questions
 à choix réparties sur quatre chapitres — est décrit dans `docs/quiz.md`, et il
 vaut d'être relu au même moment : une question qui cesse d'être relevée
 disparaît du quiz sans que rien ne le signale.

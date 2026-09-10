@@ -63,7 +63,7 @@ Le mode quiz a d'abord posé les questions telles quelles, et une bonne part
 d'entre elles sont devenues insolubles : « Donner l'affixe du vecteur
 $\overrightarrow{M_2M_4}$ » ne dit pas où sont les points. Ils sont écrits une
 fois en tête de l'exercice, dans le bloc, et valent pour toutes ses questions —
-**251 des 453 questions du site** en dépendent.
+**251 des 473 questions du site** en dépendent.
 
 Rien ne le signale : la question s'affiche, ses propositions aussi, le compte de
 questions est juste. Seul quelqu'un qui essaie de répondre s'en aperçoit.
