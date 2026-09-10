@@ -19,7 +19,7 @@ const MAX_TENTATIVES = 24
  * « Corriger » inoffensif.
  */
 export default defineEventHandler(async (event) => {
-  await requireUserSession(event)
+  const uid = await idUtilisateur(event)
 
   const c = await readBody<CorpsTentative>(event)
   if (typeof c?.chemin !== 'string' || !c.chemin.startsWith('/')) {
@@ -39,17 +39,18 @@ export default defineEventHandler(async (event) => {
   db.exec('BEGIN')
   try {
     db.prepare(`
-      INSERT INTO qcm_tentative (chemin, bloc, t, justes, total, ratees)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(chemin, bloc, t) DO NOTHING
-    `).run(chemin, c.bloc, t, c.justes, c.total, JSON.stringify(ratees))
+      INSERT INTO qcm_tentative (utilisateur_id, chemin, bloc, t, justes, total, ratees)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(utilisateur_id, chemin, bloc, t) DO NOTHING
+    `).run(uid, chemin, c.bloc, t, c.justes, c.total, JSON.stringify(ratees))
 
     db.prepare(`
       DELETE FROM qcm_tentative
-      WHERE chemin = ? AND bloc = ? AND id NOT IN (
-        SELECT id FROM qcm_tentative WHERE chemin = ? AND bloc = ? ORDER BY t DESC LIMIT ?
+      WHERE utilisateur_id = ? AND chemin = ? AND bloc = ? AND id NOT IN (
+        SELECT id FROM qcm_tentative
+        WHERE utilisateur_id = ? AND chemin = ? AND bloc = ? ORDER BY t DESC LIMIT ?
       )
-    `).run(chemin, c.bloc, chemin, c.bloc, MAX_TENTATIVES)
+    `).run(uid, chemin, c.bloc, uid, chemin, c.bloc, MAX_TENTATIVES)
 
     db.exec('COMMIT')
   } catch (erreur) {

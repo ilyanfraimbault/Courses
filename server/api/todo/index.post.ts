@@ -14,7 +14,7 @@ interface CorpsAjout {
  * présente la renvoie telle quelle, avec un 200 plutôt qu'un 201.
  */
 export default defineEventHandler(async (event) => {
-  await requireUserSession(event)
+  const uid = await idUtilisateur(event)
 
   const c = await readBody<CorpsAjout>(event)
   if (typeof c?.chemin !== 'string' || !c.chemin.startsWith('/')) {
@@ -30,16 +30,18 @@ export default defineEventHandler(async (event) => {
 
   const db = useBase()
   const existant = db.prepare(
-    'SELECT id FROM todo WHERE chemin = ? AND COALESCE(bloc, \'\') = COALESCE(?, \'\')'
-  ).get(chemin, bloc) as { id: number } | undefined
+    'SELECT id FROM todo WHERE utilisateur_id = ? AND chemin = ? AND COALESCE(bloc, \'\') = COALESCE(?, \'\')'
+  ).get(uid, chemin, bloc) as { id: number } | undefined
 
-  if (existant) return lireTodo(db, existant.id)
+  if (existant) return lireTodo(db, uid, existant.id)
 
-  const { rang } = db.prepare('SELECT COALESCE(MAX(rang), 0) + 1 AS rang FROM todo').get() as { rang: number }
+  const { rang } = db
+    .prepare('SELECT COALESCE(MAX(rang), 0) + 1 AS rang FROM todo WHERE utilisateur_id = ?')
+    .get(uid) as { rang: number }
   const r = db.prepare(
-    'INSERT INTO todo (chemin, bloc, titre, type, rang, cree_le) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(chemin, bloc, c.titre.trim(), type, rang, Date.now())
+    'INSERT INTO todo (utilisateur_id, chemin, bloc, titre, type, rang, cree_le) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(uid, chemin, bloc, c.titre.trim(), type, rang, Date.now())
 
   setResponseStatus(event, 201)
-  return lireTodo(db, Number(r.lastInsertRowid))
+  return lireTodo(db, uid, Number(r.lastInsertRowid))
 })

@@ -71,6 +71,95 @@ const MIGRATIONS: string[] = [
   -- « fiche entière » qu'on veut.
   CREATE UNIQUE INDEX todo_cible ON todo (chemin, COALESCE(bloc, ''));
   CREATE INDEX todo_ordre ON todo (rang);
+  `,
+
+  // v2 — plusieurs comptes.
+  //
+  // Chaque donnée appartient désormais à quelqu'un. On ne pouvait pas se
+  // contenter d'ajouter une colonne : les clés primaires de `fiche` et
+  // `reussite` devaient s'élargir, et SQLite ne sait pas modifier une clé
+  // primaire en place. D'où la reconstruction.
+  //
+  // Les lignes de la v1 ne sont pas reprises : elles n'appartiendraient à
+  // personne, et le site n'a jamais été déployé — il n'existe donc aucune
+  // donnée de production à préserver. En développement, on réimporte depuis un
+  // export si besoin.
+  `
+  CREATE TABLE utilisateur (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    pseudo       TEXT    NOT NULL,
+    -- Le pseudo replié en minuscules, pour que « Ilyan » et « ilyan » ne
+    -- puissent pas coexister : deux comptes qu'on ne distingue pas à l'œil
+    -- sont une invitation à se tromper de mot de passe, puis à croire à un vol.
+    pseudo_replie TEXT   NOT NULL UNIQUE,
+    -- Empreinte scrypt au format PHC : elle transporte son propre sel et ses
+    -- propres paramètres, donc les durcir plus tard n'invalide pas l'existant.
+    mot_de_passe TEXT    NOT NULL,
+    cree_le      INTEGER NOT NULL
+  ) STRICT;
+
+  DROP TABLE reussite;
+  DROP TABLE qcm_tentative;
+  DROP TABLE todo;
+  DROP TABLE fiche;
+
+  CREATE TABLE fiche (
+    utilisateur_id INTEGER NOT NULL,
+    chemin         TEXT    NOT NULL,
+    total          INTEGER NOT NULL DEFAULT 0,
+    maj            INTEGER NOT NULL,
+    PRIMARY KEY (utilisateur_id, chemin),
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT;
+
+  CREATE TABLE reussite (
+    utilisateur_id INTEGER NOT NULL,
+    chemin         TEXT    NOT NULL,
+    bloc           TEXT    NOT NULL,
+    label          TEXT    NOT NULL,
+    reponse        TEXT    NOT NULL,
+    premiere       INTEGER NOT NULL,
+    maj            INTEGER NOT NULL,
+    PRIMARY KEY (utilisateur_id, chemin, bloc, label),
+    FOREIGN KEY (utilisateur_id, chemin) REFERENCES fiche(utilisateur_id, chemin) ON DELETE CASCADE
+  ) STRICT, WITHOUT ROWID;
+
+  CREATE INDEX reussite_par_bloc ON reussite (utilisateur_id, chemin, bloc);
+
+  CREATE TABLE qcm_tentative (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    utilisateur_id INTEGER NOT NULL,
+    chemin         TEXT    NOT NULL,
+    bloc           TEXT    NOT NULL,
+    t              INTEGER NOT NULL,
+    justes         INTEGER NOT NULL,
+    total          INTEGER NOT NULL,
+    ratees         TEXT    NOT NULL,
+    UNIQUE (utilisateur_id, chemin, bloc, t),
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT;
+
+  CREATE INDEX qcm_tentative_par_bloc ON qcm_tentative (utilisateur_id, chemin, bloc, t DESC);
+
+  CREATE TABLE todo (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    utilisateur_id INTEGER NOT NULL,
+    chemin         TEXT    NOT NULL,
+    bloc           TEXT,
+    titre          TEXT    NOT NULL,
+    type           TEXT,
+    rang           INTEGER NOT NULL,
+    note           TEXT,
+    fait_le        INTEGER,
+    cree_le        INTEGER NOT NULL,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT;
+
+  -- COALESCE, et non la colonne nue : en SQLite deux NULL ne s'égalent jamais,
+  -- si bien qu'un index sur (bloc) laisserait passer autant de doublons
+  -- « fiche entière » qu'on veut.
+  CREATE UNIQUE INDEX todo_cible ON todo (utilisateur_id, chemin, COALESCE(bloc, ''));
+  CREATE INDEX todo_ordre ON todo (utilisateur_id, rang);
   `
 ]
 

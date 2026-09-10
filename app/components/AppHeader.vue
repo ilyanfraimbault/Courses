@@ -4,7 +4,7 @@ import type { ContentNavigationItem } from '@nuxt/content'
 const navigation = inject<Ref<ContentNavigationItem[]>>('navigation')
 
 const { header } = useAppConfig()
-const { loggedIn, clear } = useUserSession()
+const { loggedIn, user, clear } = useUserSession()
 
 const liens = [
   { label: 'Cours', to: '/cours', icon: 'i-lucide-library' },
@@ -62,7 +62,8 @@ async function deconnecter() {
         variant="ghost"
         size="sm"
         icon="i-lucide-log-out"
-        aria-label="Se déconnecter"
+        :label="user?.pseudo"
+        :aria-label="`Se déconnecter de ${user?.pseudo}`"
         title="Se déconnecter"
         @click="deconnecter"
       />

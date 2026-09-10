@@ -46,6 +46,7 @@ function decouperEntree(entree: string): { bloc: string, label: string } | null 
  */
 export function importerResultats(
   db: DatabaseSync,
+  uid: number,
   brut: unknown,
   options: { simulation?: boolean } = {}
 ): RapportImport {
@@ -73,8 +74,8 @@ export function importerResultats(
     // « maj » ne recule pas : réimporter une archive ne doit pas rétrograder une
     // fiche travaillée depuis.
     const majFiche = db.prepare(`
-      INSERT INTO fiche (chemin, total, maj) VALUES (?, ?, ?)
-      ON CONFLICT(chemin) DO UPDATE
+      INSERT INTO fiche (utilisateur_id, chemin, total, maj) VALUES (?, ?, ?, ?)
+      ON CONFLICT(utilisateur_id, chemin) DO UPDATE
         SET total = excluded.total, maj = excluded.maj
         WHERE excluded.maj > fiche.maj
     `)
@@ -85,15 +86,19 @@ export function importerResultats(
     // modifiées : un `ON CONFLICT DO UPDATE` en compte une même quand la valeur
     // ne bouge pas, et le rapport annoncerait des insertions à chaque rejeu —
     // c'est-à-dire qu'il mentirait exactement là où on l'interroge.
-    const existeReussite = db.prepare('SELECT 1 FROM reussite WHERE chemin = ? AND bloc = ? AND label = ?')
+    const existeReussite = db.prepare(
+      'SELECT 1 FROM reussite WHERE utilisateur_id = ? AND chemin = ? AND bloc = ? AND label = ?'
+    )
     const majReussite = db.prepare(`
-      INSERT INTO reussite (chemin, bloc, label, reponse, premiere, maj) VALUES (?, ?, ?, 'importe', ?, ?)
-      ON CONFLICT(chemin, bloc, label) DO UPDATE
+      INSERT INTO reussite (utilisateur_id, chemin, bloc, label, reponse, premiere, maj)
+      VALUES (?, ?, ?, ?, 'importe', ?, ?)
+      ON CONFLICT(utilisateur_id, chemin, bloc, label) DO UPDATE
         SET premiere = MIN(reussite.premiere, excluded.premiere)
     `)
     const majTentative = db.prepare(`
-      INSERT INTO qcm_tentative (chemin, bloc, t, justes, total, ratees) VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(chemin, bloc, t) DO NOTHING
+      INSERT INTO qcm_tentative (utilisateur_id, chemin, bloc, t, justes, total, ratees)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(utilisateur_id, chemin, bloc, t) DO NOTHING
     `)
 
     for (const f of donnees.fiches ?? []) {
@@ -102,14 +107,16 @@ export function importerResultats(
       const chemin = cheminCanonique(f.chemin)
       const maj = Date.parse(f.maj) || Date.now()
 
-      const r = majFiche.run(chemin, f.total ?? 0, maj)
+      const r = majFiche.run(uid, chemin, f.total ?? 0, maj)
       if (Number(r.changes) > 0) rapport.fiches.ecrites += 1
 
       // La ligne « fiche » doit exister avant ses réussites : la clé étrangère
       // l'exige, et une fiche dont le « maj » n'a pas été retenu n'a pas été
       // créée par l'appel précédent.
-      db.prepare('INSERT INTO fiche (chemin, total, maj) VALUES (?, ?, ?) ON CONFLICT(chemin) DO NOTHING')
-        .run(chemin, f.total ?? 0, maj)
+      db.prepare(
+        'INSERT INTO fiche (utilisateur_id, chemin, total, maj) VALUES (?, ?, ?, ?)'
+        + ' ON CONFLICT(utilisateur_id, chemin) DO NOTHING'
+      ).run(uid, chemin, f.total ?? 0, maj)
 
       for (const entree of f.questions ?? []) {
         rapport.questions.vues += 1
@@ -119,8 +126,8 @@ export function importerResultats(
           rapport.avertissements.push(`entrée illisible sur ${chemin} : « ${entree} »`)
           continue
         }
-        const dejaLa = !!existeReussite.get(chemin, decoupee.bloc, decoupee.label)
-        majReussite.run(chemin, decoupee.bloc, decoupee.label, maj, maj)
+        const dejaLa = !!existeReussite.get(uid, chemin, decoupee.bloc, decoupee.label)
+        majReussite.run(uid, chemin, decoupee.bloc, decoupee.label, maj, maj)
         if (dejaLa) rapport.questions.dejaPresentes += 1
         else rapport.questions.inserees += 1
       }
@@ -137,7 +144,7 @@ export function importerResultats(
           continue
         }
         const res = majTentative.run(
-          chemin, q.bloc, horodatage, t.justes ?? 0, t.total ?? 0,
+          uid, chemin, q.bloc, horodatage, t.justes ?? 0, t.total ?? 0,
           JSON.stringify(Array.isArray(t.ratees) ? t.ratees : [])
         )
         if (Number(res.changes) > 0) rapport.tentatives.inserees += 1

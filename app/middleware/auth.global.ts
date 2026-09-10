@@ -5,7 +5,7 @@
  *
  * Le tableau de bord, lui, n'a de sens que connecté.
  */
-const PUBLIQUES = ['/cours', '/connexion']
+const PUBLIQUES = ['/cours', '/connexion', '/inscription']
 
 export default defineNuxtRouteMiddleware((to) => {
   const publique = PUBLIQUES.some(p => to.path === p || to.path.startsWith(p + '/'))

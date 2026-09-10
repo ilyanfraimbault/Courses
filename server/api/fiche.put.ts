@@ -17,7 +17,7 @@ interface CorpsFiche {
  * site porte 87 questions.
  */
 export default defineEventHandler(async (event) => {
-  await requireUserSession(event)
+  const uid = await idUtilisateur(event)
 
   const corps = await readBody<CorpsFiche>(event)
   if (typeof corps?.chemin !== 'string' || !corps.chemin.startsWith('/')) {
@@ -50,28 +50,29 @@ export default defineEventHandler(async (event) => {
   db.exec('BEGIN')
   try {
     db.prepare(`
-      INSERT INTO fiche (chemin, total, maj) VALUES (?, ?, ?)
-      ON CONFLICT(chemin) DO UPDATE SET total = excluded.total, maj = excluded.maj
-    `).run(chemin, corps.total, maj)
+      INSERT INTO fiche (utilisateur_id, chemin, total, maj) VALUES (?, ?, ?, ?)
+      ON CONFLICT(utilisateur_id, chemin) DO UPDATE SET total = excluded.total, maj = excluded.maj
+    `).run(uid, chemin, corps.total, maj)
 
     // Élagage : ce que l'instantané ne mentionne plus a disparu du contenu ou a
     // été annulé par une auto-évaluation.
     if (retenues.length) {
       const conditions = retenues.map(() => '(bloc = ? AND label = ?)').join(' OR ')
-      db.prepare(`DELETE FROM reussite WHERE chemin = ? AND NOT (${conditions})`)
-        .run(chemin, ...retenues.flatMap(r => [r.bloc, r.label]))
+      db.prepare(`DELETE FROM reussite WHERE utilisateur_id = ? AND chemin = ? AND NOT (${conditions})`)
+        .run(uid, chemin, ...retenues.flatMap(r => [r.bloc, r.label]))
     } else {
-      db.prepare('DELETE FROM reussite WHERE chemin = ?').run(chemin)
+      db.prepare('DELETE FROM reussite WHERE utilisateur_id = ? AND chemin = ?').run(uid, chemin)
     }
 
     const inserer = db.prepare(`
-      INSERT INTO reussite (chemin, bloc, label, reponse, premiere, maj) VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(chemin, bloc, label) DO UPDATE
+      INSERT INTO reussite (utilisateur_id, chemin, bloc, label, reponse, premiere, maj)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(utilisateur_id, chemin, bloc, label) DO UPDATE
         SET reponse = excluded.reponse,
             premiere = MIN(reussite.premiere, excluded.premiere),
             maj = excluded.maj
     `)
-    for (const r of retenues) inserer.run(chemin, r.bloc, r.label, r.reponse, maj, maj)
+    for (const r of retenues) inserer.run(uid, chemin, r.bloc, r.label, r.reponse, maj, maj)
 
     db.exec('COMMIT')
   } catch (erreur) {

@@ -10,17 +10,17 @@ import { FORMAT_RESULTATS, VERSION_RESULTATS } from '~~/shared/types/resultats'
  * connaît la collection.
  */
 export default defineEventHandler(async (event): Promise<ResultatsExport> => {
-  await requireUserSession(event)
+  const uid = await idUtilisateur(event)
 
   const db = useBase()
 
   const fiches: FicheResultat[] = []
-  const lignesFiches = db.prepare('SELECT chemin, total, maj FROM fiche ORDER BY chemin').all() as
+  const lignesFiches = db.prepare('SELECT chemin, total, maj FROM fiche WHERE utilisateur_id = ? ORDER BY chemin').all(uid) as
     { chemin: string, total: number, maj: number }[]
 
-  const parFiche = db.prepare('SELECT bloc, label FROM reussite WHERE chemin = ?')
+  const parFiche = db.prepare('SELECT bloc, label FROM reussite WHERE utilisateur_id = ? AND chemin = ?')
   for (const f of lignesFiches) {
-    const questions = (parFiche.all(f.chemin) as { bloc: string, label: string }[])
+    const questions = (parFiche.all(uid, f.chemin) as { bloc: string, label: string }[])
       .map(q => `${q.bloc}#${q.label}`)
       // Tri naturel : sans lui, « 10. » passerait avant « 2. » et la liste ne
       // suivrait plus l'ordre de la fiche.
@@ -36,13 +36,13 @@ export default defineEventHandler(async (event): Promise<ResultatsExport> => {
 
   const qcm: QcmResultat[] = []
   const blocs = db.prepare(
-    'SELECT DISTINCT chemin, bloc FROM qcm_tentative ORDER BY chemin, bloc'
-  ).all() as { chemin: string, bloc: string }[]
+    'SELECT DISTINCT chemin, bloc FROM qcm_tentative WHERE utilisateur_id = ? ORDER BY chemin, bloc'
+  ).all(uid) as { chemin: string, bloc: string }[]
   const parBloc = db.prepare(
-    'SELECT t, justes, total, ratees FROM qcm_tentative WHERE chemin = ? AND bloc = ? ORDER BY t ASC'
+    'SELECT t, justes, total, ratees FROM qcm_tentative WHERE utilisateur_id = ? AND chemin = ? AND bloc = ? ORDER BY t ASC'
   )
   for (const b of blocs) {
-    const lignes = parBloc.all(b.chemin, b.bloc) as
+    const lignes = parBloc.all(uid, b.chemin, b.bloc) as
       { t: number, justes: number, total: number, ratees: string }[]
     qcm.push({
       chemin: b.chemin,

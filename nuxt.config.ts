@@ -124,9 +124,10 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // Le mot de passe du site. Aucune valeur par défaut : sans lui, la connexion
-    // renvoie une 500 explicite plutôt que d'accepter la chaîne vide.
-    coursMotDePasse: '',
+    // Code exigé pour créer un compte. Vide, les inscriptions sont **fermées** :
+    // le site vit sur un domaine public, et une inscription libre invite les
+    // robots. Le code se partage à qui de droit.
+    codeInscription: '',
     // Répertoire inscriptible et non fichier monté seul : le mode WAL écrit
     // « -wal » et « -shm » à côté de la base.
     baseFichier: '.data/cours.sqlite',

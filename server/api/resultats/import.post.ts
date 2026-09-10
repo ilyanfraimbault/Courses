@@ -4,13 +4,13 @@
  * commande ne sert qu'au développement local.
  */
 export default defineEventHandler(async (event) => {
-  await requireUserSession(event)
+  const uid = await idUtilisateur(event)
 
   const corps = await readBody(event)
   const simulation = getQuery(event).simulation === 'true'
 
   try {
-    return importerResultats(useBase(), corps, { simulation })
+    return importerResultats(useBase(), uid, corps, { simulation })
   } catch (erreur) {
     throw createError({ statusCode: 400, statusMessage: (erreur as Error).message })
   }

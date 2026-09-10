@@ -6,14 +6,10 @@ definePageMeta({ layout: false })
 const route = useRoute()
 const { fetch: rafraichirSession, loggedIn } = useUserSession()
 
+const pseudo = ref('')
 const motDePasse = ref('')
 const erreur = ref<string | null>(null)
 const envoi = ref(false)
-
-// Déjà connecté : la page de connexion n'a rien à dire.
-watchEffect(() => {
-  if (loggedIn.value) navigateTo(suite.value)
-})
 
 const suite = computed(() => {
   const s = route.query.suite
@@ -22,18 +18,25 @@ const suite = computed(() => {
   return typeof s === 'string' && s.startsWith('/') && !s.startsWith('//') ? s : '/'
 })
 
+watchEffect(() => {
+  if (loggedIn.value) navigateTo(suite.value)
+})
+
 async function connecter() {
   erreur.value = null
   envoi.value = true
   try {
-    await $fetch('/api/auth/login', { method: 'POST', body: { motDePasse: motDePasse.value } })
+    await $fetch('/api/auth/login', {
+      method: 'POST',
+      body: { pseudo: pseudo.value, motDePasse: motDePasse.value }
+    })
     await rafraichirSession()
     await navigateTo(suite.value)
   } catch (e) {
     const statut = (e as { statusCode?: number })?.statusCode
     erreur.value = statut === 429
       ? 'Trop de tentatives. Réessaie dans une minute.'
-      : 'Mot de passe incorrect.'
+      : 'Pseudo ou mot de passe incorrect.'
     motDePasse.value = ''
   } finally {
     envoi.value = false
@@ -52,7 +55,7 @@ useSeoMeta({ title: 'Connexion' })
             Cours
           </h1>
           <p class="text-sm text-muted mt-1">
-            Entre le mot de passe pour retrouver ta progression.
+            Connecte-toi pour retrouver ta progression.
           </p>
         </template>
 
@@ -61,12 +64,20 @@ useSeoMeta({ title: 'Connexion' })
           @submit.prevent="connecter"
         >
           <UInput
+            v-model="pseudo"
+            placeholder="Pseudo"
+            autocomplete="username"
+            size="lg"
+            autofocus
+            :disabled="envoi"
+          />
+
+          <UInput
             v-model="motDePasse"
             type="password"
             placeholder="Mot de passe"
             autocomplete="current-password"
             size="lg"
-            autofocus
             :disabled="envoi"
           />
 
@@ -84,9 +95,21 @@ useSeoMeta({ title: 'Connexion' })
             size="lg"
             block
             :loading="envoi"
-            :disabled="!motDePasse"
+            :disabled="!pseudo || !motDePasse"
           />
         </form>
+
+        <template #footer>
+          <p class="text-sm text-muted">
+            Pas encore de compte ?
+            <ULink
+              to="/inscription"
+              class="text-primary"
+            >
+              En créer un
+            </ULink>
+          </p>
+        </template>
       </UCard>
     </div>
   </UApp>

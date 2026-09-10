@@ -1,6 +1,9 @@
 /**
  * Vérification manuelle de la couche serveur, de bout en bout.
  *
+ * Elle crée un compte jetable ; l'isolation entre comptes est vérifiée
+ * séparément par scripts/verifier-comptes.mjs.
+ *
  * Elle n'est pas dans la CI : elle a besoin d'un serveur qui tourne et d'une
  * base réelle, et son rôle est d'être relancée quand on touche au schéma ou aux
  * routes — pas à chaque commit.
@@ -34,7 +37,14 @@ async function req(chemin, opts = {}) {
   return { statut: r.status, corps }
 }
 
-const co = await req('/api/auth/login', { method: 'POST', body: JSON.stringify({ motDePasse: 'test-local' }) })
+// Un compte jetable, propre à cette vérification.
+const PSEUDO = 'verif-' + Math.random().toString(36).slice(2, 8)
+const MDP = 'motdepasse-de-verification'
+await req('/api/auth/register', {
+  method: 'POST',
+  body: JSON.stringify({ pseudo: PSEUDO, motDePasse: MDP, code: process.env.NUXT_CODE_INSCRIPTION ?? 'code-de-classe' })
+})
+const co = await req('/api/auth/login', { method: 'POST', body: JSON.stringify({ pseudo: PSEUDO, motDePasse: MDP }) })
 check('connexion avec le bon mot de passe → 200', co.statut === 200, JSON.stringify(co.corps))
 if (co.statut !== 200) {
   console.log(JSON.stringify({ ok, ko }, null, 1))

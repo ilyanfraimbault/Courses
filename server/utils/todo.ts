@@ -10,16 +10,19 @@ import type { TodoItem } from '~~/shared/types/resultats'
  * build, que le client joint. Le serveur ne connaît pas le contenu, et c'est
  * très bien : le contenu est versionné, son compte est déjà calculé.
  */
-export function listerTodo(db: DatabaseSync): TodoItem[] {
+export function listerTodo(db: DatabaseSync, uid: number): TodoItem[] {
   const lignes = db.prepare(`
     SELECT t.id, t.chemin, t.bloc, t.titre, t.type, t.note, t.fait_le, t.cree_le,
            (
              SELECT COUNT(*) FROM reussite r
-             WHERE r.chemin = t.chemin AND (t.bloc IS NULL OR r.bloc = t.bloc)
+             WHERE r.utilisateur_id = t.utilisateur_id
+               AND r.chemin = t.chemin
+               AND (t.bloc IS NULL OR r.bloc = t.bloc)
            ) AS reussies
     FROM todo t
+    WHERE t.utilisateur_id = ?
     ORDER BY t.rang ASC, t.id ASC
-  `).all()
+  `).all(uid)
 
   // On recopie champ par champ plutôt que de forcer le type : `node:sqlite`
   // rend des `Record<string, SQLOutputValue>`, et une assertion masquerait une
@@ -37,6 +40,6 @@ export function listerTodo(db: DatabaseSync): TodoItem[] {
   }))
 }
 
-export function lireTodo(db: DatabaseSync, id: number): TodoItem | undefined {
-  return listerTodo(db).find(t => t.id === id)
+export function lireTodo(db: DatabaseSync, uid: number, id: number): TodoItem | undefined {
+  return listerTodo(db, uid).find(t => t.id === id)
 }

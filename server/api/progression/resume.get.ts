@@ -8,14 +8,15 @@ import type { ResumeFiche } from '~~/shared/types/resultats'
  * Une trentaine de lignes, quelques centaines d'octets.
  */
 export default defineEventHandler(async (event): Promise<Record<string, ResumeFiche>> => {
-  await requireUserSession(event)
+  const uid = await idUtilisateur(event)
 
   const lignes = useBase().prepare(`
     SELECT f.chemin, f.total, f.maj, COUNT(r.label) AS reussies
     FROM fiche f
-    LEFT JOIN reussite r ON r.chemin = f.chemin
+    LEFT JOIN reussite r ON r.utilisateur_id = f.utilisateur_id AND r.chemin = f.chemin
+    WHERE f.utilisateur_id = ?
     GROUP BY f.chemin
-  `).all() as { chemin: string, total: number, maj: number, reussies: number }[]
+  `).all(uid) as { chemin: string, total: number, maj: number, reussies: number }[]
 
   const resume: Record<string, ResumeFiche> = {}
   for (const l of lignes) {

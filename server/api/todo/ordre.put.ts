@@ -13,7 +13,7 @@ interface CorpsOrdre {
  * moitié réordonnée.
  */
 export default defineEventHandler(async (event) => {
-  await requireUserSession(event)
+  const uid = await idUtilisateur(event)
 
   const c = await readBody<CorpsOrdre>(event)
   if (!Array.isArray(c?.ids) || c.ids.some(i => !Number.isInteger(i))) {
@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   const ids = c.ids as number[]
 
   const db = useBase()
-  const connus = (db.prepare('SELECT id FROM todo').all() as { id: number }[]).map(r => r.id)
+  const connus = (db.prepare('SELECT id FROM todo WHERE utilisateur_id = ?').all(uid) as { id: number }[]).map(r => r.id)
 
   if (ids.length !== connus.length || new Set(ids).size !== ids.length
     || !connus.every(id => ids.includes(id))) {
@@ -31,8 +31,8 @@ export default defineEventHandler(async (event) => {
 
   db.exec('BEGIN')
   try {
-    const majRang = db.prepare('UPDATE todo SET rang = ? WHERE id = ?')
-    ids.forEach((id, index) => majRang.run(index + 1, id))
+    const majRang = db.prepare('UPDATE todo SET rang = ? WHERE id = ? AND utilisateur_id = ?')
+    ids.forEach((id, index) => majRang.run(index + 1, id, uid))
     db.exec('COMMIT')
   } catch (erreur) {
     db.exec('ROLLBACK')

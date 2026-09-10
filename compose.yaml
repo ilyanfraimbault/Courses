@@ -11,7 +11,8 @@ services:
       NITRO_PORT: 3000
       NUXT_BASE_FICHIER: /data/cours.sqlite
       NUXT_SESSION_PASSWORD: "${NUXT_SESSION_PASSWORD:?32 caractères minimum}"
-      NUXT_COURS_MOT_DE_PASSE: "${NUXT_COURS_MOT_DE_PASSE:?le mot de passe du site}"
+      # Vide, les inscriptions sont fermées : c'est volontairement le défaut.
+      NUXT_CODE_INSCRIPTION: "${NUXT_CODE_INSCRIPTION:-}"
       NUXT_SESSION_COOKIE_SECURE: "true"
       # Caddy réécrit X-Forwarded-For : on peut s'y fier pour identifier la
       # source d'une tentative de connexion.
