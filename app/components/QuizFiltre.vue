@@ -10,6 +10,21 @@ const emit = defineEmits<{ 'update:modelValue': [filtre: FiltreQuiz] }>()
 
 const deplies = ref<string[]>([])
 
+/**
+ * Un chapitre dont une notion est cochée s'ouvre tout seul.
+ *
+ * C'est ce qui rend lisible un filtre qu'on n'a pas composé soi-même — un lien
+ * venu de « Mes domaines » arrive avec un point de cours déjà coché. Replié, le
+ * chapitre annoncerait « 4 questions dans la sélection » sans que rien à l'écran
+ * ne dise lesquelles.
+ */
+watch(() => props.modelValue.notions, (notions) => {
+  for (const notion of notions) {
+    const chapitre = notion.split('/')[0]
+    if (chapitre && !deplies.value.includes(chapitre)) deplies.value.push(chapitre)
+  }
+}, { immediate: true })
+
 function estDeplie(cle: string) {
   return deplies.value.includes(cle)
 }

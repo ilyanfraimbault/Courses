@@ -26,6 +26,11 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   même point de cours ; la séance ne finit que lorsque tout est acquis. Séances
   reprises d'un appareil à l'autre, historique et panneau « ce qui résiste ».
   Voir `docs/quiz.md`.
+- **Progression par domaine** (`/mes-domaines`) : les 473 questions rangées par
+  point de cours — 103 domaines sous quatre chapitres — avec, sur une même
+  barre, ce qui est tombé juste du premier coup et ce qu'il a fallu reprendre.
+  Le moins acquis en tête, et un bouton par domaine qui ouvre le quiz avec ce
+  point de cours déjà coché. Voir `docs/domaines.md`.
 - To-do manuelle à trois niveaux — chapitre, fiche, bloc — réordonnable par
   glisser ou par flèches, aux deux niveaux.
 - Tableau de bord « où j'en suis », page « mes résultats », export et import
