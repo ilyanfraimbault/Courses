@@ -21,7 +21,7 @@ Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
 les exercices du TD, les fiches d'entraînement, les révisions et les sept QCM.
 Sur les 473 questions du site, **432** sont exploitables — celles qui portent
-une lettre attendue et au moins deux propositions. Les 21 autres sont des
+une lettre attendue et au moins deux propositions. Les **41** autres sont des
 questions ouvertes, qui s'auto-évaluent : une file qui doit savoir si la réponse
 était juste ne peut rien en faire.
 
@@ -61,10 +61,17 @@ rend une question insoluble sans le dire.
 Tirer quarante questions au hasard demanderait autrement d'ouvrir les
 vingt-sept fiches, soit **27 Mo** d'arbre à parcourir. Le hook
 `content:file:afterParse` de `nuxt.config.ts` relève donc, à côté du comptage
-des questions et du relevé des blocs, un champ `quiz` par page : une entrée par
-question à choix, **de quoi la choisir, jamais de quoi la poser**. L'ensemble
-pèse 84 Ko et se charge une fois en mémoire ; les énoncés, eux, ne sont jamais
-mis en cache.
+des questions et du relevé des blocs, un champ `releve` par page : une entrée
+par question, **de quoi la choisir et la classer, jamais de quoi la poser**.
+L'ensemble se charge une fois en mémoire ; les énoncés, eux, ne sont jamais mis
+en cache.
+
+Le relevé porte les **473** questions du site et non les seules 432 du quiz. Le
+champ `interrogeable` fait le tri, et la banque n'est que la part vraie de ce
+champ. C'est la progression par domaine qui a demandé cet élargissement — elle
+compte aussi les questions ouvertes, sans quoi le total d'un chapitre ne
+tomberait plus juste (voir `docs/domaines.md`). Deux relevés côte à côte se
+seraient contredits le jour où l'un aurait changé.
 
 Vérifier le relevé après une modification de contenu :
 
@@ -72,9 +79,11 @@ Vérifier le relevé après une modification de contenu :
 node -e "
 const {DatabaseSync}=require('node:sqlite');
 const db=new DatabaseSync('.data/content/contents.sqlite');
-const rows=db.prepare('SELECT path, quiz FROM _content_cours').all();
+const rows=db.prepare('SELECT path, releve FROM _content_cours').all();
 let n=0; const t={};
-for (const r of rows) for (const q of JSON.parse(r.quiz||'[]')) { n++; t[q.theme]=(t[q.theme]||0)+1 }
+for (const r of rows) for (const q of JSON.parse(r.releve||'[]')) {
+  if (!q.interrogeable) continue; n++; t[q.theme]=(t[q.theme]||0)+1
+}
 console.log(n, t);
 "
 ```

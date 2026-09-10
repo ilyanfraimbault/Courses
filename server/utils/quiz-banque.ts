@@ -36,11 +36,22 @@ interface PageContenu {
   icone?: string | null
   ordre?: number | null
   questions?: number | null
-  quiz?: QuestionRelevee[] | null
+  releve?: QuestionRelevee[] | null
 }
 
 interface Banque {
+  /**
+   * Toutes les questions identifiables du site, questions ouvertes comprises.
+   * C'est la vue dont la progression par domaine a besoin : elle range en
+   * domaines ce que la mémoire sait, et la mémoire ignore, elle, si une question
+   * se corrigeait toute seule.
+   */
   entrees: EntreeBanque[]
+  /**
+   * Celles que le quiz sait poser. C'est **cette** liste que le tirage, les
+   * filtres et le catalogue voient : le reste ne se corrige pas tout seul.
+   */
+  interrogeables: EntreeBanque[]
   /** Chapitre → intitulé, icône et sommaire, relevés sur la page d'index du chapitre. */
   chapitres: Map<string, { titre: string, icone: string | null, chemin: string, ordre: number }>
 }
@@ -102,13 +113,13 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
   if (banque && Date.now() < banque.expire) return banque.valeur
 
   const pages = await collectionCours(event)
-    .select('path', 'title', 'icone', 'ordre', 'questions', 'quiz')
+    .select('path', 'title', 'icone', 'ordre', 'questions', 'releve')
     .all() as unknown as PageContenu[]
 
   const entrees: EntreeBanque[] = []
   for (const page of pages) {
     const chemin = cheminCanonique(page.path)
-    for (const q of page.quiz ?? []) {
+    for (const q of page.releve ?? []) {
       entrees.push({
         ...q,
         id: composerIdentite(chemin, q.bloc, q.label),
@@ -137,7 +148,7 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
     })
   }
 
-  const valeur: Banque = { entrees, chapitres }
+  const valeur: Banque = { entrees, interrogeables: entrees.filter(e => e.interrogeable), chapitres }
   banque = { valeur, expire: Date.now() + PEREMPTION }
   return valeur
 }
@@ -159,7 +170,10 @@ export function composerCatalogue(banque: Banque): CatalogueQuiz {
   const parTheme = new Map<string, Map<string, { titre: string, questions: number }>>()
   const totaux = new Map<string, number>()
 
-  for (const e of banque.entrees) {
+  // Les questions ouvertes n'entrent pas au catalogue : annoncer « 18 questions »
+  // sur une notion dont le quiz ne sait en poser que 12 ferait une séance qui
+  // s'arrête plus tôt que promis.
+  for (const e of banque.interrogeables) {
     const theme = e.theme ?? 'divers'
     totaux.set(theme, (totaux.get(theme) ?? 0) + 1)
     if (!e.notionCle) continue
@@ -191,7 +205,7 @@ export function composerCatalogue(banque: Banque): CatalogueQuiz {
     || a.titre.localeCompare(b.titre, 'fr'))
 
   return {
-    total: banque.entrees.length,
+    total: banque.interrogeables.length,
     themes,
     tailleMin: TAILLE_MIN,
     tailleMax: TAILLE_MAX

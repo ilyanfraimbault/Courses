@@ -95,7 +95,7 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
     // voit jamais deux fois la même question ». Elle ne peut être rompue que
     // lorsque le filtre est épuisé, et le client le dit alors franchement.
     const dejaVues = new Set(etat.entrees.map(e => e.question))
-    const similaire = choisirSimilaire(filtrer(banque.entrees, lireFiltre(ligne.filtre)), candidate, dejaVues)
+    const similaire = choisirSimilaire(filtrer(banque.interrogeables, lireFiltre(ligne.filtre)), candidate, dejaVues)
     etat.entrees.push({
       question: similaire.entree.id,
       place: entree.place,
