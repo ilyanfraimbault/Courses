@@ -161,6 +161,13 @@ useSeoMeta({ title: 'Où j\'en suis' })
           color="primary"
           variant="subtle"
         />
+        <UButton
+          to="/mes-domaines"
+          icon="i-lucide-target"
+          label="Voir mes domaines"
+          color="neutral"
+          variant="subtle"
+        />
       </div>
     </UPageBody>
   </UPage>

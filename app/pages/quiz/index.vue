@@ -19,6 +19,30 @@ const taille = ref(20)
 const lancement = ref(false)
 const erreur = ref<string | null>(null)
 
+/**
+ * Un chapitre ou un point de cours passé en adresse préselectionne le filtre :
+ * c'est par là que « Mes domaines » envoie ici, avec la case déjà cochée.
+ *
+ * Les clés sont confrontées au catalogue avant d'être retenues. Un lien mis en
+ * favori survit ainsi à un cours renommé — il ouvre le quiz sur tout, ce qui est
+ * le comportement par défaut, au lieu de préparer une séance vide.
+ */
+const route = useRoute()
+
+function listeQuery(valeur: unknown): string[] {
+  return (Array.isArray(valeur) ? valeur : [valeur]).filter((v): v is string => typeof v === 'string' && !!v)
+}
+
+watch(catalogue, (c) => {
+  if (!c || filtre.value.themes.length || filtre.value.notions.length) return
+  const themesConnus = new Set(c.themes.map(t => t.cle))
+  const notionsConnues = new Set(c.themes.flatMap(t => t.notions.map(n => n.cle)))
+  filtre.value = {
+    themes: listeQuery(route.query.theme).filter(t => themesConnus.has(t)),
+    notions: listeQuery(route.query.notion).filter(n => notionsConnues.has(n))
+  }
+}, { immediate: true })
+
 /** Le compte du filtre, calculé comme le serveur le calculera. */
 const disponibles = computed(() => {
   const c = catalogue.value
