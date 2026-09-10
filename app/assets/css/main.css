@@ -173,6 +173,30 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Quiz : l'énoncé commun d'un bloc, rappelé au-dessus de la question.
+   --------------------------------------------------------------------------- */
+
+/* Un liseré plutôt qu'un cadre : l'énoncé du bloc doit se lire comme le
+   contexte de la question, pas comme un second encadré qui lui ferait
+   concurrence. */
+.cours-quiz-chapeau {
+  border-left-width: 2px;
+  border-left-style: solid;
+  border-left-color: var(--ui-border);
+  padding-left: 0.875rem;
+}
+
+/* Les formules d'un énoncé rappelé restent à la taille du texte qui les
+   entoure : grossies comme en pleine page, elles écraseraient la question. */
+.cours-quiz-chapeau .katex {
+  font-size: 1em;
+}
+
+.cours-quiz-chapeau .katex-display {
+  margin-block: 0.5rem;
+}
+
+/* ---------------------------------------------------------------------------
    Exemples traités : blocs dépliables au fil du cours.
    --------------------------------------------------------------------------- */
 

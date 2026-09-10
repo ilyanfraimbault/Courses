@@ -57,6 +57,25 @@ que les boutons de réponse existent le trouve vide, et conclut à tort que le
 rendu est cassé. Attendre le contenu lui-même (`.cours-enonce p`,
 `.cours-enonce .katex`), pas son conteneur.
 
+### Une question sortie de son bloc perd la moitié de son énoncé
+
+Le mode quiz a d'abord posé les questions telles quelles, et une bonne part
+d'entre elles sont devenues insolubles : « Donner l'affixe du vecteur
+$\overrightarrow{M_2M_4}$ » ne dit pas où sont les points. Ils sont écrits une
+fois en tête de l'exercice, dans le bloc, et valent pour toutes ses questions —
+**251 des 453 questions du site** en dépendent.
+
+Rien ne le signale : la question s'affiche, ses propositions aussi, le compte de
+questions est juste. Seul quelqu'un qui essaie de répondre s'en aperçoit.
+
+**Ce qui l'a démasqué** : avoir répondu soi-même à une question du quiz. Aucun
+contrôle automatique ne l'aurait vu, puisque tout ce qui se compte se comptait
+bien. Le contrôle existe maintenant, dans `verif:quiz`, et il porte sur ce qui
+manquait : la présence de l'énoncé du bloc, et sa part sur un large tirage.
+
+À retenir pour toute reprise de contenu hors de son contexte : ce qui rend une
+question compréhensible n'est pas toujours dans la question.
+
 ### `navigation.title` sert deux fois
 
 Il nomme l'entrée dans la barre latérale **et** l'entête d'accordéon du dossier.
