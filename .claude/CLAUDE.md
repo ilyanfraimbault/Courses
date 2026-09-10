@@ -62,6 +62,19 @@ Corriger un cours corrige le quiz. Le thème d'une question vient du rappel de
 cours qu'elle vise, pas de la page où elle vit : un QCM mélange les chapitres
 exprès. Voir `docs/quiz.md`.
 
+**Une question ne se pose jamais sans l'énoncé commun de son bloc.** « Donner
+l'affixe du vecteur M₂M₄ » est insoluble sans les coordonnées, écrites une fois
+en tête de l'exercice — et 251 des 453 questions du site sont dans ce cas. Le
+quiz rappelle donc cet énoncé au-dessus de chaque question, en entier et sans
+repli.
+
+**Une question gagnée au quiz est cochée sur sa fiche**, dans la même
+transaction. Le report n'emprunte pas `PUT /api/fiche`, dont l'instantané
+effacerait le reste de la fiche que le quiz ne connaît pas : il écrit la seule
+ligne concernée, et crée au besoin la fiche avec le compte de questions relevé
+au build — jamais avec zéro. L'inverse n'existe pas : une faute n'efface rien,
+et le quiz ne relit jamais cette mémoire.
+
 **Le serveur est maître des règles.** Le plafond de 24 tentatives par QCM,
 l'agrégation d'un chapitre sur ses fiches, l'unicité d'une cible de to-do : tout
 est appliqué en base, pas au client. Une règle vit à un seul endroit.

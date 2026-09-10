@@ -18,8 +18,10 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 - Comptes multiples (pseudo + mot de passe haché en scrypt), inscription par
   code, isolation des données vérifiée entre deux comptes.
 - Progression et historique de QCM en base, synchronisés entre appareils.
-- **Mode quiz** : une question à la fois, tirée dans les 412 questions à choix
-  du site, filtrable par chapitre ou par point de cours (89 notions nommées).
+- **Mode quiz** : une question à la fois — avec l'énoncé commun de son bloc —
+  tirée dans les 412 questions à choix du site, filtrable par chapitre ou par
+  point de cours (89 notions nommées). Une question gagnée est cochée sur sa
+  fiche.
   Une faute renvoie la place à la fin de la file avec une *autre* question du
   même point de cours ; la séance ne finit que lorsque tout est acquis. Séances
   reprises d'un appareil à l'autre, historique et panneau « ce qui résiste ».
@@ -106,11 +108,13 @@ fiches, les QCM et la to-do, pas les séances de quiz. Le format est partagé av
 le portfolio d'origine ; l'y ajouter serait un champ facultatif de plus, à faire
 le jour où une sauvegarde des séances aura de la valeur.
 
-**Une question gagnée au quiz ne coche pas sa question sur la fiche.** C'est
-délibéré, et la raison est écrite dans `docs/quiz.md` : `PUT /api/fiche` écrit
-un instantané de la fiche entière, dont le quiz ne connaît ni le total ni les
-autres questions. Le relier proprement demanderait une route d'écriture par
-question, à faire si le besoin se confirme.
+**Le quiz emprunte le contexte d'une question, pas seulement son énoncé.** Un
+bloc dont l'entête est pédagogique plutôt qu'un énoncé — les paliers
+d'entraînement s'ouvrent souvent sur la méthode — voit ce texte s'afficher
+au-dessus de chacune de ses questions. C'est assumé : les distinguer demanderait
+une heuristique, et une heuristique qui se trompe rend une question insoluble
+sans le dire. Si ça gêne à l'usage, la sortie est un attribut explicite sur le
+bloc, pas une devinette.
 
 ## Choix qu'il vaut mieux ne pas rejouer
 

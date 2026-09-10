@@ -27,6 +27,13 @@ function verifier(nom, condition, detail = '') {
   if (!condition) echecs.push(nom)
 }
 
+/** Tout le texte d'un fragment minimark, pour pouvoir y chercher un mot. */
+function texteDe(noeuds) {
+  if (typeof noeuds === 'string') return noeuds
+  if (!Array.isArray(noeuds)) return ''
+  return noeuds.map(texteDe).join(' ')
+}
+
 async function api(chemin, options = {}) {
   const r = await fetch(BASE + chemin, {
     ...options,
@@ -154,6 +161,78 @@ verifier('« ce qui résiste » est renseigné',
   session.fautes === 0 || r.corps.resistent.length > 0, r.corps.resistent.length + ' notions')
 verifier('les notions résistantes portent leur nom du contenu',
   r.corps.resistent.every(n => n.titre && !n.titre.includes('/')), r.corps.resistent[0]?.titre ?? '—')
+
+console.log('\n— L\'énoncé commun du bloc')
+// « Donner l'affixe du vecteur M₂M₄ » est insoluble sans les coordonnées, qui
+// sont écrites une fois en tête de l'exercice. La notion « Affixes, distances et
+// milieu » ne vit que dans des blocs qui portent un tel énoncé : le contrôle est
+// donc franc, pas statistique.
+const affixes = notions.find(n => n.cle.endsWith('/cours-affixes'))
+if (!affixes) {
+  verifier('la notion des affixes existe au catalogue', false, 'introuvable')
+} else {
+  r = await api('/api/quiz/session', { method: 'POST', body: { notions: [affixes.cle], taille: 5 } })
+  const seance = r.corps.session
+  const posees = []
+  for (let p = 0; p < seance.taille; p++) {
+    const q = await api(`/api/quiz/session/${seance.id}/question?position=${p}`)
+    posees.push(q.corps.question)
+  }
+  verifier('chaque question rend l\'énoncé commun de son bloc',
+    posees.every(q => Array.isArray(q.enonceBloc) && q.enonceBloc.length > 0),
+    `${posees.filter(q => q.enonceBloc).length} / ${posees.length}`)
+  const texte = posees.map(q => texteDe(q.enonceBloc)).join(' ')
+  verifier('l\'énoncé rappelle les données que la question suppose',
+    /M_1|figure|repère/.test(texte), texte.slice(0, 90).replace(/\s+/g, ' ') + '…')
+}
+
+// Et sur un large tirage, la proportion doit rester dans la bande attendue :
+// 251 des 453 questions du site vivent sous un énoncé commun. Zéro dirait que le
+// relevé est cassé, cent qu'il ramasse ce qui ne lui appartient pas.
+r = await api('/api/quiz/session', { method: 'POST', body: { taille: 60 } })
+const large = r.corps.session
+let avecEnonce = 0
+for (let p = 0; p < large.taille; p++) {
+  const q = await api(`/api/quiz/session/${large.id}/question?position=${p}`)
+  if (q.corps.question?.enonceBloc?.length) avecEnonce += 1
+}
+const part = Math.round(100 * avecEnonce / large.taille)
+verifier('la part de questions à énoncé commun reste plausible',
+  part >= 35 && part <= 85, `${part} % sur ${large.taille} tirées`)
+
+console.log('\n— Report sur la fiche')
+// Une question gagnée au quiz doit se retrouver cochée dans son exercice. On
+// répond jusqu'à en trouver une juste, puis on interroge la fiche elle-même.
+r = await api('/api/quiz/session', { method: 'POST', body: { taille: 40 } })
+const report = r.corps.session
+let gagnee = null
+for (let tour = 0; tour < 40 && !gagnee; tour++) {
+  const etat = await api(`/api/quiz/session/${report.id}`)
+  const q = etat.corps.question
+  if (!q) break
+  for (const lettre of q.lettres) {
+    const rep = await api(`/api/quiz/session/${report.id}/reponse`, {
+      method: 'POST', body: { position: q.position, lettre }
+    })
+    if (rep.statut !== 200) break
+    if (rep.corps.correction.juste) gagnee = q
+    break
+  }
+}
+if (!gagnee) {
+  verifier('une question a fini par tomber juste', false)
+} else {
+  const fiche = await api(`/api/fiche?chemin=${gagnee.fiche.chemin}`)
+  verifier('la question gagnée est cochée sur sa fiche',
+    Object.prototype.hasOwnProperty.call(fiche.corps.faites, gagnee.id), gagnee.id)
+  verifier('la fiche connaît son dénominateur, pas zéro',
+    fiche.corps.total > 0, `total = ${fiche.corps.total}`)
+  const resume = await api('/api/progression/resume')
+  const ligne = resume.corps[gagnee.fiche.chemin]
+  verifier('le tableau de bord voit la réussite',
+    !!ligne && ligne.reussies >= 1 && ligne.total >= ligne.reussies,
+    ligne ? `${ligne.reussies} / ${ligne.total}` : 'aucune ligne')
+}
 
 console.log('\n— Cadrage par utilisateur')
 const cookieA = cookie

@@ -31,6 +31,31 @@ dans l'arbre de la page au moment de poser la question. Corriger une faute de
 frappe dans un cours corrige donc le quiz du même coup, sans rien à
 resynchroniser.
 
+### Une question ne se pose pas sans son énoncé
+
+Beaucoup de questions ne portent pas tout leur énoncé. « Donner l'affixe du
+vecteur $\overrightarrow{M_2M_4}$ » n'a de sens qu'avec « les points lus sur la
+figure sont $M_1(2,1)$, $M_2(0,3)$… », écrit **une fois** en tête de l'exercice
+et valable pour toutes ses questions. C'est le cas de **251 des 453** questions
+du site.
+
+Le quiz relit donc, avec chaque question, l'énoncé commun de son bloc — tout ce
+qui précède la première question — et l'affiche au-dessus, en retrait. En
+entier, et sans repli : un énoncé qu'il faut déplier pour lire est précisément
+le défaut qu'on corrige. La médiane fait 232 caractères, le maximum 849.
+
+Deux relevés rendent l'affaire simple. Aucun `extrait-cours` ne vit à
+l'intérieur d'un bloc — vérifié sur les 111 du site — il n'y a donc pas de
+rappel de cours à écarter de l'énoncé. Et seules quatre questions renvoient à
+autre chose qu'elles-mêmes, toutes à leur propre partie *a)* : aucune ne devient
+insoluble une fois son bloc rappelé.
+
+En contrepartie, un bloc dont l'entête est **pédagogique** plutôt qu'un énoncé —
+les paliers d'entraînement s'ouvrent souvent sur la méthode à suivre — voit ce
+texte s'afficher au-dessus de chacune de ses questions. On le donne quand même :
+les distinguer demanderait une heuristique, et une heuristique qui se trompe
+rend une question insoluble sans le dire.
+
 ### L'index, relevé au build
 
 Tirer quarante questions au hasard demanderait autrement d'ouvrir les
@@ -177,20 +202,39 @@ L'intitulé lisible d'une notion n'est **pas** recopié en base : il vient du
 contenu à la lecture. Le figer ferait afficher une notion renommée dans le cours
 sous son ancien nom des mois plus tard.
 
-## Ce que le quiz n'écrit pas
+## Une question gagnée compte sur sa fiche
 
-**La progression des fiches.** Une question gagnée au quiz ne coche pas la
-question correspondante sur sa fiche, et c'est délibéré : `PUT /api/fiche`
-écrit un instantané de la fiche **entière**, et le quiz, qui n'a jamais ouvert
-la page, ne connaît ni son total ni ses autres questions. Lui faire écrire une
-ligne isolée obligerait à inventer une fiche à `total = 0`, et le tableau de
-bord compterait alors des fiches « ouvertes » qui ne l'ont jamais été. La
-mémoire du quiz vit dans ses propres tables.
+Une question trouvée est une question trouvée : la retrouver cochée en vert dans
+son exercice est ce qu'on attend, et devoir la refaire sur la fiche pour qu'elle
+compte serait une punition sans objet. Le report a donc lieu dans la **même
+transaction** que l'avancée de la file — les deux décrivent le même événement.
+
+Il ne peut pas passer par `PUT /api/fiche`, qui écrit un instantané de la fiche
+**entière** : le quiz, qui n'a pas ouvert la page, n'en connaît pas les autres
+questions, et son instantané effacerait tout le reste. Le serveur écrit donc la
+seule ligne concernée, avec trois précautions (`server/utils/quiz-progression.ts`) :
+
+- **le dénominateur vient du contenu.** Si le quiz est le premier à écrire pour
+  cette fiche, la ligne `fiche` est créée avec le nombre de questions compté au
+  build — pas avec zéro, qui ferait afficher « 1 / 0 » au tableau de bord ;
+- **une fiche déjà connue garde son total.** C'est la page qui fait foi : elle le
+  réécrit à chaque visite ;
+- **une question déjà trouvée garde sa réponse.** Même règle qu'à l'import : la
+  lettre gagnée sur la fiche ne se fait pas remplacer, et `premiere` retient la
+  plus ancienne des deux dates.
+
+L'inverse n'existe pas. Une faute au quiz n'efface rien, et le quiz ne **relit**
+jamais la progression : il repose volontiers une question déjà trouvée sur sa
+fiche — c'est le même contrat que le QCM, dont la copie arriverait sinon
+pré-remplie.
+
+## Ce que le quiz n'écrit pas
 
 **L'export JSON.** `resultats-cours` transporte les fiches, les QCM et la to-do,
 pas les séances de quiz. Le format est partagé avec le portfolio d'origine ;
 l'y ajouter serait un champ facultatif de plus, à faire le jour où on en aura
-besoin.
+besoin. Les questions gagnées au quiz, elles, voyagent — elles sont dans la
+progression des fiches.
 
 ## Vérifier
 
@@ -222,6 +266,10 @@ Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 - **aucune question n'est posée deux fois** dans une séance ;
 - une séance finit par se terminer, même en répondant faux exprès ;
 - répondre deux fois à la même position rend une 409 sans rien corrompre ;
+- chaque question d'un bloc à énoncé commun rend cet énoncé, et la part de
+  questions concernées reste dans la bande attendue sur un large tirage ;
+- une question gagnée est cochée sur sa fiche, avec le bon dénominateur, et le
+  tableau de bord la voit ;
 - la séance d'un compte est introuvable depuis un autre.
 
 Le rendu, lui, ne se vérifie pas au `curl` : la page charge tout au montage. Il
