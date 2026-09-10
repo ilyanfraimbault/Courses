@@ -1,4 +1,3 @@
-import { queryCollection } from '@nuxt/content/server'
 import type { H3Event } from 'h3'
 import type {
   CatalogueQuiz, ExtraitQuiz, FiltreQuiz, FragmentContenu,
@@ -54,6 +53,34 @@ let banque: { valeur: Banque, expire: number } | null = null
 
 const PEREMPTION = import.meta.dev ? 5_000 : Number.POSITIVE_INFINITY
 
+/**
+ * La collection `cours`, interrogée côté serveur.
+ *
+ * Nitro auto-importe `queryCollection`, et sa variante serveur prend l'événement
+ * en premier argument. Mais le programme TypeScript de l'**application** relit
+ * les routes serveur pour typer `$fetch`, et y résout la variante *client*, à un
+ * seul argument : `pnpm typecheck` échoue là où le programme serveur, lui, passe.
+ * D'où ce retypage, tenu en un seul endroit.
+ *
+ * Ce qu'il ne faut **pas** faire à la place, c'est importer
+ * `@nuxt/content/server` pour retrouver la bonne signature. Ce second chemin
+ * vers le même module lui donne une autre identité aux yeux de Rollup, qui
+ * embarque alors deux fois le runtime de Nuxt Content — dump de la base de
+ * contenu compris — et le pic mémoire du build franchit les 2 Go.
+ *
+ * Mesuré, tas plafonné à 2048 Mo comme sur le runner de la CI : `master` passe,
+ * l'import explicite échoue sur « JavaScript heap out of memory » pendant le
+ * build Nitro, ce retypage passe. En local, tas par défaut à 8 Go, les trois
+ * passent — c'est exactement le genre de panne qu'on n'attrape qu'en bridant
+ * la mémoire pour reproduire la CI.
+ */
+type RequeteCours = ReturnType<typeof queryCollection>
+
+function collectionCours(event: H3Event): RequeteCours {
+  const interroger = queryCollection as (event: H3Event, collection: 'cours') => RequeteCours
+  return interroger(event, 'cours')
+}
+
 /** Le dernier segment d'un chemin : « /cours/a1/…/trigonometrie » → « trigonometrie ». */
 function dernierSegment(chemin: string): string {
   const segments = chemin.split('/').filter(Boolean)
@@ -63,7 +90,7 @@ function dernierSegment(chemin: string): string {
 export async function chargerBanque(event: H3Event): Promise<Banque> {
   if (banque && Date.now() < banque.expire) return banque.valeur
 
-  const pages = await queryCollection(event, 'cours')
+  const pages = await collectionCours(event)
     .select('path', 'title', 'icone', 'ordre', 'quiz')
     .all() as unknown as PageContenu[]
 
@@ -321,7 +348,7 @@ export interface QuestionLue {
  * quiz, sans rien à resynchroniser.
  */
 export async function lireQuestion(event: H3Event, entree: EntreeBanque): Promise<QuestionLue | null> {
-  const page = await queryCollection(event, 'cours').path(entree.chemin).first() as
+  const page = await collectionCours(event).path(entree.chemin).first() as
     { title?: string, body?: { value?: unknown } } | null
   if (!page?.body?.value) return null
 
