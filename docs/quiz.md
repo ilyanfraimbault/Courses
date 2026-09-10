@@ -50,11 +50,35 @@ rappel de cours à écarter de l'énoncé. Et seules quatre questions renvoient 
 autre chose qu'elles-mêmes, toutes à leur propre partie *a)* : aucune ne devient
 insoluble une fois son bloc rappelé.
 
-En contrepartie, un bloc dont l'entête est **pédagogique** plutôt qu'un énoncé —
-les paliers d'entraînement s'ouvrent souvent sur la méthode à suivre — voit ce
-texte s'afficher au-dessus de chacune de ses questions. On le donne quand même :
-les distinguer demanderait une heuristique, et une heuristique qui se trompe
-rend une question insoluble sans le dire.
+### Tous les entêtes ne sont pas des énoncés
+
+Un palier d'entraînement s'ouvre sur la méthode à suivre — « Une seule idée
+gouverne tout ce palier : quand une fonction est appliquée à une autre… ». Le
+rappeler au-dessus de chaque question du palier reviendrait à souffler la
+réponse.
+
+Le bloc le dit donc lui-même :
+
+```md
+:::exercice{titre="Palier 3 — Les formes composées" entete="introduction"}
+```
+
+L'attribut est **explicite**, pas déduit : une heuristique qui se trompe rend
+une question insoluble sans le dire, et ce n'est pas un risque qu'on prend pour
+économiser dix-huit attributs. Deux valeurs seulement — `enonce`, le défaut, et
+`introduction`.
+
+**Le défaut compte.** Sans attribut, l'entête est traitée comme un énoncé. C'est
+le sens sûr : oublier de marquer une introduction ne coûte qu'un peu de bruit
+dans le quiz, tandis que l'oubli inverse rendrait la question impossible. Le
+texte reste affiché sur la fiche dans tous les cas — l'attribut ne concerne que
+le quiz.
+
+Classement actuel, fait en lisant les 53 entêtes une par une : **18 blocs**
+marqués `introduction`, tous des paliers d'entraînement, pour 50 questions. Les
+paliers 2 et 4 des nombres complexes n'en sont pas : ils posent
+`z₁ = 1−2i, z₂ = −3+i` et les points `A, B, C`, dont les questions dépendent.
+Restent **160 questions** dont l'énoncé est rappelé.
 
 ### L'index, relevé au build
 
@@ -413,8 +437,10 @@ Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 - **aucune question n'est posée deux fois** dans une séance ;
 - une séance finit par se terminer, même en répondant faux exprès ;
 - répondre deux fois à la même position rend une 409 sans rien corrompre ;
-- chaque question d'un bloc à énoncé commun rend cet énoncé, et la part de
-  questions concernées reste dans la bande attendue sur un large tirage ;
+- chaque question d'un bloc à énoncé commun rend cet énoncé, une entête marquée
+  `introduction` n'est jamais rappelée, et la part de questions concernées reste
+  dans la bande attendue sur un large tirage — attention, un tirage n'est pas un
+  échantillon uniforme de la banque, il s'étale par notion ;
 - une question gagnée est cochée sur sa fiche, avec le bon dénominateur, et le
   tableau de bord la voit ;
 - la séance d'un compte est introuvable depuis un autre.

@@ -211,9 +211,16 @@ if (!affixes) {
     /M_1|figure|repère/.test(texte), texte.slice(0, 90).replace(/\s+/g, ' ') + '…')
 }
 
-// Et sur un large tirage, la proportion doit rester dans la bande attendue :
-// 251 des 473 questions du site vivent sous un énoncé commun. Zéro dirait que le
-// relevé est cassé, cent qu'il ramasse ce qui ne lui appartient pas.
+// Et sur un large tirage, la proportion doit rester dans la bande attendue.
+//
+// Attention au chiffre de référence : 160 des 432 questions à choix vivent sous
+// un énoncé rappelé, soit 37 % de la **banque** — mais un tirage n'en est pas un
+// échantillon uniforme. Il s'étale par notion, et les fiches d'entraînement,
+// riches en petites notions, y pèsent bien plus que leur part ; les QCM, dont
+// les blocs n'ont aucun préambule, aussi. Mesuré sur trois tirages de soixante :
+// 17, 20 et 23 %. La bande est donc large et centrée là-dessus. Zéro dirait que
+// le relevé est cassé, cent qu'il ramasse ce qui ne lui appartient pas — dont
+// les entêtes marquées « introduction ».
 r = await api('/api/quiz/session', { method: 'POST', body: { taille: 60 } })
 const large = r.corps.session
 let avecEnonce = 0
@@ -223,7 +230,27 @@ for (let p = 0; p < large.taille; p++) {
 }
 const part = Math.round(100 * avecEnonce / large.taille)
 verifier('la part de questions à énoncé commun reste plausible',
-  part >= 35 && part <= 85, `${part} % sur ${large.taille} tirées`)
+  part >= 10 && part <= 45, `${part} % sur ${large.taille} tirées`)
+
+// L'autre sens : un bloc qui déclare `entete="introduction"` ne doit rien
+// rappeler. Les cinq paliers de la fiche d'entraînement de trigonométrie sont
+// tous marqués ainsi ; on tire large dans ce chapitre et on les regarde.
+r = await api('/api/quiz/session', { method: 'POST', body: { themes: ['trigonometrie'], taille: 60 } })
+const trigo = r.corps.session
+const paliers = []
+for (let p = 0; p < trigo.taille; p++) {
+  const q = await api(`/api/quiz/session/${trigo.id}/question?position=${p}`)
+  const item = q.corps.question
+  if (item?.fiche.chemin.endsWith('/trigonometrie/entrainement') && item.fiche.blocTitre.startsWith('Palier ')) {
+    paliers.push(item)
+  }
+}
+// Non-vacuité affirmée séparément : un contrôle qui ne regarde rien passe
+// toujours, et c'est la pire façon d'avoir l'air vert.
+verifier('des questions de palier ont bien été tirées', paliers.length > 0, `${paliers.length} tirées`)
+verifier('une entête « introduction » n\'est pas rappelée au-dessus des questions',
+  paliers.every(q => !q.enonceBloc),
+  `${paliers.filter(q => q.enonceBloc).length} en rappellent une`)
 
 console.log('\n— Report sur la fiche')
 // Une question gagnée au quiz doit se retrouver cochée dans son exercice. On

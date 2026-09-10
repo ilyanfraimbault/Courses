@@ -121,13 +121,12 @@ fiches, les QCM et la to-do, pas les séances de quiz. Le format est partagé av
 le portfolio d'origine ; l'y ajouter serait un champ facultatif de plus, à faire
 le jour où une sauvegarde des séances aura de la valeur.
 
-**Le quiz emprunte le contexte d'une question, pas seulement son énoncé.** Un
-bloc dont l'entête est pédagogique plutôt qu'un énoncé — les paliers
-d'entraînement s'ouvrent souvent sur la méthode — voit ce texte s'afficher
-au-dessus de chacune de ses questions. C'est assumé : les distinguer demanderait
-une heuristique, et une heuristique qui se trompe rend une question insoluble
-sans le dire. Si ça gêne à l'usage, la sortie est un attribut explicite sur le
-bloc, pas une devinette.
+**Le classement des entêtes est à tenir à jour.** Un bloc dont l'entête est une
+introduction pédagogique porte `entete="introduction"` ; sans attribut, le quiz
+la traite comme un énoncé et la rappelle au-dessus de chaque question. Dix-huit
+blocs sont marqués aujourd'hui, tous des paliers d'entraînement. Un nouveau bloc
+de ce genre est à marquer à la main — le défaut est volontairement le sens sûr,
+pas le plus fréquent.
 
 ## Choix qu'il vaut mieux ne pas rejouer
 
