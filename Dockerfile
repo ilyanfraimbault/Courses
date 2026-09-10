@@ -9,6 +9,12 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 WORKDIR /app
 COPY . ./
+# Même raison qu'en CI : le tas par défaut de Node plafonne à ~2 Go dans le
+# conteneur, et l'assemblage Nitro y tient de justesse. Sans cette marge, le
+# build de l'image tombe sur « JavaScript heap out of memory » — donc le
+# déploiement aussi. La variable ne concerne que cet étage : l'image
+# d'exécution repart d'un `FROM` neuf.
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN pnpm run build
 
 FROM node:24-alpine AS runner

@@ -159,6 +159,32 @@ NODE_OPTIONS=--max-old-space-size=2048 pnpm build
 l'auto-import, quitte à retyper la fonction à un seul endroit, plutôt qu'à
 l'importer par un second chemin.
 
+### L'assemblage Nitro tenait de justesse sous les 2 Go
+
+Corriger la duplication ci-dessus n'a pas suffi à rendre la CI verte, et le
+plus instructif est ce que la mesure a montré : **`master` lui-même échoue déjà
+à 1536 Mo de tas**. L'assemblage Nitro vivait donc entre 1536 et 2048 Mo, à un
+cheveu du plafond par défaut du runner, et n'importe quel ajout un peu gros
+devait finir par franchir la marche. Le mode quiz l'a franchie.
+
+La panne est brutale et muette : « JavaScript heap out of memory » au milieu du
+build, aucun avertissement avant. Et elle ne se voit pas en local, où le tas
+par défaut vaut 8 Go.
+
+Le build reçoit donc 4 Go explicitement, **aux deux endroits qui construisent
+dans un environnement contraint** : l'étape `pnpm run build` de la CI et
+l'étage `build` du Dockerfile. Oublier le second aurait laissé passer la CI et
+cassé le déploiement.
+
+**Ce qui l'a démasqué** : rejouer le build en bridant le tas, sur la branche
+*et* sur `master`, à 2048 puis à 1536 Mo. Un seul des deux niveaux ne dit rien ;
+c'est la comparaison qui montre où était réellement la marge.
+
+```bash
+rm -rf .nuxt .output node_modules/.cache .data
+NODE_OPTIONS=--max-old-space-size=1536 pnpm build   # échoue déjà sur master
+```
+
 ### L'auto-import serveur est vu comme celui du client par le typecheck
 
 `queryCollection` prend l'événement en premier argument côté Nitro, pas côté

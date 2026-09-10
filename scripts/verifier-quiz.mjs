@@ -87,7 +87,15 @@ verifier('réponse acceptée', r.statut === 200, 'statut ' + r.statut)
 const correction = r.corps.correction
 session = r.corps.session
 verifier('la correction porte la solution rédigée', Array.isArray(correction.solution) && correction.solution.length > 0)
-verifier('la correction porte le rappel de cours visé', !!correction.extrait?.titre, correction.extrait?.titre ?? 'aucun')
+// Toutes les questions ne visent pas un rappel de cours — quarante-huit des
+// quatre cent douze n'en ont pas. Ce qui doit tenir, c'est l'équivalence : une
+// question qui annonce une notion doit rendre l'extrait correspondant, et
+// l'affirmer sur la seule première question tirée rendrait le contrôle
+// dépendant du hasard.
+verifier(
+  'une question qui annonce une notion rend son rappel de cours',
+  !premiere.notionTitre || correction.extrait?.titre === premiere.notionTitre,
+  premiere.notionTitre ? `${premiere.notionTitre} → ${correction.extrait?.titre ?? 'aucun'}` : 'cette question ne vise aucun rappel')
 verifier('le verdict correspond à la lettre donnée', correction.juste === (correction.donnee === correction.bonne))
 
 if (correction.juste) {

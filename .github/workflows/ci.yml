@@ -35,7 +35,15 @@ jobs:
 
       # `nuxt typecheck` peut passer sur des types .nuxt périmés là où le build
       # échoue : les deux sont nécessaires, pas seulement le premier.
+      #
+      # Le tas par défaut du runner plafonne à 2 Go, et l'assemblage Nitro y
+      # tenait de justesse : mesuré, le build échoue déjà à 1536 Mo sur `master`.
+      # Le mode quiz a suffi à franchir la marche, et la panne est brutale —
+      # « JavaScript heap out of memory », rien avant. On donne donc au build la
+      # mémoire qu'il demande plutôt que de le laisser à un cheveu du plafond.
       - run: pnpm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
   image:
     runs-on: ubuntu-24.04

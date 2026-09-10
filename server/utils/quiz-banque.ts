@@ -68,11 +68,14 @@ const PEREMPTION = import.meta.dev ? 5_000 : Number.POSITIVE_INFINITY
  * embarque alors deux fois le runtime de Nuxt Content — dump de la base de
  * contenu compris — et le pic mémoire du build franchit les 2 Go.
  *
- * Mesuré, tas plafonné à 2048 Mo comme sur le runner de la CI : `master` passe,
- * l'import explicite échoue sur « JavaScript heap out of memory » pendant le
- * build Nitro, ce retypage passe. En local, tas par défaut à 8 Go, les trois
- * passent — c'est exactement le genre de panne qu'on n'attrape qu'en bridant
- * la mémoire pour reproduire la CI.
+ * Mesuré, tas plafonné à 2048 Mo : `master` passe, l'import explicite échoue sur
+ * « JavaScript heap out of memory » pendant l'assemblage Nitro, ce retypage
+ * passe. Avec le tas par défaut de 8 Go, les trois passent — cette panne-là ne
+ * se voit qu'en bridant la mémoire.
+ *
+ * Cela ne suffisait pas pour autant à rendre la CI verte : l'assemblage tenait
+ * déjà de justesse sous les 2 Go du runner avant ce mode, et le build y reçoit
+ * désormais 4 Go explicitement. Voir `.claude/pieges.md`.
  */
 type RequeteCours = ReturnType<typeof queryCollection>
 
