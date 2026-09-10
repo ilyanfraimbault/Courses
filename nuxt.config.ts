@@ -1,25 +1,21 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
+// Le relevé du contenu a lieu ici, au build, et il a besoin de découper les
+// intitulés exactement comme l'application le fait à l'exécution : c'est ce qui
+// garantit que le bloc relevé et l'identité « …#exercice-3#12. » écrite en base
+// désignent la même chose. Ce fichier n'importe donc pas une copie de
+// `slugifier`, il importe **la** fonction — voir l'avertissement en tête de
+// `app/utils/cours.ts`, qui doit rester libre de tout import Nuxt.
+import { slugifier } from './app/utils/cours'
+
 /** Les trois balises qui posent une question, quel que soit le format de la fiche. */
 const BALISES_QUESTION = new Set(['exo-question', 'qcm-question', 'question'])
 
 /** Les balises qui regroupent des questions, et qu'on peut mettre en to-do. */
 const BALISES_BLOC = new Set(['exercice', 'qcm'])
 
-/**
- * Réduit un intitulé à un identifiant lisible et stable. C'est **le même**
- * calcul que `slugifier` côté application : c'est ce qui garantit que le bloc
- * relevé ici et l'identité « …#exercice-3#12. » écrite en base désignent la
- * même chose. Les deux doivent bouger ensemble.
- */
-function slugifier(texte: string): string {
-  return texte
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-}
+/** Les lettres qu'une question peut proposer, dans leur ordre d'affichage. */
+const LETTRES = ['a', 'b', 'c', 'd', 'e']
 
 /**
  * Compte les questions d'une page en parcourant son arbre minimark, dont chaque
@@ -75,6 +71,123 @@ function releverBlocs(noeuds: unknown, sortie: Record<string, BlocReleve> = {}):
     }
     releverBlocs(noeud.slice(2), sortie)
   }
+  return sortie
+}
+
+/* ---------------------------------------------------------------------------
+   Le relevé de la banque du quiz.
+
+   Le mode quiz n'a pas de questions à lui : il tire dans celles des fiches. Il
+   lui faut donc, sans ouvrir une seule page, savoir quelles questions existent,
+   lesquelles se corrigent toutes seules, et de quoi chacune parle. Ce relevé est
+   cet index — quelques dizaines d'octets par question, l'énoncé restant dans le
+   corps de la fiche, relu à la demande.
+   --------------------------------------------------------------------------- */
+
+interface ExtraitReleve {
+  titre: string
+  source?: string
+}
+
+interface QuestionRelevee {
+  bloc: string
+  blocTitre: string
+  label: string
+  nature: string
+  choix: number
+  notion: string | null
+  notionTitre: string | null
+  theme: string | null
+}
+
+/**
+ * Les rappels de cours de la page, par identifiant. Un même identifiant peut
+ * servir dans deux pages différentes — `cours-quotient` désigne le quotient de
+ * fonctions ici, le quotient de complexes ailleurs — d'où un relevé par page,
+ * comme la résolution qu'en fait l'application à l'exécution.
+ */
+function releverExtraits(noeuds: unknown, sortie: Record<string, ExtraitReleve> = {}): Record<string, ExtraitReleve> {
+  if (!Array.isArray(noeuds)) return sortie
+  for (const noeud of noeuds) {
+    if (!Array.isArray(noeud)) continue
+    if (noeud[0] === 'extrait-cours') {
+      const props = noeud[1] as { id?: string, titre?: string, source?: string } | undefined
+      if (props?.id && props.titre) sortie[props.id] = { titre: props.titre, source: props.source }
+    }
+    releverExtraits(noeud.slice(2), sortie)
+  }
+  return sortie
+}
+
+/**
+ * Le chapitre auquel un chemin appartient : « …/trigonometrie/cours » donne
+ * « trigonometrie ». C'est l'avant-dernier segment, et non un rang fixe : le
+ * jour où une seconde matière existera, la règle tiendra encore.
+ */
+function chapitreDe(chemin: string | undefined): string | null {
+  if (!chemin) return null
+  const segments = chemin.split('#')[0]!.split('/').filter(Boolean)
+  return segments.length >= 2 ? segments[segments.length - 2]! : null
+}
+
+/**
+ * Relève les questions à choix d'une page, avec ce qu'il faut pour les trier.
+ *
+ * Deux décisions méritent d'être écrites.
+ *
+ * **On ne retient que ce qui se corrige seul** : une question sans lettre
+ * attendue, ou avec une seule proposition, s'auto-évalue — elle n'a pas sa place
+ * dans une file qui doit savoir, elle, si la réponse était juste.
+ *
+ * **Le thème vient du cours visé, pas de la page.** Un QCM mélange
+ * délibérément les chapitres : le classer par son dossier mettrait ses vingt
+ * questions dans un thème « qcm » dont personne ne veut. Chaque question, elle,
+ * renvoie au rappel de cours exact qui lui manquait, et ce rappel pointe vers
+ * une section d'un chapitre : c'est de là que le thème est déduit. Une question
+ * sans rappel retombe sur le chapitre de sa fiche.
+ */
+function releverQuiz(noeuds: unknown, chemin: string | undefined, extraits: Record<string, ExtraitReleve>, bloc: BlocReleve & { slug: string } | null = null, sortie: QuestionRelevee[] = []): QuestionRelevee[] {
+  if (!Array.isArray(noeuds)) return sortie
+  const chapitrePage = chapitreDe(chemin)
+
+  for (const noeud of noeuds) {
+    if (!Array.isArray(noeud)) continue
+    const balise = typeof noeud[0] === 'string' ? noeud[0] : null
+    const props = (noeud[1] ?? {}) as Record<string, unknown>
+
+    if (balise && BALISES_BLOC.has(balise) && typeof props.titre === 'string') {
+      releverQuiz(noeud.slice(2), chemin, extraits, { slug: slugifier(props.titre), titre: props.titre, nature: balise, questions: 0 }, sortie)
+      continue
+    }
+
+    if (balise && BALISES_QUESTION.has(balise) && bloc && typeof props.label === 'string' && typeof props.bonne === 'string') {
+      const lettres = new Set<string>()
+      for (const enfant of noeud.slice(2)) {
+        if (!Array.isArray(enfant) || enfant[0] !== 'template') continue
+        const cle = Object.keys((enfant[1] ?? {}) as object).find(c => c.startsWith('v-slot:'))
+        const nom = cle?.slice('v-slot:'.length)
+        if (nom && LETTRES.includes(nom)) lettres.add(nom)
+      }
+      if (lettres.size >= 2) {
+        const notion = typeof props.cours === 'string' ? props.cours : null
+        const extrait = notion ? extraits[notion] : undefined
+        sortie.push({
+          bloc: bloc.slug,
+          blocTitre: bloc.titre,
+          label: props.label,
+          nature: bloc.nature,
+          choix: lettres.size,
+          notion,
+          notionTitre: extrait?.titre ?? null,
+          theme: chapitreDe(extrait?.source) ?? chapitrePage
+        })
+      }
+      continue
+    }
+
+    releverQuiz(noeud.slice(2), chemin, extraits, bloc, sortie)
+  }
+
   return sortie
 }
 
@@ -154,10 +267,12 @@ export default defineNuxtConfig({
         body?: { value?: unknown }
         questions?: number
         blocs?: Record<string, unknown>
+        quiz?: unknown[]
       } | undefined
       if (!contenu?.path?.startsWith('/cours/')) return
       contenu.questions = compterQuestions(contenu.body?.value)
       contenu.blocs = releverBlocs(contenu.body?.value)
+      contenu.quiz = releverQuiz(contenu.body?.value, contenu.path, releverExtraits(contenu.body?.value))
     }
   },
 
