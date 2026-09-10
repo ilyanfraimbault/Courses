@@ -1,18 +1,42 @@
 <script setup lang="ts">
-import { useSortable, moveArrayElement } from '@vueuse/integrations/useSortable'
-
 definePageMeta({ layout: 'cours' })
 
 const { items, marquer, supprimer, reordonner } = useTodo()
-const comptes = useComptesQuestions()
-const fiches = useBlocsFiches()
+const catalogue = useCatalogueCibles()
 const toast = useToast()
 
-/** Dénominateur d'un item : les questions du bloc visé, ou celles de la fiche. */
+/** Toutes les cibles du catalogue, à plat, pour retrouver l'une d'elles par sa clé. */
+const parCle = computed(() => {
+  const table = new Map<string, { titre: string, questions: number, chapitre: string, fiche: string | null }>()
+  for (const c of catalogue.value) {
+    table.set(c.cle, { titre: c.titre, questions: c.questions, chapitre: c.titre, fiche: null })
+    for (const f of c.fiches) {
+      table.set(f.cle, { titre: f.titre, questions: f.questions, chapitre: c.titre, fiche: f.titre })
+      for (const b of f.blocs) {
+        table.set(b.cle, { titre: b.titre, questions: b.questions, chapitre: c.titre, fiche: f.titre })
+      }
+    }
+  }
+  return table
+})
+
+const cleDe = (chemin: string, bloc: string | null) => (bloc ? `${chemin}#${bloc}` : chemin)
+
+/**
+ * Dénominateur d'un item. Il vient du catalogue, donc du comptage fait au build :
+ * un chapitre pèse la somme de ses fiches, une fiche la somme de ses blocs.
+ */
 function totalDe(chemin: string, bloc: string | null): number {
-  if (!bloc) return comptes.value[chemin] ?? 0
-  const fiche = fiches.value.find(f => f.chemin === chemin)
-  return fiche?.blocs[bloc]?.questions ?? 0
+  return parCle.value.get(cleDe(chemin, bloc))?.questions ?? 0
+}
+
+/** D'où vient un item : « Fonctions usuelles › Exercices ». */
+function situationDe(chemin: string, bloc: string | null): string {
+  const cible = parCle.value.get(cleDe(chemin, bloc))
+  if (!cible) return chemin.split('/').filter(Boolean).slice(-2).join(' › ')
+  return cible.fiche && cible.fiche !== cible.titre
+    ? `${cible.chapitre} › ${cible.fiche}`
+    : cible.chapitre
 }
 
 function estTermine(item: typeof items.value[number]) {
@@ -23,36 +47,48 @@ function estTermine(item: typeof items.value[number]) {
 const aFaire = computed(() => items.value.filter(i => !estTermine(i)))
 const termines = computed(() => items.value.filter(estTermine))
 
-const liste = useTemplateRef<HTMLElement>('liste')
-
-// `useSortable` s'installe dans un `tryOnMounted` : au rendu serveur c'est un
-// non-événement, la liste sort en HTML ordinaire et s'hydrate sans divergence.
-// Pas de <ClientOnly>, donc pas de trou dans la page au chargement.
-useSortable(liste, items, {
-  handle: '.todo-poignee',
-  animation: 150,
-  onEnd: async (evt: { oldIndex?: number, newIndex?: number }) => {
-    const { oldIndex, newIndex } = evt
-    if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
-    // On laisse Sortable finir sa mutation du DOM avant de toucher au tableau
-    // réactif, sinon Vue et Sortable se disputent les mêmes nœuds.
-    await nextTick()
-    moveArrayElement(items.value, oldIndex, newIndex)
-    await nextTick()
-    if (!await reordonner(items.value.map(i => i.id))) {
-      toast.add({ title: 'Ordre non enregistré', description: 'La liste est revenue à son état précédent.', color: 'error' })
-    }
+/**
+ * La liste, groupée par chapitre — la même hiérarchie que le catalogue.
+ *
+ * Les groupes se succèdent dans l'ordre où leur premier item apparaît : on ne
+ * réordonne pas la liste, on la donne à lire. Le glisser-déposer, lui, continue
+ * de porter sur l'ordre d'ensemble.
+ */
+const groupes = computed(() => {
+  const sortie: { chapitre: string, items: typeof items.value }[] = []
+  for (const item of items.value) {
+    const chapitre = parCle.value.get(cleDe(item.chemin, item.bloc))?.chapitre
+      ?? item.chemin.split('/').filter(Boolean).at(-2)
+      ?? 'Cours'
+    const dernier = sortie.find(g => g.chapitre === chapitre)
+    if (dernier) dernier.items.push(item)
+    else sortie.push({ chapitre, items: [item] })
   }
+  return sortie
 })
 
-async function deplacer(id: number, sens: -1 | 1) {
-  const ids = items.value.map(i => i.id)
-  const i = ids.indexOf(id)
-  const j = i + sens
-  if (i < 0 || j < 0 || j >= ids.length) return
-  ;[ids[i], ids[j]] = [ids[j]!, ids[i]!]
-  if (!await reordonner(ids)) {
-    toast.add({ title: 'Ordre non enregistré', color: 'error' })
+/**
+ * Applique le nouvel ordre d'un chapitre à l'ordre d'ensemble : on remplace la
+ * tranche occupée par ce groupe, en laissant les autres où ils sont.
+ */
+async function reordonnerGroupe(ids: number[]) {
+  const positions = items.value
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => ids.includes(item.id))
+    .map(({ index }) => index)
+
+  const parId = new Map(items.value.map(i => [i.id, i]))
+  const global = [...items.value]
+  positions.forEach((position, i) => {
+    global[position] = parId.get(ids[i]!)!
+  })
+
+  if (!await reordonner(global.map(i => i.id))) {
+    toast.add({
+      title: 'Ordre non enregistré',
+      description: 'La liste est revenue à son état précédent.',
+      color: 'error'
+    })
   }
 }
 
@@ -98,31 +134,30 @@ useSeoMeta({ title: 'Ma to-do' })
         à côté d'un exercice depuis une fiche.
       </p>
 
-      <ul
+      <div
         v-else
-        ref="liste"
-        class="mt-6 flex list-none flex-col gap-2 ps-0"
+        class="mt-6 flex flex-col gap-6"
       >
-        <TodoLigne
-          v-for="(item, index) in items"
-          :key="item.id"
-          :item="item"
-          :total="totalDe(item.chemin, item.bloc)"
-          :premier="index === 0"
-          :dernier="index === items.length - 1"
-          @marquer="marquer(item.id, $event)"
-          @supprimer="supprimer(item.id)"
-          @monter="deplacer(item.id, -1)"
-          @descendre="deplacer(item.id, 1)"
+        <TodoGroupe
+          v-for="groupe of groupes"
+          :key="groupe.chapitre"
+          :chapitre="groupe.chapitre"
+          :items="groupe.items"
+          :total="totalDe"
+          :situation="situationDe"
+          :termine="estTermine"
+          @marquer="marquer"
+          @supprimer="supprimer"
+          @reordonner="reordonnerGroupe"
         />
-      </ul>
+      </div>
 
       <p
         v-if="items.length"
         class="mt-4 text-xs text-dimmed"
       >
         {{ aFaire.length }} à faire, {{ termines.length }} terminé{{ termines.length > 1 ? 's' : '' }}.
-        Glisse par la poignée, ou utilise les flèches.
+        Glisse par la poignée, ou utilise les flèches — l'ordre se règle à l'intérieur d'un chapitre.
       </p>
     </UPageBody>
   </UPage>

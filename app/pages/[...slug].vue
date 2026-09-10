@@ -46,12 +46,10 @@ const typeInfo = computed(() => coursTypeInfo(page.value?.type))
 
 const headline = computed(() => findPageHeadline(navigation?.value, page.value?.path))
 
-// Une page de cours se lit, elle ne « se fait » pas : seuls les exercices,
-// l'entraînement et les QCM ont leur place dans une liste de choses à faire.
-// Les blocs d'exercice glissés *dans* une page de cours restent ajoutables un
-// par un — ce sont les onze contrôles express de la fiche de trigonométrie.
-const CIBLABLES = ['exercices', 'entrainement', 'qcm']
-const ciblableEnTodo = computed(() => !!page.value?.type && CIBLABLES.includes(page.value.type))
+// Toute fiche peut entrer dans une to-do, y compris une page de cours : « lire
+// le cours avant les exercices » est une tâche comme une autre. Seuls les
+// sommaires en sont exclus — ils n'ont pas de `type`.
+const ciblableEnTodo = computed(() => !!page.value?.type)
 
 useSeoMeta({
   title: page.value.title,

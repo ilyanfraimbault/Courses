@@ -5,6 +5,8 @@ const props = defineProps<{
   item: TodoItem
   /** Dénominateur, venu du comptage fait au build. */
   total: number
+  /** D'où vient l'item : « Fonctions usuelles › Exercices ». */
+  situation: string
   premier: boolean
   dernier: boolean
 }>()
@@ -23,9 +25,6 @@ const typeInfo = computed(() => coursTypeInfo(props.item.type))
 const termine = computed(() => !!props.item.fait_le || (props.total > 0 && props.item.reussies >= props.total))
 
 const lien = computed(() => props.item.bloc ? `${props.item.chemin}#${props.item.bloc}` : props.item.chemin)
-
-/** Le chapitre d'où vient l'item, pour situer « Exercice 3 » sans ambiguïté. */
-const contexte = computed(() => props.item.chemin.split('/').filter(Boolean).slice(-2).join(' / '))
 </script>
 
 <template>
@@ -66,7 +65,7 @@ const contexte = computed(() => props.item.chemin.split('/').filter(Boolean).sli
         </ULink>
       </div>
       <p class="mt-0.5 truncate text-xs text-dimmed">
-        {{ contexte }}
+        {{ situation }}
       </p>
     </div>
 

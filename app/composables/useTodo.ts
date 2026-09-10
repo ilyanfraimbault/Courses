@@ -136,68 +136,69 @@ export function useBlocsFiches() {
 }
 
 export interface CibleCatalogue {
-  /** Identité de la cible, « chemin#bloc » ou « chemin » pour une fiche entière. */
+  /** Identité de la cible : « chemin » ou « chemin#bloc ». */
   cle: string
   chemin: string
   bloc: string | null
+  /** Intitulé court et uniforme d'un cours à l'autre. */
   titre: string
   type: string | null
   questions: number
 }
 
-export interface FicheCatalogue {
-  chemin: string
-  titre: string
-  type: string | null
-  questions: number
-  /**
-   * La fiche prise en entier, quand elle se « fait ». Absente sur une page de
-   * cours : elle se lit, et ses contrôles express restent choisissables un par
-   * un.
-   */
-  entiere: CibleCatalogue | null
+export interface FicheCatalogue extends CibleCatalogue {
   blocs: CibleCatalogue[]
 }
 
-export interface GroupeCatalogue {
-  chapitre: string
+export interface ChapitreCatalogue extends CibleCatalogue {
   fiches: FicheCatalogue[]
 }
 
-/** Ce qui peut entrer dans une to-do : ni les pages de cours, ni les sommaires. */
-const TYPES_CIBLABLES = ['exercices', 'entrainement', 'qcm']
+/**
+ * L'intitulé court d'une fiche, celui de la barre latérale : « Cours »,
+ * « Exercices », « Révisions », « Entraînement ». Il vient du frontmatter, donc
+ * il est le même d'un chapitre à l'autre — c'est là tout son intérêt, puisque
+ * le titre complet, lui, répète le nom du chapitre.
+ */
+function titreCourt(ligne: { title?: string, navigation?: unknown, path: string }): string {
+  const nav = ligne.navigation
+  if (nav && typeof nav === 'object' && typeof (nav as { title?: unknown }).title === 'string') {
+    return (nav as { title: string }).title
+  }
+  return ligne.title ?? ligne.path
+}
 
 /**
- * Le catalogue de tout ce qu'on peut mettre en to-do, en **deux niveaux** :
- * le chapitre, puis la fiche.
+ * Le catalogue de tout ce qu'on peut mettre en to-do, en **trois niveaux** :
+ * le chapitre, la fiche, puis le bloc.
  *
- * Une liste plate ne se parcourt pas — « Exercice 4 » existe dans quatre
- * chapitres, et rien ne disait duquel. Surtout, on veut pouvoir prendre une
- * fiche entière d'un seul geste sans avoir à cocher ses treize exercices, tout
- * en gardant la possibilité de la déplier pour n'en choisir que trois.
+ * Chaque niveau se prend d'un seul geste. Cocher « Fonctions usuelles » met le
+ * chapitre entier ; le déplier laisse choisir « Exercices » ; déplier celle-ci
+ * laisse n'en garder que l'exercice 3.
+ *
+ * Les fiches portent leur intitulé court, identique d'un chapitre à l'autre :
+ * sous « Nombres complexes », la fiche s'appelle « Exercices » et non
+ * « Nombres complexes — exercices du TD », que le chapitre annonce déjà.
  */
 export function useCatalogueCibles() {
   const { data } = useAsyncData('cours-catalogue', async () => {
     const lignes = await queryCollection('cours')
-      .select('path', 'title', 'type', 'questions', 'blocs')
+      .select('path', 'title', 'type', 'questions', 'blocs', 'navigation')
       .all()
 
-    // Les sommaires de chapitre donnent leur nom aux groupes.
-    const titreDe = new Map<string, string>()
-    for (const l of lignes) titreDe.set(cheminCanonique(l.path), l.title ?? '')
+    const parChemin = new Map(lignes.map(l => [cheminCanonique(l.path), l]))
+    const chapitres = new Map<string, ChapitreCatalogue>()
 
-    const groupes = new Map<string, GroupeCatalogue>()
-
-    for (const l of lignes) {
-      const chemin = cheminCanonique(l.path)
+    for (const ligne of lignes) {
+      const chemin = cheminCanonique(ligne.path)
       const segments = chemin.split('/').filter(Boolean)
       const cheminChapitre = '/' + segments.slice(0, -1).join('/')
-      const chapitre = titreDe.get(cheminChapitre) || segments.at(-2) || 'Cours'
+      const parent = parChemin.get(cheminChapitre)
 
-      const blocsBruts = (l.blocs ?? {}) as Record<string, { titre: string, nature: string, questions: number }>
-      const ciblable = !!l.type && TYPES_CIBLABLES.includes(l.type)
-      if (!ciblable && !Object.keys(blocsBruts).length) continue
+      // Un sommaire n'est pas une fiche : c'est lui qui nomme son chapitre.
+      if (!ligne.type || !parent) continue
 
+      const blocsBruts = (ligne.blocs ?? {}) as Record<string, { titre: string, nature: string, questions: number }>
       const blocs: CibleCatalogue[] = Object.entries(blocsBruts).map(([slug, b]) => ({
         cle: `${chemin}#${slug}`,
         chemin,
@@ -207,31 +208,32 @@ export function useCatalogueCibles() {
         questions: b.questions
       }))
 
-      const fiche: FicheCatalogue = {
-        chemin,
-        titre: l.title ?? chemin,
-        type: l.type ?? null,
-        questions: l.questions ?? 0,
-        entiere: ciblable
-          ? {
-              cle: chemin,
-              chemin,
-              bloc: null,
-              titre: l.title ?? chemin,
-              type: l.type ?? null,
-              questions: l.questions ?? 0
-            }
-          : null,
-        blocs
+      const chapitre = chapitres.get(cheminChapitre) ?? {
+        cle: cheminChapitre,
+        chemin: cheminChapitre,
+        bloc: null,
+        titre: parent.title ?? cheminChapitre,
+        type: null,
+        questions: 0,
+        fiches: []
       }
 
-      const groupe = groupes.get(chapitre) ?? { chapitre, fiches: [] }
-      groupe.fiches.push(fiche)
-      groupes.set(chapitre, groupe)
+      chapitre.fiches.push({
+        cle: chemin,
+        chemin,
+        bloc: null,
+        titre: titreCourt(ligne),
+        type: ligne.type,
+        questions: ligne.questions ?? 0,
+        blocs
+      })
+      // Le chapitre pèse ce que pèsent ses fiches : il n'a pas de questions à lui.
+      chapitre.questions += ligne.questions ?? 0
+      chapitres.set(cheminChapitre, chapitre)
     }
 
-    return [...groupes.values()].filter(g => g.fiches.length)
-  }, { default: () => [] as GroupeCatalogue[] })
+    return [...chapitres.values()].filter(c => c.fiches.length)
+  }, { default: () => [] as ChapitreCatalogue[] })
 
   return data
 }

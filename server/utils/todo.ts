@@ -16,7 +16,11 @@ export function listerTodo(db: DatabaseSync, uid: number): TodoItem[] {
            (
              SELECT COUNT(*) FROM reussite r
              WHERE r.utilisateur_id = t.utilisateur_id
-               AND r.chemin = t.chemin
+               -- « cette cible et tout ce qui est dessous » : pour une fiche ou
+               -- un bloc, le préfixe n'ajoute rien, une fiche étant une feuille.
+               -- Pour un chapitre, il agrège ses fiches — c'est ce qui permet de
+               -- mettre « Fonctions usuelles » en to-do et d'en voir l'avancée.
+               AND (r.chemin = t.chemin OR r.chemin LIKE t.chemin || '/%')
                AND (t.bloc IS NULL OR r.bloc = t.bloc)
            ) AS reussies
     FROM todo t
