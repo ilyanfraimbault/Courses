@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSortable, moveArrayElement } from '@vueuse/integrations/useSortable'
+import { useSortable } from '@vueuse/integrations/useSortable'
 import type { TodoItem } from '~~/shared/types/resultats'
 
 const props = defineProps<{
@@ -36,13 +36,15 @@ const liste = useTemplateRef<HTMLElement>('liste')
 useSortable(liste, locaux, {
   handle: '.todo-poignee',
   animation: 150,
+  // Voir ma-to-do.vue : on ne veut pas dépendre de l'ordre de montage.
+  watchElement: true,
+  // `useSortable` réordonne déjà `locaux` par son `onUpdate` par défaut, avant
+  // d'appeler `onEnd`. Le refaire ici déplacerait l'élément une seconde fois :
+  // au sein d'une liste, les deux mouvements s'annulent et rien ne bouge. On se
+  // contente donc de lire l'ordre obtenu.
   onEnd: async (evt: { oldIndex?: number, newIndex?: number }) => {
     const { oldIndex, newIndex } = evt
     if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
-    // On laisse Sortable finir sa mutation du DOM avant de toucher au tableau
-    // réactif, sinon Vue et Sortable se disputent les mêmes nœuds.
-    await nextTick()
-    moveArrayElement(locaux.value, oldIndex, newIndex)
     await nextTick()
     emit('reordonner', locaux.value.map(i => i.id))
   }

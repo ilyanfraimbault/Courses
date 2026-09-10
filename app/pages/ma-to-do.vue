@@ -121,11 +121,14 @@ const listeGroupes = useTemplateRef<HTMLElement>('listeGroupes')
 useSortable(listeGroupes, groupesLocaux, {
   handle: '.groupe-poignee',
   animation: 150,
+  // Sans cela, `useSortable` ne tente de s'attacher qu'au montage. Or la liste
+  // n'existe pas encore à cet instant : elle est en `v-else`, et la to-do
+  // arrive du serveur après. Le tri ne se posait donc jamais, en silence.
+  watchElement: true,
+  // Voir TodoGroupe : le tableau est déjà réordonné quand `onEnd` s'exécute.
   onEnd: async (evt: { oldIndex?: number, newIndex?: number }) => {
     const { oldIndex, newIndex } = evt
     if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
-    await nextTick()
-    moveArrayElement(groupesLocaux.value, oldIndex, newIndex)
     await nextTick()
     await appliquerOrdre()
   }
