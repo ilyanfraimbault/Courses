@@ -108,8 +108,17 @@ const carte = await page.locator('.cours-body').last().innerText()
 verifier('le verdict s\'affiche', /Juste\.|Raté :/.test(carte), carte.split('\n')[0])
 
 if (/Raté :/.test(carte)) {
+  const solution = page.locator('.cours-panel-solution').first()
+  const corpsSolution = solution.locator('.cours-panel-body').first()
+  const texteSolution = (await corpsSolution.innerText()).trim()
+  const formulesSolution = await corpsSolution.locator('.katex').count()
+  // Une correction peut n'être qu'une formule, et KaTeX la rend dans des nœuds
+  // qu'`innerText` ne restitue pas : compter les caractères déclarerait alors
+  // vide un panneau déplié et rempli. Le témoin est « visible et porteur de
+  // quelque chose » — du texte ou une formule.
   verifier('la correction est dépliée d\'office sur une faute',
-    (await page.locator('.cours-panel-solution').first().innerText()).length > 40)
+    await solution.isVisible() && (texteSolution.length > 40 || formulesSolution > 0),
+    `${texteSolution.length} caractères, ${formulesSolution} formule(s)`)
   verifier('les formules de la correction sont rendues',
     await page.locator('.cours-panel-solution .katex').count() > 0)
   verifier('la reprise est annoncée', /revient à la fin/.test(carte))

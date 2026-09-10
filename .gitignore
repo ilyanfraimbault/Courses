@@ -31,3 +31,7 @@ quiz-*.png
 
 # Worktrees des sessions Claude Code, propres à une machine.
 .claude/worktrees/
+
+# Captures produites par `pnpm verif:quiz:rendu` : des témoins qu'on regarde
+# une fois, pas des fichiers du dépôt.
+quiz-*.png
