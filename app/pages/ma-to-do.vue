@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useSortable, moveArrayElement } from '@vueuse/integrations/useSortable'
+
 definePageMeta({ layout: 'cours' })
 
 const { items, marquer, supprimer, reordonner } = useTodo()
@@ -67,23 +69,23 @@ const groupes = computed(() => {
   return sortie
 })
 
+// Une copie locale des groupes, que Sortable a le droit de remuer.
+const groupesLocaux = ref<{ chapitre: string, items: typeof items.value }[]>([])
+watch(groupes, (v) => {
+  groupesLocaux.value = v.map(g => ({ ...g, items: [...g.items] }))
+}, { immediate: true, deep: true })
+
 /**
- * Applique le nouvel ordre d'un chapitre à l'ordre d'ensemble : on remplace la
- * tranche occupée par ce groupe, en laissant les autres où ils sont.
+ * Écrit l'ordre d'ensemble à partir des groupes : chapitre après chapitre, et
+ * dans chacun l'ordre de ses items.
+ *
+ * Une fois les chapitres déplaçables, un ordre global qui les entrelacerait
+ * n'aurait plus de sens — il ne se verrait nulle part, la liste étant groupée.
+ * Chaque déplacement range donc la liste pour de bon.
  */
-async function reordonnerGroupe(ids: number[]) {
-  const positions = items.value
-    .map((item, index) => ({ item, index }))
-    .filter(({ item }) => ids.includes(item.id))
-    .map(({ index }) => index)
-
-  const parId = new Map(items.value.map(i => [i.id, i]))
-  const global = [...items.value]
-  positions.forEach((position, i) => {
-    global[position] = parId.get(ids[i]!)!
-  })
-
-  if (!await reordonner(global.map(i => i.id))) {
+async function appliquerOrdre() {
+  const ids = groupesLocaux.value.flatMap(g => g.items.map(i => i.id))
+  if (!await reordonner(ids)) {
     toast.add({
       title: 'Ordre non enregistré',
       description: 'La liste est revenue à son état précédent.',
@@ -91,6 +93,43 @@ async function reordonnerGroupe(ids: number[]) {
     })
   }
 }
+
+/** Réordonner les items d'un chapitre, sans toucher aux autres chapitres. */
+async function reordonnerGroupe(chapitre: string, ids: number[]) {
+  const groupe = groupesLocaux.value.find(g => g.chapitre === chapitre)
+  if (!groupe) return
+  const parId = new Map(groupe.items.map(i => [i.id, i]))
+  groupe.items = ids.map(id => parId.get(id)!).filter(Boolean)
+  await appliquerOrdre()
+}
+
+/** Déplacer un chapitre entier, d'un cran. */
+async function deplacerGroupe(chapitre: string, sens: -1 | 1) {
+  const i = groupesLocaux.value.findIndex(g => g.chapitre === chapitre)
+  const j = i + sens
+  if (i < 0 || j < 0 || j >= groupesLocaux.value.length) return
+  moveArrayElement(groupesLocaux.value, i, j)
+  await nextTick()
+  await appliquerOrdre()
+}
+
+const listeGroupes = useTemplateRef<HTMLElement>('listeGroupes')
+
+// Deux tris imbriqués : celui-ci porte sur les chapitres, celui de TodoGroupe
+// sur les items. Ils ne se marchent pas dessus parce que chacun n'écoute que sa
+// propre poignée — sans quoi tirer un item déplacerait tout son chapitre.
+useSortable(listeGroupes, groupesLocaux, {
+  handle: '.groupe-poignee',
+  animation: 150,
+  onEnd: async (evt: { oldIndex?: number, newIndex?: number }) => {
+    const { oldIndex, newIndex } = evt
+    if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+    await nextTick()
+    moveArrayElement(groupesLocaux.value, oldIndex, newIndex)
+    await nextTick()
+    await appliquerOrdre()
+  }
+})
 
 const catalogueOuvert = ref(false)
 
@@ -136,19 +175,23 @@ useSeoMeta({ title: 'Ma to-do' })
 
       <div
         v-else
+        ref="listeGroupes"
         class="mt-6 flex flex-col gap-6"
       >
         <TodoGroupe
-          v-for="groupe of groupes"
+          v-for="(groupe, index) of groupesLocaux"
           :key="groupe.chapitre"
           :chapitre="groupe.chapitre"
           :items="groupe.items"
           :total="totalDe"
           :situation="situationDe"
           :termine="estTermine"
+          :premier="index === 0"
+          :dernier="index === groupesLocaux.length - 1"
           @marquer="marquer"
           @supprimer="supprimer"
-          @reordonner="reordonnerGroupe"
+          @reordonner="reordonnerGroupe(groupe.chapitre, $event)"
+          @deplacer="deplacerGroupe(groupe.chapitre, $event)"
         />
       </div>
 
@@ -157,7 +200,8 @@ useSeoMeta({ title: 'Ma to-do' })
         class="mt-4 text-xs text-dimmed"
       >
         {{ aFaire.length }} à faire, {{ termines.length }} terminé{{ termines.length > 1 ? 's' : '' }}.
-        Glisse par la poignée, ou utilise les flèches — l'ordre se règle à l'intérieur d'un chapitre.
+        Glisse par la poignée ou utilise les flèches : celles du chapitre le déplacent en entier,
+        celles d'une ligne la déplacent dans son chapitre.
       </p>
     </UPageBody>
   </UPage>

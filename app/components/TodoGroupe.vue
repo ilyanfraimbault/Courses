@@ -10,6 +10,8 @@ const props = defineProps<{
   /** D'où vient l'item : « Fonctions usuelles › Exercices ». */
   situation: (chemin: string, bloc: string | null) => string
   termine: (item: TodoItem) => boolean
+  premier: boolean
+  dernier: boolean
 }>()
 
 const emit = defineEmits<{
@@ -17,6 +19,8 @@ const emit = defineEmits<{
   supprimer: [id: number]
   /** Le nouvel ordre des items **de ce groupe**. */
   reordonner: [ids: number[]]
+  /** Déplacer le chapitre entier, d'un cran vers le haut ou vers le bas. */
+  deplacer: [sens: -1 | 1]
 }>()
 
 // Une copie locale, que Sortable a le droit de remuer. L'ordre d'ensemble est
@@ -58,13 +62,40 @@ const restants = computed(() => props.items.filter(i => !props.termine(i)).lengt
 
 <template>
   <section>
-    <div class="flex items-baseline justify-between gap-2">
-      <h2 class="text-sm font-semibold text-highlighted">
-        {{ chapitre }}
-      </h2>
-      <span class="shrink-0 text-xs text-dimmed tabular-nums">
-        {{ restants }} à faire sur {{ items.length }}
-      </span>
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex min-w-0 items-center gap-2">
+        <UIcon
+          name="i-lucide-grip-vertical"
+          class="groupe-poignee size-4 shrink-0 cursor-grab text-dimmed"
+          aria-hidden="true"
+        />
+        <h2 class="truncate text-sm font-semibold text-highlighted">
+          {{ chapitre }}
+        </h2>
+      </div>
+      <div class="flex shrink-0 items-center gap-1">
+        <span class="text-xs text-dimmed tabular-nums">
+          {{ restants }} à faire sur {{ items.length }}
+        </span>
+        <UButton
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-chevron-up"
+          aria-label="Monter le chapitre"
+          :disabled="premier"
+          @click="emit('deplacer', -1)"
+        />
+        <UButton
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-chevron-down"
+          aria-label="Descendre le chapitre"
+          :disabled="dernier"
+          @click="emit('deplacer', 1)"
+        />
+      </div>
     </div>
 
     <ul
