@@ -113,11 +113,13 @@ du portfolio d'origine, volontairement.
 
 Frontmatter : `title`, `description`, `type` (`cours` | `exercices` |
 `entrainement` | `qcm`), `annee`, `matiere`, `ordre`, `icone`, `interactif`, et
-trois champs **remplis au build**, à ne jamais écrire à la main : `questions`
-(le compte de la page), `blocs` (les exercices et QCM, avec leur dénominateur)
-et `releve` (une entrée par question, avec son bloc, son repère, le point de
-cours qu'elle vise et son chapitre — voir `docs/quiz.md` pour la banque du quiz
-qu'on en tire, et `docs/domaines.md` pour la progression par point de cours).
+quatre champs **remplis au build**, à ne jamais écrire à la main : `questions`
+(le compte de la page), `blocs` (les exercices et QCM, avec leur dénominateur),
+`sections` (les titres de niveau 2 de la page, par ancre — ils nomment les cases
+de la sélection du quiz) et `releve` (une entrée par question, avec son bloc,
+son repère, le point de cours qu'elle vise, sa section et son chapitre — voir
+`docs/quiz.md` pour la banque du quiz qu'on en tire, et `docs/domaines.md` pour
+la progression par point de cours).
 
 Le hook qui les relève, dans `nuxt.config.ts`, importe `slugifier` depuis
 `app/utils/cours.ts` : il n'existe qu'une implémentation, et c'est ce qui

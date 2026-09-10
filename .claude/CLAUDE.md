@@ -78,8 +78,25 @@ repli.
 transaction. Le report n'emprunte pas `PUT /api/fiche`, dont l'instantané
 effacerait le reste de la fiche que le quiz ne connaît pas : il écrit la seule
 ligne concernée, et crée au besoin la fiche avec le compte de questions relevé
-au build — jamais avec zéro. L'inverse n'existe pas : une faute n'efface rien,
-et le quiz ne relit jamais cette mémoire.
+au build — jamais avec zéro. Une faute, elle, n'efface jamais rien, et le quiz
+ne relit pas la progression : il repose volontiers une question déjà trouvée.
+
+**Une faute est un événement, la seule écriture du site qui le soit.** Tout le
+reste s'écrit par instantané ; la table `faute` s'incrémente. C'est pour cela
+qu'elle a sa propre route (`POST /api/fautes`) au lieu de voyager dans le corps
+de `PUT /api/fiche` : une page ne connaît que les fautes commises sous ses yeux,
+et son instantané effacerait toutes les autres. Une bonne réponse **éteint** la
+dette au lieu de supprimer la ligne — le compte des fautes distingue
+l'étourderie de la notion qui ne passe pas. Voir `docs/quiz.md`.
+
+**Le second niveau de la sélection du quiz est le plan du chapitre**, pas
+l'intitulé du rappel de cours visé. Les rappels ne formaient pas une
+nomenclature : le même titre apparaissait deux fois, et les questions qui n'en
+visent aucun n'apparaissaient nulle part — 48 des 77 questions de trigonométrie.
+La règle qui garde l'écran honnête : **la somme des cases fait le compte du
+chapitre**, une case « le reste » servant au besoin de solde. Le point de cours
+survit sous la section, invisible dans la liste : c'est lui que « Mes domaines »
+désigne par lien, et il s'affiche alors nommé.
 
 **Le serveur est maître des règles.** Le plafond de 24 tentatives par QCM,
 l'agrégation d'un chapitre sur ses fiches, l'unicité d'une cible de to-do : tout

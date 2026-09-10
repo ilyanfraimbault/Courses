@@ -67,10 +67,20 @@ verifier('quatre chapitres', catalogue.themes.length === 4,
   catalogue.themes.map(t => `${t.titre} (${t.questions})`).join(', '))
 verifier('les thèmes couvrent toute la banque',
   catalogue.themes.reduce((n, t) => n + t.questions, 0) === catalogue.total)
-const notions = catalogue.themes.flatMap(t => t.notions)
-verifier('les notions portent un nom lisible',
-  notions.length >= 80 && notions.every(n => n.titre && !/^(qcm|cours|x)-/.test(n.titre)),
-  notions.length + ' notions')
+const sections = catalogue.themes.flatMap(t => t.sections)
+verifier('les sections portent un nom lisible',
+  sections.length >= 20 && sections.every(s => s.titre && !s.titre.includes('#')),
+  sections.length + ' sections')
+// L'invariant qui a motivé le passage au plan du cours : la somme des cases
+// d'un chapitre fait le compte du chapitre. Un chiffre qui ne s'additionne pas
+// est pire qu'un chiffre absent — c'est ce que faisaient les anciennes
+// pastilles, qui laissaient 48 des 77 questions de trigonométrie hors de toute
+// case.
+verifier('les sections couvrent chaque chapitre sans reste',
+  catalogue.themes.every(t => t.sections.reduce((n, s) => n + s.questions, 0) === t.questions),
+  catalogue.themes.map(t => `${t.titre} ${t.sections.reduce((n, s) => n + s.questions, 0)}/${t.questions}`).join(', '))
+verifier('aucun intitulé de section en double dans un chapitre',
+  catalogue.themes.every(t => new Set(t.sections.map(s => s.titre)).size === t.sections.length))
 
 console.log('\n— Une séance sur un seul chapitre')
 r = await api('/api/quiz/session', { method: 'POST', body: { themes: ['trigonometrie'], taille: 10 } })
@@ -158,29 +168,44 @@ r = await api('/api/quiz/historique')
 verifier('la séance est dans l\'historique', r.corps.sessions.some(s => s.id === session.id))
 verifier('aucune séance en cours', r.corps.encours === null)
 verifier('« ce qui résiste » est renseigné',
-  session.fautes === 0 || r.corps.resistent.length > 0, r.corps.resistent.length + ' notions')
-verifier('les notions résistantes portent leur nom du contenu',
-  r.corps.resistent.every(n => n.titre && !n.titre.includes('/')), r.corps.resistent[0]?.titre ?? '—')
+  session.fautes === 0 || r.corps.resistent.length > 0, r.corps.resistent.length + ' sections')
+verifier('les sections résistantes portent leur nom du contenu',
+  r.corps.resistent.every(s => s.titre && !s.titre.includes('#')), r.corps.resistent[0]?.titre ?? '—')
+verifier('ce qui résiste compte des questions en dette',
+  r.corps.resistent.every(s => s.enDette > 0 && s.fautes >= s.enDette))
 
 console.log('\n— L\'énoncé commun du bloc')
 // « Donner l'affixe du vecteur M₂M₄ » est insoluble sans les coordonnées, qui
-// sont écrites une fois en tête de l'exercice. La notion « Affixes, distances et
-// milieu » ne vit que dans des blocs qui portent un tel énoncé : le contrôle est
-// donc franc, pas statistique.
-const affixes = notions.find(n => n.cle.endsWith('/cours-affixes'))
+// sont écrites une fois en tête de l'exercice. La section « Points, vecteurs et
+// affixes » ne vit que dans des blocs qui portent un tel énoncé : le contrôle
+// est donc franc, pas statistique.
+const affixes = sections.find(s => /affixes/i.test(s.titre))
 if (!affixes) {
-  verifier('la notion des affixes existe au catalogue', false, 'introuvable')
+  verifier('la section des affixes existe au catalogue', false, 'introuvable')
 } else {
-  r = await api('/api/quiz/session', { method: 'POST', body: { notions: [affixes.cle], taille: 5 } })
+  r = await api('/api/quiz/session', { method: 'POST', body: { sections: [affixes.cle], taille: 5 } })
   const seance = r.corps.session
   const posees = []
   for (let p = 0; p < seance.taille; p++) {
     const q = await api(`/api/quiz/session/${seance.id}/question?position=${p}`)
     posees.push(q.corps.question)
   }
-  verifier('chaque question rend l\'énoncé commun de son bloc',
-    posees.every(q => Array.isArray(q.enonceBloc) && q.enonceBloc.length > 0),
-    `${posees.filter(q => q.enonceBloc).length} / ${posees.length}`)
+  // Un énoncé commun est une propriété du **bloc**, pas de la question : toutes
+  // les questions d'un même exercice le rendent, ou aucune.
+  const parBloc = new Map()
+  for (const q of posees) {
+    const cle = `${q.fiche.chemin}#${q.fiche.bloc}`
+    parBloc.set(cle, [...(parBloc.get(cle) ?? []), q])
+  }
+  verifier('un énoncé commun vaut pour tout son bloc',
+    [...parBloc.values()].every(l => new Set(l.map(q => texteDe(q.enonceBloc))).size === 1),
+    `${parBloc.size} blocs`)
+  // Les exercices de cette section ouvrent tous sur une figure ou un repère.
+  // Un QCM, lui, n'a pas d'énoncé commun : chacune de ses questions porte le
+  // sien en entier, et c'est très bien ainsi.
+  verifier('les exercices de la section rendent leur énoncé commun',
+    posees.filter(q => q.nature === 'exercice').every(q => q.enonceBloc?.length),
+    `${posees.filter(q => q.enonceBloc).length} / ${posees.length}, le reste étant des questions de QCM`)
   const texte = posees.map(q => texteDe(q.enonceBloc)).join(' ')
   verifier('l\'énoncé rappelle les données que la question suppose',
     /M_1|figure|repère/.test(texte), texte.slice(0, 90).replace(/\s+/g, ' ') + '…')
@@ -234,6 +259,92 @@ if (!gagnee) {
     ligne ? `${ligne.reussies} / ${ligne.total}` : 'aucune ligne')
 }
 
+console.log('\n— L\'ordre des propositions')
+// La bonne réponse d'un exercice donné finit par se retenir comme « c'est la
+// c ». Le serveur brasse donc l'ordre des propositions, place par place, et de
+// façon déterministe : deux lectures d'une même place doivent donner le même
+// ordre — sinon il changerait sous les doigts entre la lecture et le clic — et
+// sur soixante questions l'ordre de la fiche ne peut pas être conservé partout.
+r = await api('/api/quiz/session', { method: 'POST', body: { taille: 60 } })
+const brassage = r.corps.session
+let melangees = 0
+let memeOrdre = true
+for (let p = 0; p < brassage.taille; p++) {
+  const un = await api(`/api/quiz/session/${brassage.id}/question?position=${p}`)
+  const deux = await api(`/api/quiz/session/${brassage.id}/question?position=${p}`)
+  const lettres = un.corps.question.lettres
+  if (JSON.stringify(lettres) !== JSON.stringify(deux.corps.question.lettres)) memeOrdre = false
+  if (JSON.stringify(lettres) !== JSON.stringify([...lettres].sort())) melangees += 1
+}
+verifier('deux lectures d\'une même place donnent le même ordre', memeOrdre)
+verifier('l\'ordre des propositions est brassé',
+  melangees >= brassage.taille / 3,
+  `${melangees} / ${brassage.taille} questions dans un autre ordre que la fiche`)
+
+console.log('\n— La mémoire des fautes')
+// Une faute commise sur une fiche ne passait nulle part : elle mourait dans le
+// navigateur. Elle est maintenant une dette, et c'est elle qui donne son
+// contenu à « ce que j'ai raté ».
+let cat = (await api('/api/quiz/catalogue')).corps
+const vierge = cat.themes.flatMap(t => t.sections).find(x => x.ratees === 0 && x.questions >= 2)
+if (!vierge) {
+  verifier('une section sans dette existe pour le contrôle', false, 'aucune')
+} else {
+  r = await api('/api/quiz/session', { method: 'POST', body: { sections: [vierge.cle], taille: 5 } })
+  const cible = r.corps.question
+  await api(`/api/quiz/session/${r.corps.session.id}`, { method: 'DELETE' })
+
+  r = await api('/api/fautes', {
+    method: 'POST',
+    body: { chemin: cible.fiche.chemin, questions: [cible.id] }
+  })
+  verifier('une faute d\'exercice est acceptée', r.statut === 201, 'statut ' + r.statut)
+
+  cat = (await api('/api/quiz/catalogue')).corps
+  const apres = cat.themes.flatMap(t => t.sections).find(x => x.cle === vierge.cle)
+  verifier('la faute apparaît au catalogue, dans sa section',
+    apres.ratees === 1, `${apres.ratees} à revoir dans « ${apres.titre} »`)
+
+  r = await api('/api/quiz/session', {
+    method: 'POST',
+    body: { sections: [vierge.cle], erreurs: true, taille: 5 }
+  })
+  verifier('« ce que j\'ai raté » ne tire que la dette',
+    r.statut === 201 && r.corps.session.taille === 1 && r.corps.question.id === cible.id,
+    `${r.corps.session?.taille} place(s)`)
+
+  const dette = r.corps.session
+  let retrouvee = false
+  for (const lettre of cible.lettres) {
+    const etat = await api(`/api/quiz/session/${dette.id}`)
+    if (!etat.corps.question) break
+    const rep = await api(`/api/quiz/session/${dette.id}/reponse`, {
+      method: 'POST',
+      body: { position: etat.corps.question.position, lettre }
+    })
+    if (rep.statut === 200 && rep.corps.correction.juste) {
+      retrouvee = true
+      break
+    }
+  }
+  verifier('la question finit par tomber juste', retrouvee)
+  cat = (await api('/api/quiz/catalogue')).corps
+  verifier('la retrouver éteint la dette',
+    cat.themes.flatMap(t => t.sections).find(x => x.cle === vierge.cle).ratees === 0)
+
+  // Le même mécanisme depuis une copie de QCM : les questions ratées d'une
+  // tentative entrent dans la dette sans que le client ait rien à faire de plus.
+  const [, bloc, label] = cible.id.split('#')
+  r = await api('/api/qcm/tentative', {
+    method: 'POST',
+    body: { chemin: cible.fiche.chemin, bloc, justes: 0, total: 1, ratees: [label] }
+  })
+  verifier('une copie de QCM est acceptée', r.statut === 201, 'statut ' + r.statut)
+  cat = (await api('/api/quiz/catalogue')).corps
+  verifier('les ratées d\'un QCM entrent dans la dette',
+    cat.themes.flatMap(t => t.sections).find(x => x.cle === vierge.cle).ratees === 1)
+}
+
 console.log('\n— Cadrage par utilisateur')
 const cookieA = cookie
 cookie = ''
@@ -251,10 +362,29 @@ const anonyme = await fetch(BASE + '/api/quiz/catalogue')
 verifier('le catalogue exige une session', anonyme.status === 401, 'statut ' + anonyme.status)
 
 console.log('\n— Filtres')
-const notion = notions.sort((a, b) => b.questions - a.questions)[0]
-r = await api('/api/quiz/session', { method: 'POST', body: { notions: [notion.cle], taille: 5 } })
-verifier('séance sur une seule notion', r.statut === 201 && r.corps.question.notionTitre === notion.titre,
-  `${notion.titre} — ${r.corps.session?.taille} places`)
+const section = sections.slice().sort((a, b) => b.questions - a.questions)[0]
+r = await api('/api/quiz/session', { method: 'POST', body: { sections: [section.cle], taille: 5 } })
+verifier('séance sur une seule section', r.statut === 201 && r.corps.question.sectionTitre === section.titre,
+  `${section.titre} — ${r.corps.session?.taille} places`)
+// Le lien venu de « Mes domaines » : le catalogue n'affiche plus les points de
+// cours, mais il les porte toujours sous leur section. Sans eux, le bouton
+// « m'interroger là-dessus » de cette page ouvrirait une séance sur tout le
+// programme sans rien dire.
+const point = sections.flatMap(sec => sec.notions).sort((a, b) => b.questions - a.questions)[0]
+if (!point) {
+  verifier('le catalogue porte les points de cours', false, 'aucun')
+} else {
+  r = await api('/api/quiz/session', { method: 'POST', body: { notions: [point.cle], taille: 5 } })
+  const surLePoint = []
+  for (let p = 0; p < (r.corps.session?.taille ?? 0); p++) {
+    const q = await api(`/api/quiz/session/${r.corps.session.id}/question?position=${p}`)
+    surLePoint.push(q.corps.question)
+  }
+  verifier('une séance sur un point de cours ne pose que lui',
+    r.statut === 201 && surLePoint.length > 0 && surLePoint.every(q => q.notionTitre === point.titre),
+    `${point.titre} — ${r.corps.session?.taille} places`)
+}
+
 r = await api('/api/quiz/session', { method: 'POST', body: { themes: ['inexistant'], taille: 10 } })
 verifier('un filtre sans question est refusé', r.statut === 400, 'statut ' + r.statut)
 r = await api('/api/quiz/session', { method: 'POST', body: { taille: 999 } })

@@ -13,6 +13,9 @@ node_modules
 logs
 *.log
 
+# Captures laissées par `pnpm verif:quiz:rendu` à la racine.
+quiz-*.png
+
 # Misc
 .DS_Store
 .fleet

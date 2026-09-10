@@ -207,6 +207,44 @@ const MIGRATIONS: string[] = [
   ) STRICT, WITHOUT ROWID;
 
   CREATE INDEX quiz_reponse_par_notion ON quiz_reponse (notion);
+  `,
+
+  // v4 — la mémoire des fautes, et la section du cours dans l'historique.
+  //
+  // Jusqu'ici le site ne retenait que ce qui était **trouvé** : `reussite` pour
+  // les fiches, `qcm_tentative` pour les copies. Une faute d'exercice mourait
+  // dans le navigateur, si bien que « m'interroger sur ce que j'ai raté » ne
+  // pouvait pas exister — le site ne le savait pas.
+  //
+  // Une ligne par question ratée au moins une fois, quel que soit l'endroit :
+  // exercice, QCM ou quiz. `rattrapee` porte la date de la bonne réponse qui a
+  // éteint la dette ; NULL veut dire « toujours en dette », et c'est cette
+  // colonne que la sélection du quiz interroge.
+  `
+  CREATE TABLE faute (
+    utilisateur_id INTEGER NOT NULL,
+    chemin         TEXT    NOT NULL,
+    bloc           TEXT    NOT NULL,
+    label          TEXT    NOT NULL,
+    -- Combien de fois la question a été ratée, toutes occasions confondues.
+    -- Ce n'est pas décoratif : c'est ce qui distingue l'étourderie de la notion
+    -- qui ne passe pas.
+    compte         INTEGER NOT NULL DEFAULT 1,
+    derniere       INTEGER NOT NULL,
+    rattrapee      INTEGER,
+    PRIMARY KEY (utilisateur_id, chemin, bloc, label),
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT, WITHOUT ROWID;
+
+  CREATE INDEX faute_en_dette ON faute (utilisateur_id, rattrapee);
+
+  -- Le second niveau de la sélection du quiz est devenu la section du cours ;
+  -- « ce qui résiste » s'agrège donc sur elle. La colonne « notion » reste :
+  -- elle sert toujours à choisir la question qui remplace une ratée, au point
+  -- de cours près.
+  ALTER TABLE quiz_reponse ADD COLUMN section TEXT;
+
+  CREATE INDEX quiz_reponse_par_section ON quiz_reponse (section);
   `
 ]
 

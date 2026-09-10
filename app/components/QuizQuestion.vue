@@ -17,6 +17,14 @@ const emit = defineEmits<{ choisir: [lettre: string] }>()
 
 const corrige = computed(() => !!props.correction)
 
+/**
+ * Les propositions arrivent dans l'ordre où le serveur veut les poser, qui
+ * n'est pas celui de la fiche. L'écran les repère donc par leur **position** —
+ * a, b, c dans l'ordre affiché — et c'est ce repère que le clavier désigne.
+ */
+const etiquettes = computed(() => reperesQuiz(props.question.lettres))
+const reperes = computed(() => props.question.lettres.map(l => etiquettes.value[l] ?? l))
+
 /** Les lettres déjà fausses : ici, il n'y en a qu'une, celle qu'on vient de donner. */
 const errones = computed(() =>
   props.correction && !props.correction.juste ? [props.correction.donnee] : [])
@@ -37,8 +45,11 @@ function auClavier(evenement: KeyboardEvent) {
   if (corrige.value || props.envoi) return
   if (evenement.metaKey || evenement.ctrlKey || evenement.altKey) return
   const touche = evenement.key.toLowerCase()
-  const parChiffre = /^[1-9]$/.test(touche) ? props.question.lettres[Number(touche) - 1] : null
-  const lettre = parChiffre ?? (props.question.lettres.includes(touche) ? touche : null)
+  // Chiffres et lettres désignent tous deux un **rang** : « b » coche la
+  // deuxième proposition affichée, quelle que soit la lettre qu'elle porte dans
+  // la fiche. C'est ce que l'œil voit, donc ce que la main attend.
+  const rang = /^[1-9]$/.test(touche) ? Number(touche) - 1 : reperes.value.indexOf(touche)
+  const lettre = rang >= 0 ? props.question.lettres[rang] ?? null : null
   if (!lettre) return
   evenement.preventDefault()
   choisir(lettre)
@@ -67,12 +78,12 @@ useEventListener(document, 'keydown', auClavier)
         :label="question.themeTitre"
       />
       <UBadge
-        v-if="question.notionTitre"
+        v-if="question.sectionTitre || question.notionTitre"
         color="neutral"
         variant="soft"
         size="sm"
         class="max-w-full truncate"
-        :label="question.notionTitre"
+        :label="question.sectionTitre ?? question.notionTitre!"
       />
       <UBadge
         v-if="question.rejouee"
@@ -114,6 +125,7 @@ useEventListener(document, 'keydown', auClavier)
     <ChoixReponses
       class="mt-6"
       :lettres="question.lettres"
+      :etiquettes="etiquettes"
       :bonne="correction?.bonne ?? ''"
       :choisi="choisi"
       :errones="errones"
@@ -135,7 +147,7 @@ useEventListener(document, 'keydown', auClavier)
         Correction en cours…
       </template>
       <template v-else>
-        Au clavier : {{ question.lettres.join(', ') }} ou 1 à {{ question.lettres.length }}.
+        Au clavier : {{ reperes.join(', ') }} ou 1 à {{ reperes.length }}.
       </template>
     </p>
   </div>

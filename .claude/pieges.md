@@ -281,3 +281,38 @@ déploiement passe au vert. D'où `IMAGE_TAG=${{ github.sha }}`.
   une seule fois sur la chaîne entière. Ça a produit des préfixes de fichiers
   faux, silencieusement. Pour toute manipulation en masse de fichiers, préférer
   un script Python explicite.
+
+- **Les scripts de vérification veulent une base vierge *et* le bon code
+  d'inscription.** `verifier-comptes.mjs` écrit `code-de-classe` en dur et
+  s'inscrit sous les pseudos fixes « alice » et « bob » : lancé deux fois sur la
+  même base, ou contre un serveur au code différent, il échoue en cascade sur
+  une erreur qui n'a rien à voir (`Cannot convert undefined or null to object`,
+  parce que la requête suivante n'a pas de session). Repartir d'une base neuve :
+
+  ```bash
+  NUXT_CODE_INSCRIPTION=code-de-classe NUXT_BASE_FICHIER=/tmp/essai.sqlite pnpm dev
+  ```
+
+## Écriture de code
+
+### Un backtick dans un commentaire SQL ferme le littéral de gabarit
+
+Les migrations de `server/utils/schema.ts` sont des chaînes entre backticks, et
+leurs commentaires SQL suivent l'usage du dépôt : nommer les colonnes entre
+backticks. Le premier de ces backticks **termine la chaîne**, et la migration
+devient une expression que rien ne comprend. Le message ne parle ni de SQL ni de
+commentaire : `Parsing error: ',' expected`, sur une ligne de prose française.
+
+Dans une migration, citer les colonnes entre guillemets français.
+
+### Un formulaire rempli avant l'hydratation reste vide pour Vue
+
+`page.getByPlaceholder(…).fill(…)` juste après `page.goto` écrit dans le DOM
+avant que Vue ne prenne la main : le `v-model` ne voit rien, et le bouton
+d'envoi reste désactivé pour toujours. Playwright, lui, attend patiemment un
+bouton qui ne s'activera jamais, puis rend un délai dépassé de 30 s qui ressemble
+à un défaut de l'application.
+
+En développement l'écart se compte en secondes, et il dépend de la machine :
+remplir **en boucle jusqu'à ce que le formulaire réponde** plutôt qu'attendre un
+délai fixe. C'est ce que fait `scripts/verifier-rendu-quiz.mjs`.

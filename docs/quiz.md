@@ -91,7 +91,10 @@ console.log(n, t);
 Attendu aujourd'hui : `432 { trigonometrie: 77, 'fonctions-variable-reelle': 153, 'fonctions-usuelles': 69, 'nombres-complexes': 133 }`.
 
 Un thème `null` dans ce relevé signalerait une question que le catalogue ne
-saurait pas classer — aujourd'hui il n'y en a aucune.
+saurait pas classer — aujourd'hui il n'y en a aucune. Une `section` nulle est
+moins grave : la question tombe dans « le reste du chapitre ». Il y en a huit,
+et elles viennent des deux seuls rappels de cours dont la `source` ne porte pas
+d'ancre.
 
 ## Le thème d'une question vient du cours, pas de la page
 
@@ -105,21 +108,76 @@ Mais chaque question renvoie au rappel de cours exact qui lui manquait
 pointe vers une section d'un chapitre :
 
 ```
-::extrait-cours{id="qcm-g-derivees" source="/cours/…/fonctions-variable-reelle/cours#…"}
+::extrait-cours{id="qcm-g-derivees" source="/cours/…/fonctions-variable-reelle/cours#_5-les-formes-composées"}
 ```
 
 Le thème est donc l'avant-dernier segment de cette source. Une question sans
 rappel retombe sur le chapitre de sa fiche. Rien n'est écrit à la main : une
 table de correspondance vieillirait en silence, la `source` non.
 
-Le **nom** de la notion est l'intitulé de ce même extrait — « Dérivées : le
-mécanisme des composées » —, ce qui donne 94 notions nommées sous les quatre
-chapitres, et un second niveau de sélection sans un octet de métadonnée en plus.
+## Le second niveau, c'est le plan du chapitre
 
-Deux chapitres peuvent employer le même identifiant d'extrait — `cours-quotient`
-désigne le quotient de fonctions ici, le quotient de complexes ailleurs. La clé
-d'une notion est donc `chapitre/identifiant`, sans quoi rater une dérivée
-proposerait une question de complexes.
+L'ancre de cette même `source` nomme la **section du cours**, et c'est elle qui
+sert de second niveau à la sélection : `/…/trigonometrie/cours#_4-les-valeurs-remarquables`
+s'affiche « 4. Les valeurs remarquables », intitulé relu dans la page de cours.
+
+Ça n'a pas toujours été le cas, et le changement mérite d'être expliqué. Le
+second niveau était l'**intitulé du rappel de cours** visé. Deux défauts, chacun
+suffisant pour rendre l'écran de sélection inutilisable :
+
+- **le même intitulé apparaissait deux fois.** Deux rappels écrits dans deux
+  fiches — l'un dans l'entraînement, l'autre dans un QCM — portent souvent le
+  même titre : « Résoudre une équation trigonométrique » deux fois en trigo, six
+  titres en double dans « fonctions dérivées » comme dans « complexes ». Rien à
+  l'œil ne les distinguait ;
+- **les comptes ne s'additionnaient pas.** Une question qui ne vise aucun rappel
+  n'apparaissait dans aucune pastille. Trigonométrie annonçait **77** questions
+  au chapitre pour **29** réparties dans ses pastilles : les 48 autres, les
+  contrôles express de la page de cours, n'étaient atteignables qu'en cochant le
+  chapitre entier.
+
+Le plan du chapitre règle les deux. Un titre de section est unique dans sa page
+par construction, et une question sans rappel se rattache au **titre de niveau 2
+qui la précède dans sa propre page** — ce qui est précisément la section dont
+elle parle, puisqu'un contrôle express est écrit sous le cours qu'il vérifie.
+
+Le relevé donne aujourd'hui **34 cases pour 432 questions**, et chaque chapitre
+est couvert sans reste :
+
+| Chapitre | Cases | Questions |
+|---|---|---|
+| Trigonométrie | 12 | 77 |
+| Fonctions d'une variable réelle | 6 | 153 |
+| Fonctions usuelles | 8 | 69 |
+| Nombres complexes | 8 | 133 |
+
+Huit questions n'ont pas de section : deux rappels de cours pointent vers une
+page sans ancre. Elles tombent dans une case « Le reste du chapitre », qui
+existe pour que la somme des cases fasse toujours le compte du chapitre. Un
+chiffre qui ne s'additionne pas est pire qu'un chiffre absent.
+
+Le repli sur le titre de niveau 2 n'a lieu que si la question **appartient** au
+chapitre de sa page : une question de QCM qui vise le cours des fonctions
+usuelles ne doit pas classer « Partie B » du QCM parmi les sections de ce
+chapitre.
+
+La **notion** — l'intitulé du rappel — n'a pas disparu pour autant. Elle sert
+encore à deux choses, où sa finesse est un atout et son ambiguïté sans
+conséquence :
+
+- elle est le **premier palier** du choix d'une question de reprise ;
+- elle est ce que **« Mes domaines » désigne par lien.** Cette page-là raisonne
+  en points de cours — c'est son sujet — et son bouton « m'interroger » ouvre
+  `/quiz?notion=…`. Le catalogue porte donc toujours les notions, rangées sous
+  leur section, mais il ne les **affiche** pas : une sélection reçue par lien
+  arrive nommée dans un bandeau, avec la section qui la contient et de quoi la
+  retirer. C'est la seule façon d'annoncer « 4 questions dans la sélection » en
+  disant lesquelles.
+
+Une notion vit dans une seule section, les deux venant de la même `source`.
+Sa clé est `chapitre/identifiant`, deux chapitres pouvant employer le même
+identifiant d'extrait — `cours-quotient` désigne le quotient de fonctions ici,
+le quotient de complexes ailleurs.
 
 ## La file
 
@@ -161,6 +219,36 @@ donc à deux niveaux : un chapitre après l'autre, et dans chacun une notion apr
 l'autre. Sur quarante questions et les quatre chapitres, la répartition observée
 est 10 / 10 / 10 / 10.
 
+### … et il préfère ce qui n'est pas su
+
+À l'intérieur d'un point de cours, l'ordre n'est pas au hasard. Quatre paliers,
+du plus urgent au moins utile :
+
+1. **en dette** — ratée quelque part et pas encore retrouvée depuis ;
+2. **jamais posée au quiz** — du neuf, tant qu'il en reste ;
+3. **posée il y a plus de deux semaines** — le temps d'oublier ;
+4. **posée récemment** — faute de mieux dans la sélection.
+
+Sans ce classement, une banque de 432 questions finit par reposer avant-hier ce
+qu'on a vu hier, et une séance n'apprend plus qu'à reconnaître des énoncés. Le
+tri est **stable** et n'intervient qu'après le mélange : à palier égal, l'ordre
+reste aléatoire. Et il reste **subordonné à l'étalement**, sans quoi une séance
+de vingt questions se réduirait aux vingt dettes du même chapitre.
+
+### L'ordre des propositions est brassé
+
+La bonne réponse d'un exercice donné finit par se retenir comme « c'est la c ».
+Le serveur envoie donc les propositions dans un ordre **tiré pour cette place de
+cette séance**, et l'écran ne montre jamais les lettres de la fiche : il
+numérote les propositions dans l'ordre où elles s'affichent, et le clavier
+désigne ce rang. La lettre écrite dans le contenu ne transparaît nulle part.
+
+Le brassage est **déterministe** — un mulberry32 amorcé par `séance:place:question`.
+Ce n'est pas un raffinement : la même question est lue deux ou trois fois — pour
+l'afficher, pour la corriger, au préchargement — et un ordre retiré à chaque
+lecture changerait sous les doigts entre le moment où on lit et celui où on
+clique.
+
 ## Le serveur est maître du barème
 
 La bonne réponse **ne part pas** avec la question : elle reste au serveur
@@ -184,18 +272,20 @@ d'où la règle « un préchargement vide ne s'utilise pas, il se refait ».
 
 | Route | Rôle |
 |---|---|
-| `GET /api/quiz/catalogue` | chapitres et notions, avec leurs comptes |
+| `GET /api/quiz/catalogue` | chapitres et sections du cours, avec leurs comptes et leur dette |
 | `POST /api/quiz/session` | ouvre une séance, tire les places, rend la première question |
 | `GET /api/quiz/session/:id` | reprend une séance là où elle s'était arrêtée |
 | `DELETE /api/quiz/session/:id` | clôt une séance sans l'effacer |
 | `GET /api/quiz/session/:id/question?position=` | une question de la file, pour le préchargement |
 | `POST /api/quiz/session/:id/reponse` | corrige, allonge la file s'il le faut, rend la correction |
 | `GET /api/quiz/historique` | les séances passées, et ce qui résiste |
+| `POST /api/fautes` | les fautes commises sur une fiche — hors quiz, mais même mémoire |
 
 Toutes passent par `idUtilisateur(event)` : une séance n'est lisible que par son
-compte. Le catalogue est du contenu et n'appartient à personne, mais il exige
-quand même une session — le quiz tout entier est derrière la connexion, et une
-porte entrouverte sur le côté ne sert qu'à surprendre plus tard.
+compte. Le découpage du catalogue est du contenu et n'appartient à personne,
+mais ses comptes de dette, si — et le quiz tout entier est de toute façon
+derrière la connexion, une porte entrouverte sur le côté ne servant qu'à
+surprendre plus tard.
 
 ## Les tables
 
@@ -207,9 +297,52 @@ file, et c'est voulu : la file dit où en est *cette* séance, ces lignes disent
 qui résiste depuis toujours — et ça ne se lit pas en désérialisant trente JSON.
 C'est de là que vient le panneau « Ce qui résiste ».
 
-L'intitulé lisible d'une notion n'est **pas** recopié en base : il vient du
-contenu à la lecture. Le figer ferait afficher une notion renommée dans le cours
-sous son ancien nom des mois plus tard.
+`faute` porte la dette : une ligne par question ratée au moins une fois, son
+compte de fautes, et la date qui l'a éteinte — ou `NULL` tant qu'elle tient.
+
+L'intitulé lisible d'une section n'est **pas** recopié en base : il vient du
+contenu à la lecture. Le figer ferait afficher une section renommée dans le
+cours sous son ancien nom des mois plus tard. C'est aussi pourquoi « ce qui
+résiste » agrège en mémoire plutôt qu'en SQL : la base ne connaît que des
+identités de questions.
+
+## Ce que j'ai raté
+
+Le site ne retenait que ce qui était **trouvé** : `reussite` pour les fiches,
+`qcm_tentative` pour les copies. Une faute d'exercice mourait dans le
+navigateur. « M'interroger sur ce que j'ai raté » ne pouvait donc pas exister —
+le site ne le savait pas.
+
+La table `faute` porte une ligne par question ratée au moins une fois, quel que
+soit l'endroit :
+
+| D'où vient la faute | Qui l'écrit |
+|---|---|
+| une proposition fausse sur une fiche | `POST /api/fautes`, envoyé par la page |
+| une question ratée dans une copie de QCM | `POST /api/qcm/tentative`, depuis ses `ratees` |
+| une mauvaise réponse au quiz | `POST /api/quiz/session/:id/reponse` |
+
+Et la dette **s'éteint** en retrouvant la question, où que ce soit : la
+progression d'une fiche (`PUT /api/fiche`) et une bonne réponse au quiz
+rattrapent l'une comme l'autre. `rattrapee` porte la date ; `NULL` veut dire
+« toujours en dette », et c'est cette colonne que la sélection interroge.
+
+La ligne n'est jamais effacée : `compte` retient le nombre de fautes, ce qui
+distingue l'étourderie de la notion qui ne passe pas. C'est de là que vient le
+panneau « ce qui résiste », qui couvre donc maintenant les exercices et les QCM
+et non plus les seules séances de quiz.
+
+Une faute est un **événement**, pas un état, et c'est la seule écriture du site
+qui le soit. Elle ne peut donc pas voyager dans le corps de `PUT /api/fiche`,
+qui décrit l'état complet des questions trouvées : la page ne connaît que les
+fautes commises sous ses yeux, et son instantané effacerait tout le reste. D'où
+une route à part, et un envoi par delta. Une seule faute est comptée par
+question et par visite, quel que soit le nombre de mauvaises lettres essayées :
+c'est la question qui n'est pas sue, pas chaque clic.
+
+Dans l'écran de sélection, « seulement ce que j'ai raté » est un **tamis** posé
+sur le reste : il croise ce qui est coché au lieu de s'y ajouter, et pris seul
+il prend toute la dette.
 
 ## Une question gagnée compte sur sa fiche
 
@@ -267,9 +400,14 @@ QUIZ_BASE=http://localhost:3210 NUXT_CODE_INSCRIPTION=essai pnpm verif:quiz
 
 Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 
-- 432 questions dans la banque, réparties sur quatre chapitres et 94 notions
-  nommées, sans reste ;
+- 432 questions dans la banque, réparties sur quatre chapitres et 34 sections
+  de cours, chaque chapitre couvert **sans reste** et sans intitulé en double ;
 - la bonne réponse n'est pas dans la charge utile d'une question ;
+- l'ordre des propositions est brassé, et deux lectures d'une même place
+  rendent le même ordre ;
+- une faute d'exercice apparaît au catalogue dans sa section, « seulement ce que
+  j'ai raté » ne tire qu'elle, et la retrouver éteint la dette ;
+- les questions ratées d'une copie de QCM entrent dans la même dette ;
 - une faute allonge la file d'une entrée qui porte le numéro de la place ratée ;
 - la question de reprise n'est jamais celle qu'on vient de rater ;
 - **aucune question n'est posée deux fois** dans une séance ;

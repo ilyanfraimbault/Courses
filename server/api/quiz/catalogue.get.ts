@@ -2,14 +2,16 @@ import type { CatalogueQuiz } from '~~/shared/types/quiz'
 
 /**
  * Sur quoi on peut se faire interroger : les chapitres, et dans chacun les
- * points de cours précis.
+ * sections du cours.
  *
- * Rien ici n'appartient à personne — c'est le contenu, pas des données — mais la
- * route exige quand même une session : le quiz tout entier est derrière la
- * connexion, et une porte entrouverte sur le côté ne sert qu'à surprendre plus
- * tard.
+ * Le découpage vient du contenu et n'appartient à personne. Les **comptes de
+ * questions ratées**, eux, appartiennent au compte connecté : c'est ce qui
+ * permet d'écrire « 12 en dette » à côté d'un chapitre avant même d'avoir
+ * choisi quoi que ce soit. La route exigeait déjà une session — le quiz tout
+ * entier est derrière la connexion — et elle n'est lue qu'au montage, jamais au
+ * rendu serveur, comme toute donnée d'utilisateur ici.
  */
 export default defineEventHandler(async (event): Promise<CatalogueQuiz> => {
-  await idUtilisateur(event)
-  return composerCatalogue(await chargerBanque(event))
+  const uid = await idUtilisateur(event)
+  return composerCatalogue(await chargerBanque(event), questionsEnDette(useBase(), uid))
 })

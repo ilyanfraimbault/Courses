@@ -74,6 +74,13 @@ export default defineEventHandler(async (event) => {
     `)
     for (const r of retenues) inserer.run(uid, chemin, r.bloc, r.label, r.reponse, maj, maj)
 
+    // Retrouver une question éteint la dette qu'elle avait laissée — d'un
+    // exercice, d'un QCM ou d'une séance de quiz, peu importe où la faute a été
+    // faite. L'instantané est rejoué à chaque visite, mais `rattraperFautes` ne
+    // touche que ce qui est encore en dette : les visites suivantes n'écrivent
+    // rien et ne rajeunissent aucune date.
+    rattraperFautes(db, uid, retenues.map(r => ({ chemin, bloc: r.bloc, label: r.label })), maj)
+
     db.exec('COMMIT')
   } catch (erreur) {
     db.exec('ROLLBACK')

@@ -31,7 +31,9 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   while (etat.position < etat.entrees.length) {
     const entree = etat.entrees[etat.position]!
     const candidate = trouverEntree(banque, entree.question)
-    posee = candidate ? await poserQuestion(event, banque, candidate, etat.position, !!entree.rejouee) : null
+    posee = candidate
+      ? await poserQuestion(event, banque, candidate, etat.position, !!entree.rejouee, `${id}:${etat.position}`)
+      : null
     if (posee) break
     etat.entrees.splice(etat.position, 1)
     elaguees += 1

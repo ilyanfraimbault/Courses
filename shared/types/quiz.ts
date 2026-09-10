@@ -49,14 +49,55 @@ export interface QuestionRelevee {
    * renvoie au cours d'un seul — et, à défaut, du chapitre de la fiche.
    */
   theme: string | null
+  /**
+   * Section du cours dont la question relève, sous la forme
+   * « /chemin/de/la/page#ancre ». C'est le second niveau de la sélection : le
+   * plan du chapitre, tel qu'il est écrit dans la page de cours.
+   *
+   * Elle vient de l'ancre du rappel de cours visé, et à défaut du titre de
+   * niveau 2 qui précède la question dans sa propre page — ce qui rattrape les
+   * contrôles express insérés au fil du cours, qui ne visent aucun rappel.
+   */
+  section: string | null
 }
 
-/** Une notion, c'est-à-dire un point de cours précis, dans le catalogue. */
+/**
+ * Une section du cours dans le catalogue : une case du plan du chapitre.
+ *
+ * Le second niveau de la sélection a d'abord été l'intitulé du rappel de cours
+ * visé. C'était illisible : deux rappels écrits dans deux fiches différentes
+ * portent souvent le même titre, si bien que le même intitulé apparaissait deux
+ * fois — six fois dans les chapitres « fonctions dérivées » et « complexes » —
+ * et les questions qui ne visent aucun rappel n'apparaissaient nulle part. Sur
+ * les 77 questions de trigonométrie, 29 seulement étaient atteignables autrement
+ * qu'en cochant le chapitre entier.
+ */
+export interface SectionCatalogue {
+  /** « /chemin/de/la/page#ancre », identique au champ `section` des questions. */
+  cle: string
+  /** L'intitulé de la section, tel qu'il est écrit dans le cours. */
+  titre: string
+  questions: number
+  /** Parmi elles, celles qui sont en dette : ratées et pas encore retrouvées. */
+  ratees: number
+  /**
+   * Les points de cours qui vivent dans cette section. Ils ne s'affichent pas
+   * dans la liste — c'est précisément leur ambiguïté qui a fait passer la
+   * sélection au plan du chapitre — mais « Mes domaines » raisonne en points de
+   * cours, et son lien « m'interroger là-dessus » a besoin de les nommer et de
+   * les compter. Un point de cours vit dans une seule section, puisque les deux
+   * viennent de la même `source`.
+   */
+  notions: NotionCatalogue[]
+}
+
+/** Un point de cours : l'intitulé d'un rappel, et ce qu'il pèse. */
 export interface NotionCatalogue {
-  /** « chapitre/identifiant-extrait » : le même identifiant peut servir dans deux chapitres. */
+  /** « chapitre/identifiant-extrait » : le même identifiant sert dans deux chapitres. */
   cle: string
   titre: string
   questions: number
+  ratees: number
 }
 
 export interface ThemeCatalogue {
@@ -67,11 +108,14 @@ export interface ThemeCatalogue {
   /** Chemin de la page de sommaire du chapitre, quand elle existe. */
   chemin: string | null
   questions: number
-  notions: NotionCatalogue[]
+  ratees: number
+  sections: SectionCatalogue[]
 }
 
 export interface CatalogueQuiz {
   total: number
+  /** Questions en dette, tous chapitres confondus. */
+  ratees: number
   themes: ThemeCatalogue[]
   /** Bornes acceptées pour la taille d'un tirage, pour que le client n'invente rien. */
   tailleMin: number
@@ -81,7 +125,20 @@ export interface CatalogueQuiz {
 /** Ce sur quoi on demande à être interrogé. Vide de tout côté = tout le catalogue. */
 export interface FiltreQuiz {
   themes: string[]
-  notions: string[]
+  sections: string[]
+  /**
+   * Ne tirer que dans les questions en dette — ratées quelque part sur le site
+   * et pas encore retrouvées depuis. Se croise avec les chapitres et les
+   * sections cochés ; seul, il prend toute la dette.
+   */
+  erreurs?: boolean
+  /**
+   * Des points de cours précis. Ils ne se cochent pas à la main — la liste des
+   * sections a remplacé la leur — mais un lien venu de « Mes domaines » en
+   * désigne un, et les séances ouvertes avant ce changement en portaient. Ils
+   * s'additionnent aux chapitres et aux sections comme le reste.
+   */
+  notions?: string[]
 }
 
 /** Une question prête à être posée. La bonne réponse n'y figure pas. */
@@ -91,6 +148,8 @@ export interface QuestionQuiz {
   label: string
   theme: string | null
   themeTitre: string | null
+  /** L'intitulé de la section du cours, tel qu'il s'affiche en tête de question. */
+  sectionTitre: string | null
   notionTitre: string | null
   nature: NatureQuestion
   /** D'où elle vient, pour pouvoir y retourner. */
@@ -181,12 +240,21 @@ export interface ResumeSessionQuiz {
   themes: string[]
 }
 
-/** Ce qui résiste : une notion, et le compte des fautes qu'elle a coûtées. */
-export interface NotionResistante {
+/**
+ * Ce qui résiste : une section du cours, et ce qu'elle doit encore.
+ *
+ * Elle ne se lit plus dans les seules séances de quiz mais dans la mémoire des
+ * fautes, qui couvre aussi les exercices et les QCM — c'est-à-dire l'essentiel
+ * de ce qu'on fait sur le site.
+ */
+export interface SectionResistante {
   cle: string
   titre: string
   theme: string | null
-  posees: number
+  themeTitre: string | null
+  /** Questions de la section ratées et pas encore retrouvées. */
+  enDette: number
+  /** Fautes accumulées sur ces questions, toutes occasions confondues. */
   fautes: number
 }
 
@@ -194,5 +262,5 @@ export interface HistoriqueQuiz {
   sessions: ResumeSessionQuiz[]
   /** La session inachevée, s'il y en a une : c'est elle qu'on propose de reprendre. */
   encours: ResumeSessionQuiz | null
-  resistent: NotionResistante[]
+  resistent: SectionResistante[]
 }

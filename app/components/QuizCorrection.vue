@@ -14,6 +14,12 @@ const coursOuvert = ref(false)
 // séance de quarante questions en séance de lecture.
 const solutionOuverte = ref(!props.correction.juste)
 
+// Le verdict nomme les propositions comme l'écran les a montrées, et non par
+// les lettres de la fiche : le quiz en a brassé l'ordre.
+const etiquettes = computed(() => reperesQuiz(props.question.lettres))
+const donnee = computed(() => etiquettes.value[props.correction.donnee] ?? props.correction.donnee)
+const bonne = computed(() => etiquettes.value[props.correction.bonne] ?? props.correction.bonne)
+
 const grandEcran = useMediaQuery('(min-width: 48rem)')
 
 // Le contenu d'un tiroir est téléporté dans <body>, hors de `.cours-body` : sans
@@ -39,8 +45,8 @@ const uiTiroir = computed(() => ({
         />
         <span v-if="correction.juste">Juste.</span>
         <span v-else>
-          Raté : tu as répondu <strong class="uppercase">{{ correction.donnee }}</strong>,
-          la bonne réponse était la <strong class="uppercase">{{ correction.bonne }}</strong>.
+          Raté : tu as répondu <strong class="uppercase">{{ donnee }}</strong>,
+          la bonne réponse était la <strong class="uppercase">{{ bonne }}</strong>.
         </span>
       </p>
 

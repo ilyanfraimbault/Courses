@@ -47,14 +47,22 @@ export interface LigneSession {
  * la page d'historique inutilisable.
  */
 export function lireFiltre(json: string): FiltreQuiz {
+  const chaines = (valeur: unknown) =>
+    Array.isArray(valeur) ? valeur.filter((v): v is string => typeof v === 'string') : []
   try {
     const brut = JSON.parse(json) as Partial<FiltreQuiz>
     return {
-      themes: Array.isArray(brut?.themes) ? brut.themes.filter(t => typeof t === 'string') : [],
-      notions: Array.isArray(brut?.notions) ? brut.notions.filter(n => typeof n === 'string') : []
+      themes: chaines(brut?.themes),
+      sections: chaines(brut?.sections),
+      erreurs: brut?.erreurs === true,
+      // Hérité : les séances ouvertes quand le second niveau de la sélection
+      // était le rappel de cours visé. On les relit telles quelles pour qu'une
+      // séance en cours au moment d'une mise en ligne garde ses candidats
+      // jusqu'à sa dernière question.
+      notions: chaines(brut?.notions)
     }
   } catch {
-    return { themes: [], notions: [] }
+    return { themes: [], sections: [] }
   }
 }
 

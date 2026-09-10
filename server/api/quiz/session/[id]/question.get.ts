@@ -33,7 +33,9 @@ export default defineEventHandler(async (event): Promise<{ position: number, que
 
   const banque = await chargerBanque(event)
   const candidate = trouverEntree(banque, entree.question)
-  const posee = candidate ? await poserQuestion(event, banque, candidate, position, !!entree.rejouee) : null
+  const posee = candidate
+    ? await poserQuestion(event, banque, candidate, position, !!entree.rejouee, `${id}:${position}`)
+    : null
 
   return { position, question: posee?.question ?? null }
 })

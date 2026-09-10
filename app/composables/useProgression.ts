@@ -8,6 +8,12 @@ export interface ProgressionApi {
   oublier: (id: string | null) => void
   /** Signale une question trouvée : la lettre, ou « auto » en auto-évaluation. */
   reussir: (id: string | null, reponse: string) => void
+  /**
+   * Signale une question ratée. À n'appeler qu'une fois par question et par
+   * visite : c'est un événement qui s'ajoute à la mémoire des fautes, pas un
+   * état qu'on réécrit.
+   */
+  rater: (id: string | null) => void
   /** Retire une question de la progression — l'auto-évaluation permet de se dédire. */
   annuler: (id: string | null) => void
   /** Ce que la mémoire sait de cette question, ou null si elle reste à faire. */
@@ -45,10 +51,44 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
     for (const [id, reponse] of Object.entries(donnees.faites)) faites.set(id, reponse)
   }, { immediate: true })
 
+  // Les fautes en attente d'envoi. Elles ne vivent pas dans `faites` : ce sont
+  // des événements, envoyés puis oubliés, là où `faites` est un état complet
+  // renvoyé en entier à chaque écriture.
+  const fautes = reactive(new Set<string>())
+
+  /**
+   * Les fautes partent par **lot et par delta**, non par instantané : une page
+   * ne connaît que les fautes commises sous ses yeux, jamais celles des visites
+   * passées, et un instantané effacerait donc tout le reste.
+   *
+   * Le lot est vidé avant l'envoi : si celui-ci échoue, la faute est perdue. On
+   * s'en accommode — c'est une donnée de confort, et la réenfiler ferait
+   * compter deux fois la même erreur au premier succès qui suit.
+   */
+  const envoyerFautes = useDebounceFn(async () => {
+    if (!chargee.value || !fautes.size) return
+    const lot = [...fautes]
+    fautes.clear()
+    try {
+      await $fetch('/api/fautes', {
+        method: 'POST',
+        body: { chemin: cheminCanonique(toValue(chemin)), questions: lot }
+      })
+    } catch {
+      // Idem que la progression : on n'inflige pas un message d'erreur au
+      // milieu d'un exercice pour une mémoire d'appoint.
+    }
+  }, DELAI_ENVOI)
+
   const api: ProgressionApi = {
     declarer: (id) => { if (id) declarees.add(id) },
     oublier: (id) => { if (id) declarees.delete(id) },
     reussir: (id, reponse) => { if (id) faites.set(id, reponse) },
+    rater: (id) => {
+      if (!id) return
+      fautes.add(id)
+      envoyerFautes()
+    },
     annuler: (id) => { if (id) faites.delete(id) },
     memoire: id => (id ? faites.get(id) ?? null : null)
   }
@@ -106,6 +146,16 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(instantane())
       }).catch(() => {})
+      if (fautes.size) {
+        const lot = [...fautes]
+        fautes.clear()
+        fetch('/api/fautes', {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ chemin: cheminCanonique(toValue(chemin)), questions: lot })
+        }).catch(() => {})
+      }
     } catch {
       // Idem : un envoi manqué n'est pas une raison d'interrompre la navigation.
     }
