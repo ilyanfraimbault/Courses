@@ -35,7 +35,7 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   }
 
   const banque = await chargerBanque(event)
-  const candidats = filtrer(banque.entrees, filtre)
+  const candidats = filtrer(banque.interrogeables, filtre)
   if (!candidats.length) {
     throw createError({ statusCode: 400, statusMessage: 'aucune question ne correspond à cette sélection' })
   }

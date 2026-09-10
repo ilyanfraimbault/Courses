@@ -18,9 +18,10 @@ export type FragmentContenu = unknown[]
 export type NatureQuestion = 'exercice' | 'qcm'
 
 /**
- * Une question telle que le relevé du build la connaît : de quoi la **choisir**,
- * jamais de quoi la poser. C'est ce qui tient dans la collection sans la
- * gonfler — l'énoncé, lui, est relu à la demande dans le corps de la fiche.
+ * Une question telle que le relevé du build la connaît : de quoi la **choisir**
+ * et la **classer**, jamais de quoi la poser. C'est ce qui tient dans la
+ * collection sans la gonfler — l'énoncé, lui, est relu à la demande dans le
+ * corps de la fiche.
  */
 export interface QuestionRelevee {
   /** Slug du bloc, seconde pièce de l'identité de la question. */
@@ -32,6 +33,12 @@ export interface QuestionRelevee {
   nature: NatureQuestion
   /** Nombre de propositions effectivement écrites. */
   choix: number
+  /**
+   * Vrai quand la question se corrige toute seule. Le relevé porte **toutes**
+   * les questions identifiables du site, parce que la progression par domaine
+   * les compte toutes ; le quiz, lui, ne tire que dans celles-ci.
+   */
+  interrogeable: boolean
   /** Identifiant de l'extrait de cours visé, s'il y en a un. */
   notion: string | null
   /** Intitulé de cet extrait, qui sert de nom lisible à la notion. */
