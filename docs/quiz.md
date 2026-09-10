@@ -460,3 +460,8 @@ Playwright n'est pas une dépendance du projet. `import()` ne suivant pas
 npm i -g playwright && playwright install chromium
 PLAYWRIGHT_MODULE=$(npm root -g)/playwright/index.mjs pnpm verif:quiz:rendu
 ```
+
+Le script se crée un compte jetable : il faut donc un `NUXT_CODE_INSCRIPTION`
+dans le `.env` local, et le même dans `CODE` (`code-de-classe` par défaut). Sans
+lui le serveur ferme l'inscription, et le script échoue à sa première étape sans
+avoir rien pu regarder.
