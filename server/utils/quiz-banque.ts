@@ -1,0 +1,427 @@
+import { queryCollection } from '@nuxt/content/server'
+import type { H3Event } from 'h3'
+import type {
+  CatalogueQuiz, ExtraitQuiz, FiltreQuiz, FragmentContenu,
+  NatureQuestion, QuestionQuiz, QuestionRelevee, ThemeCatalogue
+} from '~~/shared/types/quiz'
+
+/** Bornes du tirage. Au-delà, la file cesse d'être une séance et devient une corvée. */
+export const TAILLE_MIN = 5
+export const TAILLE_MAX = 60
+
+/** Une question de la banque, telle que le tirage la manipule. */
+export interface EntreeBanque extends QuestionRelevee {
+  /** Identité « /chemin#bloc#label », la même que celle de la progression. */
+  id: string
+  chemin: string
+  ficheTitre: string
+  /**
+   * Clé de la notion, préfixée par le thème : le même identifiant d'extrait sert
+   * dans deux chapitres — `cours-quotient` désigne le quotient de fonctions ici,
+   * le quotient de complexes ailleurs — et les confondre ferait proposer une
+   * question de complexes à qui vient de rater une dérivée.
+   */
+  notionCle: string | null
+}
+
+interface PageContenu {
+  path: string
+  title: string
+  icone?: string | null
+  ordre?: number | null
+  quiz?: QuestionRelevee[] | null
+}
+
+interface Banque {
+  entrees: EntreeBanque[]
+  /** Chapitre → intitulé, icône et sommaire, relevés sur la page d'index du chapitre. */
+  chapitres: Map<string, { titre: string, icone: string | null, chemin: string, ordre: number }>
+}
+
+/**
+ * La banque, chargée une fois.
+ *
+ * Ce qu'on garde en mémoire est **l'index** relevé au build : quatre cent douze
+ * entrées, quatre-vingt-quatre kilo-octets. Les énoncés, eux, ne sont jamais
+ * mis en cache : les vingt-sept fiches pèsent vingt-sept mégaoctets d'arbre une
+ * fois désérialisées, et les tenir au chaud pour épargner dix millisecondes de
+ * `JSON.parse` serait un mauvais échange sur un VPS à deux gigaoctets.
+ *
+ * En développement le contenu change sous les pieds du serveur, d'où la
+ * péremption courte.
+ */
+let banque: { valeur: Banque, expire: number } | null = null
+
+const PEREMPTION = import.meta.dev ? 5_000 : Number.POSITIVE_INFINITY
+
+/** Le dernier segment d'un chemin : « /cours/a1/…/trigonometrie » → « trigonometrie ». */
+function dernierSegment(chemin: string): string {
+  const segments = chemin.split('/').filter(Boolean)
+  return segments[segments.length - 1] ?? ''
+}
+
+export async function chargerBanque(event: H3Event): Promise<Banque> {
+  if (banque && Date.now() < banque.expire) return banque.valeur
+
+  const pages = await queryCollection(event, 'cours')
+    .select('path', 'title', 'icone', 'ordre', 'quiz')
+    .all() as unknown as PageContenu[]
+
+  const entrees: EntreeBanque[] = []
+  for (const page of pages) {
+    const chemin = cheminCanonique(page.path)
+    for (const q of page.quiz ?? []) {
+      entrees.push({
+        ...q,
+        id: composerIdentite(chemin, q.bloc, q.label),
+        chemin,
+        ficheTitre: page.title,
+        notionCle: q.notion ? `${q.theme ?? '?'}/${q.notion}` : null
+      })
+    }
+  }
+
+  // Le chapitre d'un thème est la page dont le dernier segment porte son nom :
+  // « …/remise-a-niveau-maths/trigonometrie » est le sommaire du chapitre
+  // « trigonometrie ». C'est elle qui lui donne son intitulé et son icône,
+  // plutôt qu'une table écrite à la main qui vieillirait en silence.
+  const themes = new Set(entrees.map(e => e.theme).filter((t): t is string => !!t))
+  const chapitres = new Map<string, { titre: string, icone: string | null, chemin: string, ordre: number }>()
+  for (const page of pages) {
+    const segment = dernierSegment(page.path)
+    if (!themes.has(segment) || chapitres.has(segment)) continue
+    chapitres.set(segment, {
+      titre: page.title,
+      icone: page.icone ?? null,
+      chemin: cheminCanonique(page.path),
+      ordre: page.ordre ?? 999
+    })
+  }
+
+  const valeur: Banque = { entrees, chapitres }
+  banque = { valeur, expire: Date.now() + PEREMPTION }
+  return valeur
+}
+
+/** Les questions retenues par un filtre. Un filtre vide de tout côté prend tout. */
+export function filtrer(entrees: EntreeBanque[], filtre: FiltreQuiz): EntreeBanque[] {
+  const themes = new Set(filtre.themes)
+  const notions = new Set(filtre.notions)
+  if (!themes.size && !notions.size) return entrees
+  // Les deux listes s'additionnent au lieu de se croiser : cocher un chapitre
+  // puis une notion d'un autre chapitre demande les deux, pas leur intersection
+  // — qui serait vide, et qui rendrait la case à cocher incompréhensible.
+  return entrees.filter(e =>
+    (e.theme && themes.has(e.theme)) || (e.notionCle && notions.has(e.notionCle)))
+}
+
+/** Le catalogue : les thèmes, leurs notions, et de quoi les compter. */
+export function composerCatalogue(banque: Banque): CatalogueQuiz {
+  const parTheme = new Map<string, Map<string, { titre: string, questions: number }>>()
+  const totaux = new Map<string, number>()
+
+  for (const e of banque.entrees) {
+    const theme = e.theme ?? 'divers'
+    totaux.set(theme, (totaux.get(theme) ?? 0) + 1)
+    if (!e.notionCle) continue
+    const notions = parTheme.get(theme) ?? new Map()
+    parTheme.set(theme, notions)
+    const entree = notions.get(e.notionCle) ?? { titre: e.notionTitre ?? e.notion!, questions: 0 }
+    entree.questions += 1
+    notions.set(e.notionCle, entree)
+  }
+
+  const themes: ThemeCatalogue[] = [...totaux].map(([cle, questions]) => {
+    const chapitre = banque.chapitres.get(cle)
+    return {
+      cle,
+      titre: chapitre?.titre ?? cle,
+      icone: chapitre?.icone ?? null,
+      chemin: chapitre?.chemin ?? null,
+      questions,
+      notions: [...(parTheme.get(cle) ?? new Map())]
+        .map(([c, n]) => ({ cle: c, titre: n.titre, questions: n.questions }))
+        .sort((a, b) => b.questions - a.questions || a.titre.localeCompare(b.titre, 'fr'))
+    }
+  })
+
+  // L'ordre des chapitres est celui du cours, pas celui de leur stock : on
+  // révise dans l'ordre où on a appris.
+  themes.sort((a, b) =>
+    (banque.chapitres.get(a.cle)?.ordre ?? 999) - (banque.chapitres.get(b.cle)?.ordre ?? 999)
+    || a.titre.localeCompare(b.titre, 'fr'))
+
+  return {
+    total: banque.entrees.length,
+    themes,
+    tailleMin: TAILLE_MIN,
+    tailleMax: TAILLE_MAX
+  }
+}
+
+function melanger<T>(liste: T[]): T[] {
+  const copie = [...liste]
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tampon = copie[i]!
+    copie[i] = copie[j]!
+    copie[j] = tampon
+  }
+  return copie
+}
+
+/**
+ * Tire `taille` questions parmi les candidates, en les étalant.
+ *
+ * Un tirage uniforme donnerait volontiers six questions sur la même formule de
+ * dérivation, simplement parce qu'elle est la plus représentée — ce qui est
+ * l'inverse de ce qu'on demande à une séance de révision. On tourne donc à deux
+ * niveaux : un thème après l'autre, et dans chacun une notion après l'autre.
+ * Les groupes épuisés sortent du tour, si bien qu'un thème pauvre ne bloque pas
+ * le tirage : il donne ce qu'il a, les autres complètent.
+ */
+export function tirer(candidats: EntreeBanque[], taille: number): EntreeBanque[] {
+  const parTheme = new Map<string, Map<string, EntreeBanque[]>>()
+  for (const e of candidats) {
+    const theme = e.theme ?? 'divers'
+    const notions = parTheme.get(theme) ?? new Map<string, EntreeBanque[]>()
+    parTheme.set(theme, notions)
+    const cle = e.notionCle ?? `${theme}/(sans notion)`
+    notions.set(cle, [...(notions.get(cle) ?? []), e])
+  }
+
+  const themes = melanger([...parTheme].map(([, notions]) =>
+    melanger([...notions.values()].map(liste => melanger(liste)))))
+
+  const tirees: EntreeBanque[] = []
+  let curseurTheme = 0
+  const curseurs = new Map<number, number>()
+
+  while (tirees.length < taille && themes.some(t => t.length)) {
+    const theme = themes[curseurTheme % themes.length]!
+    if (theme.length) {
+      const i = (curseurs.get(curseurTheme % themes.length) ?? 0) % theme.length
+      const groupe = theme[i]!
+      const question = groupe.pop()
+      if (question) tirees.push(question)
+      if (!groupe.length) theme.splice(i, 1)
+      curseurs.set(curseurTheme % themes.length, i + 1)
+    }
+    curseurTheme += 1
+  }
+
+  return tirees
+}
+
+/**
+ * La question à poser à la place d'une question ratée.
+ *
+ * On ne repose jamais la même : réciter la réponse qu'on vient de lire ne prouve
+ * rien. On cherche donc, dans l'ordre, une question **du même point de cours**,
+ * puis du même exercice, puis du même chapitre, puis n'importe laquelle du
+ * filtre — et toujours une qu'on n'a pas encore vue dans cette session.
+ *
+ * Le palier « même bloc » ne vaut que pour un **exercice** : ses questions
+ * portent sur un même sujet par construction, et la voisine de la question
+ * ratée est souvent le meilleur substitut qui soit. Un QCM, lui, mélange les
+ * chapitres exprès — proposer « une autre question du QCM 1 » reviendrait à
+ * tirer au hasard, ce que le palier suivant fait déjà mieux en restant dans le
+ * chapitre.
+ *
+ * Quand il ne reste rien, on repose la question manquée, en le disant : c'est
+ * la seule façon de tenir la promesse « ça continue tant que tout n'est pas
+ * acquis » quand la banque est à sec.
+ */
+export function choisirSimilaire(
+  candidats: EntreeBanque[],
+  manquee: EntreeBanque,
+  exclues: Set<string>
+): { entree: EntreeBanque, rejouee: boolean } {
+  const libres = candidats.filter(e => !exclues.has(e.id))
+
+  const paliers: EntreeBanque[][] = [
+    manquee.notionCle ? libres.filter(e => e.notionCle === manquee.notionCle) : [],
+    manquee.nature === 'exercice'
+      ? libres.filter(e => e.chemin === manquee.chemin && e.bloc === manquee.bloc)
+      : [],
+    manquee.theme ? libres.filter(e => e.theme === manquee.theme) : [],
+    libres
+  ]
+
+  for (const palier of paliers) {
+    if (palier.length) return { entree: palier[Math.floor(Math.random() * palier.length)]!, rejouee: false }
+  }
+
+  return { entree: manquee, rejouee: true }
+}
+
+/* ---------------------------------------------------------------------------
+   La lecture d'un énoncé, à la demande.
+   --------------------------------------------------------------------------- */
+
+const BALISES_QUESTION = new Set(['exo-question', 'qcm-question', 'question'])
+const BALISES_BLOC = new Set(['exercice', 'qcm'])
+const LETTRES = ['a', 'b', 'c', 'd', 'e']
+
+type Noeud = [string, Record<string, unknown>, ...unknown[]]
+
+function estNoeud(valeur: unknown): valeur is Noeud {
+  return Array.isArray(valeur) && typeof valeur[0] === 'string'
+}
+
+/** Le premier nœud qui satisfait `test`, en profondeur. */
+function chercher(noeuds: unknown, test: (n: Noeud) => boolean): Noeud | null {
+  if (!Array.isArray(noeuds)) return null
+  for (const noeud of noeuds) {
+    if (!estNoeud(noeud)) continue
+    if (test(noeud)) return noeud
+    const trouve = chercher(noeud.slice(2), test)
+    if (trouve) return trouve
+  }
+  return null
+}
+
+/** Les slots d'un nœud MDC, par nom : `#a`, `#indice`, `#solution`. */
+function slots(noeud: Noeud): Record<string, FragmentContenu> {
+  const sortie: Record<string, FragmentContenu> = {}
+  for (const enfant of noeud.slice(2)) {
+    if (!estNoeud(enfant) || enfant[0] !== 'template') continue
+    const cle = Object.keys(enfant[1] ?? {}).find(c => c.startsWith('v-slot:'))
+    if (!cle) continue
+    sortie[cle.slice('v-slot:'.length)] = enfant.slice(2)
+  }
+  return sortie
+}
+
+/** Le contenu par défaut d'un nœud : ses enfants, slots exclus. */
+function corps(noeud: Noeud): FragmentContenu {
+  return noeud.slice(2).filter(enfant => !(estNoeud(enfant) && enfant[0] === 'template'))
+}
+
+export interface QuestionLue {
+  label: string
+  bonne: string
+  nature: NatureQuestion
+  blocTitre: string
+  ficheTitre: string
+  lettres: string[]
+  enonce: FragmentContenu
+  choix: Record<string, FragmentContenu>
+  indice: FragmentContenu | null
+  solution: FragmentContenu | null
+  extrait: ExtraitQuiz | null
+}
+
+/**
+ * Relit une question dans le corps de sa fiche.
+ *
+ * C'est ici que le quiz emprunte au contenu au lieu de le dupliquer : l'énoncé,
+ * les propositions, l'indice, la solution rédigée et jusqu'au rappel de cours
+ * visé sont ceux de la fiche, à l'octet près. Une correction du cours corrige le
+ * quiz, sans rien à resynchroniser.
+ */
+export async function lireQuestion(event: H3Event, entree: EntreeBanque): Promise<QuestionLue | null> {
+  const page = await queryCollection(event, 'cours').path(entree.chemin).first() as
+    { title?: string, body?: { value?: unknown } } | null
+  if (!page?.body?.value) return null
+
+  // On retrouve le bloc par son **intitulé exact**, celui-là même que le relevé
+  // du build a rangé dans l'index. Repasser par `slugifier` obligerait le
+  // serveur à embarquer une fonction de l'application pour retrouver ce qu'il
+  // sait déjà.
+  const bloc = chercher(page.body.value, n =>
+    BALISES_BLOC.has(n[0]) && n[1]?.titre === entree.blocTitre)
+  if (!bloc) return null
+
+  const question = chercher(bloc.slice(2), n =>
+    BALISES_QUESTION.has(n[0]) && n[1]?.label === entree.label)
+  if (!question) return null
+
+  const bonne = question[1]?.bonne
+  if (typeof bonne !== 'string') return null
+
+  const parts = slots(question)
+  const lettres = LETTRES.filter(l => parts[l])
+  const choix: Record<string, FragmentContenu> = {}
+  for (const lettre of lettres) choix[lettre] = parts[lettre]!
+
+  // Le rappel de cours vit ailleurs sur la page, et plusieurs questions le
+  // partagent : on le retrouve par son identifiant, exactement comme le bouton
+  // « Cours » d'une fiche.
+  let extrait: ExtraitQuiz | null = null
+  const idExtrait = question[1]?.cours
+  if (typeof idExtrait === 'string') {
+    const noeud = chercher(page.body.value, n => n[0] === 'extrait-cours' && n[1]?.id === idExtrait)
+    if (noeud && typeof noeud[1]?.titre === 'string') {
+      extrait = {
+        titre: noeud[1].titre,
+        source: typeof noeud[1].source === 'string' ? noeud[1].source : null,
+        corps: corps(noeud)
+      }
+    }
+  }
+
+  return {
+    label: entree.label,
+    bonne,
+    nature: entree.nature,
+    blocTitre: typeof bloc[1]?.titre === 'string' ? bloc[1].titre : entree.blocTitre,
+    ficheTitre: page.title ?? entree.ficheTitre,
+    lettres,
+    enonce: corps(question),
+    choix,
+    indice: parts.indice ?? null,
+    solution: parts.solution ?? null,
+    extrait
+  }
+}
+
+/**
+ * Assemble la question à afficher.
+ *
+ * La bonne réponse **ne part pas** avec elle : elle reste au serveur jusqu'à ce
+ * qu'on ait répondu. C'est la seule façon d'empêcher qu'on la lise dans la
+ * charge utile de la page, et c'est cohérent avec le reste — le plafond de
+ * tentatives, l'unicité d'une cible de to-do : une règle vit à un seul endroit,
+ * et cet endroit est le serveur.
+ */
+export async function poserQuestion(
+  event: H3Event,
+  banque: Banque,
+  entree: EntreeBanque,
+  position: number,
+  rejouee: boolean
+): Promise<{ question: QuestionQuiz, lue: QuestionLue } | null> {
+  const lue = await lireQuestion(event, entree)
+  if (!lue) return null
+
+  return {
+    lue,
+    question: {
+      id: entree.id,
+      label: lue.label,
+      theme: entree.theme,
+      themeTitre: entree.theme ? banque.chapitres.get(entree.theme)?.titre ?? null : null,
+      notionTitre: entree.notionTitre,
+      nature: entree.nature,
+      fiche: {
+        chemin: entree.chemin,
+        titre: lue.ficheTitre,
+        bloc: entree.bloc,
+        blocTitre: lue.blocTitre
+      },
+      lettres: lue.lettres,
+      enonce: lue.enonce,
+      choix: lue.choix,
+      rejouee,
+      position
+    }
+  }
+}
+
+/** L'entrée de banque d'une identité, ou null si le contenu ne la porte plus. */
+export function trouverEntree(banque: Banque, id: string): EntreeBanque | null {
+  return banque.entrees.find(e => e.id === id) ?? null
+}
+
+export type { Banque }

@@ -160,6 +160,53 @@ const MIGRATIONS: string[] = [
   -- « fiche entière » qu'on veut.
   CREATE UNIQUE INDEX todo_cible ON todo (utilisateur_id, chemin, COALESCE(bloc, ''));
   CREATE INDEX todo_ordre ON todo (utilisateur_id, rang);
+  `,
+
+  // v3 — le mode quiz.
+  //
+  // Une session de quiz n'est pas une copie rendue : c'est une file qu'on
+  // rallonge à chaque faute et qui ne se vide que lorsque tout est acquis. Elle
+  // se reprend d'un appareil à l'autre, donc elle vit en base et non dans le
+  // navigateur.
+  `
+  CREATE TABLE quiz_session (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    utilisateur_id INTEGER NOT NULL,
+    -- Ce sur quoi on a demandé à être interrogé, en JSON : { themes, notions }.
+    filtre         TEXT    NOT NULL,
+    -- Nombre de questions demandées au départ, qui est aussi le nombre de
+    -- places à acquérir : la file, elle, s'allonge.
+    taille         INTEGER NOT NULL,
+    -- La file entière, en JSON. Elle s'écrit par instantané, comme la
+    -- progression d'une fiche : rejouer une écriture est sans effet de bord.
+    etat           TEXT    NOT NULL,
+    poses          INTEGER NOT NULL DEFAULT 0,
+    justes         INTEGER NOT NULL DEFAULT 0,
+    fautes         INTEGER NOT NULL DEFAULT 0,
+    commencee_le   INTEGER NOT NULL,
+    maj            INTEGER NOT NULL,
+    finie_le       INTEGER,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT;
+
+  CREATE INDEX quiz_session_par_utilisateur ON quiz_session (utilisateur_id, maj DESC);
+
+  -- Une ligne par question posée. Elle est redondante avec la file, et c'est
+  -- voulu : la file dit où en est **cette** session, ces lignes disent ce qui
+  -- résiste depuis toujours, et ça ne se lit pas en désérialisant trente JSON.
+  CREATE TABLE quiz_reponse (
+    session_id INTEGER NOT NULL,
+    ordre      INTEGER NOT NULL,
+    question   TEXT    NOT NULL,
+    theme      TEXT,
+    notion     TEXT,
+    juste      INTEGER NOT NULL,
+    t          INTEGER NOT NULL,
+    PRIMARY KEY (session_id, ordre),
+    FOREIGN KEY (session_id) REFERENCES quiz_session(id) ON DELETE CASCADE
+  ) STRICT, WITHOUT ROWID;
+
+  CREATE INDEX quiz_reponse_par_notion ON quiz_reponse (notion);
   `
 ]
 
