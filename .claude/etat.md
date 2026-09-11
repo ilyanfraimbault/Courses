@@ -15,6 +15,10 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 
 - Les 28 fiches, 473 questions, KaTeX, cercle trigonométrique, tableaux de
   variations — tout le contenu du portfolio, aux mêmes URLs.
+- Une 29ᵉ fiche, propre à ce site : le **formulaire de trigonométrie**
+  (`/cours/a1/remise-a-niveau-maths/trigonometrie/formulaire`), toutes les
+  formules avec un exemple chacune. Type `formulaire`, aucune question — il ne
+  change ni les 473 questions, ni le quiz, ni les domaines.
 - Comptes multiples (pseudo + mot de passe haché en scrypt), inscription par
   code, isolation des données vérifiée entre deux comptes.
 - Progression et historique de QCM en base, synchronisés entre appareils.

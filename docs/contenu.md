@@ -135,7 +135,8 @@ donne `/cours/a1/remise-a-niveau-maths/…`. Les chemins sont **identiques** à 
 du portfolio d'origine, volontairement.
 
 Frontmatter : `title`, `description`, `type` (`cours` | `exercices` |
-`entrainement` | `qcm`), `annee`, `matiere`, `ordre`, `icone`, `interactif`, et
+`entrainement` | `qcm` | `formulaire`), `annee`, `matiere`, `ordre`, `icone`,
+`interactif`, et
 quatre champs **remplis au build**, à ne jamais écrire à la main : `questions`
 (le compte de la page), `blocs` (les exercices et QCM, avec leur dénominateur),
 `sections` (les titres de niveau 2 de la page, par ancre — ils nomment les cases
