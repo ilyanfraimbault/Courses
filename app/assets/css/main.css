@@ -113,14 +113,20 @@
 }
 
 /* Une proposition de QCM tient sur une ligne de bouton : le paragraphe que MDC
-   génère autour ne doit pas y apporter les marges verticales de la prose. Et une
-   formule trop large défile dans sa proposition plutôt que d'élargir la page.
+   génère autour ne doit pas y apporter les marges verticales de la prose.
 
    La règle vise le paragraphe **à toute profondeur**, et non le seul enfant
    direct : `ContentRenderer` enveloppe le fragment dans un `div` sans classe, si
    bien que le `<p class="my-5">` échappait à la remise à zéro. Ses 20 px de
    marge haute décalaient le texte de la proposition sous la lettre qui le
-   repère — mesuré : la formule commençait 20 px plus bas que son repère. */
+   repère — mesuré : la formule commençait 20 px plus bas que son repère.
+
+   Pas de `overflow-x: auto` ici, bien qu'il ait l'air de protéger la page d'une
+   formule trop large : il force `overflow-y` à `auto`, et une fraction KaTeX
+   dépasse la ligne de quelques pixels — chaque proposition qui en portait une
+   gagnait sa propre barre de défilement verticale. Une formule en bloc défile
+   déjà d'elle-même (`.cours-body .katex-display`), une formule en ligne passe à
+   la ligne sur ses opérateurs. */
 .cours-qcm-choix :is(div, p) {
   margin-block: 0;
 }
@@ -133,7 +139,6 @@
 
 .cours-qcm-choix {
   min-width: 0;
-  overflow-x: auto;
 }
 
 .cours-qcm-choix .katex-display {
