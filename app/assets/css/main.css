@@ -114,9 +114,21 @@
 
 /* Une proposition de QCM tient sur une ligne de bouton : le paragraphe que MDC
    génère autour ne doit pas y apporter les marges verticales de la prose. Et une
-   formule trop large défile dans sa proposition plutôt que d'élargir la page. */
-.cours-qcm-choix > * {
+   formule trop large défile dans sa proposition plutôt que d'élargir la page.
+
+   La règle vise le paragraphe **à toute profondeur**, et non le seul enfant
+   direct : `ContentRenderer` enveloppe le fragment dans un `div` sans classe, si
+   bien que le `<p class="my-5">` échappait à la remise à zéro. Ses 20 px de
+   marge haute décalaient le texte de la proposition sous la lettre qui le
+   repère — mesuré : la formule commençait 20 px plus bas que son repère. */
+.cours-qcm-choix :is(div, p) {
   margin-block: 0;
+}
+
+/* Une proposition en plusieurs blocs — rare, mais elle existe — garde de quoi
+   les distinguer, sans revenir aux marges de la prose. */
+.cours-qcm-choix p + p {
+  margin-top: 0.375rem;
 }
 
 .cours-qcm-choix {

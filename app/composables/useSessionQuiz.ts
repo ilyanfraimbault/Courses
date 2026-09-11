@@ -83,15 +83,22 @@ export function useSessionQuiz(id: MaybeRefOrGetter<number>) {
     }
   }
 
-  async function repondre(lettre: string) {
+  /**
+   * Envoie une réponse — une lettre cochée, ou l'aveu qu'on ne sait pas.
+   *
+   * Les deux suivent le même chemin parce que ce sont la même chose du point de
+   * vue de la file : une place traitée. C'est le serveur qui décide de ce
+   * qu'elle vaut.
+   */
+  async function envoyerReponse(corps: { lettre: string } | { passee: true }) {
     if (envoi.value || correction.value || !session.value || !question.value) return
     envoi.value = true
-    choisi.value = lettre
+    choisi.value = 'lettre' in corps ? corps.lettre : null
     erreur.value = null
     try {
       const donnees = await $fetch<ReponseCorrection>(`/api/quiz/session/${toValue(id)}/reponse`, {
         method: 'POST',
-        body: { position: question.value.position, lettre }
+        body: { position: question.value.position, ...corps }
       })
       correction.value = donnees.correction
       session.value = donnees.session
@@ -110,6 +117,11 @@ export function useSessionQuiz(id: MaybeRefOrGetter<number>) {
       envoi.value = false
     }
   }
+
+  const repondre = (lettre: string) => envoyerReponse({ lettre })
+
+  /** « Je ne sais pas » : la place est manquée, et la correction s'ouvre. */
+  const passer = () => envoyerReponse({ passee: true })
 
   async function suivante() {
     if (!session.value) return
@@ -158,5 +170,5 @@ export function useSessionQuiz(id: MaybeRefOrGetter<number>) {
 
   onMounted(charger)
 
-  return { session, question, correction, choisi, chargement, envoi, erreur, finie, repondre, suivante, clore, charger }
+  return { session, question, correction, choisi, chargement, envoi, erreur, finie, repondre, passer, suivante, clore, charger }
 }

@@ -1,6 +1,6 @@
 # Où en est le projet
 
-Dernière mise à jour : 10 septembre 2026.
+Dernière mise à jour : 11 septembre 2026.
 
 ## En ligne
 
@@ -23,7 +23,10 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   **section du cours** (34 cases, qui couvrent chaque chapitre sans reste). Une
   question gagnée est cochée sur sa fiche.
   Une faute renvoie la place à la fin de la file avec une *autre* question du
-  même point de cours ; la séance ne finit que lorsque tout est acquis. Séances
+  même point de cours ; la séance ne finit que lorsque tout est acquis.
+  « Je ne sais pas » (touche `0`) fait exactement la même chose, en ouvrant en
+  plus la correction *et* l'indice : ne pas savoir se dit, au lieu de se jouer à
+  une chance sur quatre. Séances
   reprises d'un appareil à l'autre, historique et panneau « ce qui résiste ».
   L'ordre des propositions est brassé à chaque place, et le tirage préfère ce
   qui est en dette, puis ce qui n'a jamais été posé. Voir `docs/quiz.md`.

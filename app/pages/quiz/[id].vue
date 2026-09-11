@@ -11,7 +11,7 @@ const id = computed(() => Number(route.params.id))
 
 const {
   session, question, correction, choisi, chargement, envoi, erreur, finie,
-  repondre, suivante, clore
+  repondre, passer, suivante, clore
 } = useSessionQuiz(id)
 
 const sortie = ref(false)
@@ -75,196 +75,206 @@ useSeoMeta({ title: 'Séance de quiz' })
          `justify-center`, qui rognerait le haut d'une correction plus haute que
          la fenêtre au lieu de la laisser défiler. -->
     <div class="mx-auto flex min-h-[calc(100svh-11rem)] w-full max-w-3xl flex-col py-6 sm:py-10">
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <UButton
-          to="/quiz"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-arrow-left"
-          label="Quiz"
-        />
-        <div class="min-w-0 flex-1" />
-        <template v-if="session">
-          <span class="text-sm text-muted tabular-nums">
-            <strong class="text-highlighted">{{ session.acquises }} / {{ session.taille }}</strong> acquises
-          </span>
-          <UBadge
-            v-if="enDette"
-            color="error"
-            variant="subtle"
-            size="sm"
-            class="tabular-nums"
-            :label="`${enDette} à reprendre`"
-          />
+      <!-- L'entête tient dans son propre bloc, refermé par un filet : la frise
+           marque la place en cours d'un anneau qui déborde de sa case, et sans
+           cette réserve elle venait s'asseoir sur le bord de la carte. -->
+      <header class="flex flex-col gap-3 border-b border-default pb-5">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
           <UButton
-            v-if="!finie"
+            to="/quiz"
             color="neutral"
             variant="ghost"
             size="xs"
-            icon="i-lucide-door-open"
-            :loading="sortie"
-            label="Arrêter"
-            @click="quitter"
+            icon="i-lucide-arrow-left"
+            label="Quiz"
           />
-        </template>
-      </div>
-
-      <UProgress
-        v-if="session"
-        class="mt-3"
-        size="xs"
-        :color="pourcentage === 100 ? 'success' : 'primary'"
-        :model-value="session.acquises"
-        :max="session.taille || 1"
-      />
-
-      <QuizFrise
-        v-if="session"
-        class="mt-3"
-        :session="session"
-      />
-
-      <UAlert
-        v-if="erreur"
-        class="my-auto"
-        color="error"
-        variant="subtle"
-        icon="i-lucide-triangle-alert"
-        :description="erreur"
-      >
-        <template #actions>
-          <UButton
-            color="neutral"
-            variant="subtle"
-            size="sm"
-            label="Retour au quiz"
-            to="/quiz"
-          />
-        </template>
-      </UAlert>
-
-      <!-- Le bilan. Une séance finie ne se rejoue pas : elle se relit. -->
-      <div
-        v-else-if="finie && session"
-        class="my-auto rounded-xl border border-default bg-elevated/30 px-5 py-8 text-center sm:px-8"
-      >
-        <UIcon
-          name="i-lucide-party-popper"
-          class="size-10 text-primary"
-        />
-        <h1 class="mt-3 mb-0 text-2xl font-semibold text-highlighted">
-          Séance terminée
-        </h1>
-        <p class="mt-2 mb-0 text-muted">
-          Les {{ session.taille }} place{{ session.taille > 1 ? 's' : '' }} sont acquises.
-        </p>
-
-        <div class="mx-auto mt-6 grid max-w-md grid-cols-3 gap-3">
-          <div class="rounded-lg border border-default px-3 py-3">
-            <p class="m-0 text-2xl font-medium text-highlighted tabular-nums">
-              {{ session.poses }}
-            </p>
-            <p class="m-0 text-xs text-muted">
-              questions posées
-            </p>
-          </div>
-          <div class="rounded-lg border border-default px-3 py-3">
-            <p class="m-0 text-2xl font-medium text-highlighted tabular-nums">
-              {{ reussite }} %
-            </p>
-            <p class="m-0 text-xs text-muted">
-              justes du premier coup
-            </p>
-          </div>
-          <div class="rounded-lg border border-default px-3 py-3">
-            <p class="m-0 text-2xl font-medium text-highlighted tabular-nums">
-              {{ session.fautes }}
-            </p>
-            <p class="m-0 text-xs text-muted">
-              reprise{{ session.fautes > 1 ? 's' : '' }}
-            </p>
-          </div>
+          <div class="min-w-0 flex-1" />
+          <template v-if="session">
+            <span class="text-sm text-muted tabular-nums">
+              <strong class="text-highlighted">{{ session.acquises }} / {{ session.taille }}</strong> acquises
+            </span>
+            <UBadge
+              v-if="enDette"
+              color="error"
+              variant="subtle"
+              size="sm"
+              class="tabular-nums"
+              :label="`${enDette} à reprendre`"
+            />
+            <UButton
+              v-if="!finie"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              icon="i-lucide-door-open"
+              :loading="sortie"
+              label="Arrêter"
+              @click="quitter"
+            />
+          </template>
         </div>
 
-        <p class="mx-auto mt-5 mb-0 max-w-md text-sm text-muted">
-          {{ verdict }}
-        </p>
-
-        <div class="mt-6 flex flex-wrap items-center justify-center gap-2">
-          <UButton
-            to="/quiz"
-            color="primary"
-            icon="i-lucide-rotate-ccw"
-            label="Nouvelle séance"
-          />
-          <UButton
-            to="/cours"
-            color="neutral"
-            variant="subtle"
-            icon="i-lucide-library"
-            label="Retourner au cours"
-          />
-        </div>
-      </div>
-
-      <!-- La question. -->
-      <div
-        v-else
-        class="my-auto rounded-xl border border-default bg-default px-4 py-6 sm:px-8 sm:py-8"
-      >
         <div
-          v-if="!question"
-          class="flex min-h-40 items-center justify-center gap-2 text-sm text-muted"
+          v-if="session"
+          class="flex flex-col gap-2.5"
+        >
+          <UProgress
+            size="xs"
+            :color="pourcentage === 100 ? 'success' : 'primary'"
+            :model-value="session.acquises"
+            :max="session.taille || 1"
+          />
+
+          <QuizFrise :session="session" />
+        </div>
+      </header>
+
+      <!-- La zone de lecture. Sa réserve haute est garantie par `pt-8` : le
+           `my-auto` de la carte, lui, tombe à zéro dès qu'une question dépasse
+           la hauteur de l'écran. -->
+      <div class="flex flex-1 flex-col pt-8">
+        <UAlert
+          v-if="erreur"
+          class="my-auto"
+          color="error"
+          variant="subtle"
+          icon="i-lucide-triangle-alert"
+          :description="erreur"
+        >
+          <template #actions>
+            <UButton
+              color="neutral"
+              variant="subtle"
+              size="sm"
+              label="Retour au quiz"
+              to="/quiz"
+            />
+          </template>
+        </UAlert>
+
+        <!-- Le bilan. Une séance finie ne se rejoue pas : elle se relit. -->
+        <div
+          v-else-if="finie && session"
+          class="my-auto rounded-xl border border-default bg-elevated/30 px-5 py-8 text-center sm:px-8"
         >
           <UIcon
-            name="i-lucide-loader-circle"
-            class="size-4 animate-spin"
+            name="i-lucide-party-popper"
+            class="size-10 text-primary"
           />
-          <span>Chargement de la question…</span>
+          <h1 class="mt-3 mb-0 text-2xl font-semibold text-highlighted">
+            Séance terminée
+          </h1>
+          <p class="mt-2 mb-0 text-muted">
+            Les {{ session.taille }} place{{ session.taille > 1 ? 's' : '' }} sont acquises.
+          </p>
+
+          <div class="mx-auto mt-6 grid max-w-md grid-cols-3 gap-3">
+            <div class="rounded-lg border border-default px-3 py-3">
+              <p class="m-0 text-2xl font-medium text-highlighted tabular-nums">
+                {{ session.poses }}
+              </p>
+              <p class="m-0 text-xs text-muted">
+                questions posées
+              </p>
+            </div>
+            <div class="rounded-lg border border-default px-3 py-3">
+              <p class="m-0 text-2xl font-medium text-highlighted tabular-nums">
+                {{ reussite }} %
+              </p>
+              <p class="m-0 text-xs text-muted">
+                justes du premier coup
+              </p>
+            </div>
+            <div class="rounded-lg border border-default px-3 py-3">
+              <p class="m-0 text-2xl font-medium text-highlighted tabular-nums">
+                {{ session.fautes }}
+              </p>
+              <p class="m-0 text-xs text-muted">
+                reprise{{ session.fautes > 1 ? 's' : '' }}
+              </p>
+            </div>
+          </div>
+
+          <p class="mx-auto mt-5 mb-0 max-w-md text-sm text-muted">
+            {{ verdict }}
+          </p>
+
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <UButton
+              to="/quiz"
+              color="primary"
+              icon="i-lucide-rotate-ccw"
+              label="Nouvelle séance"
+            />
+            <UButton
+              to="/cours"
+              color="neutral"
+              variant="subtle"
+              icon="i-lucide-library"
+              label="Retourner au cours"
+            />
+          </div>
         </div>
 
-        <template v-else>
-          <QuizQuestion
-            :key="question.id + '@' + question.position"
-            :question="question"
-            :choisi="choisi"
-            :correction="correction"
-            :envoi="envoi"
-            :numero="question.position + 1"
-            @choisir="repondre"
-          />
-
-          <QuizCorrection
-            v-if="correction"
-            :correction="correction"
-            :question="question"
-          />
-
+        <!-- La question. -->
+        <div
+          v-else
+          class="my-auto rounded-xl border border-default bg-default px-4 py-6 sm:px-8 sm:py-8"
+        >
           <div
-            v-if="correction"
-            class="mt-6 flex flex-wrap items-center gap-3"
+            v-if="!question"
+            class="flex min-h-40 items-center justify-center gap-2 text-sm text-muted"
           >
-            <UButton
-              size="lg"
-              color="primary"
-              trailing-icon="i-lucide-arrow-right"
-              :loading="chargement"
-              :label="session && session.position >= session.longueur ? 'Voir le bilan' : 'Question suivante'"
-              @click="suivante"
+            <UIcon
+              name="i-lucide-loader-circle"
+              class="size-4 animate-spin"
             />
-            <span class="text-xs text-dimmed">Entrée</span>
+            <span>Chargement de la question…</span>
           </div>
-        </template>
-      </div>
 
-      <p
-        v-if="session && !finie"
-        class="mt-4 mb-0 text-center text-xs text-dimmed tabular-nums"
-      >
-        {{ session.longueur - session.position }} question{{ session.longueur - session.position > 1 ? 's' : '' }}
-        dans la file · {{ session.poses }} posée{{ session.poses > 1 ? 's' : '' }} depuis le début
-      </p>
+          <template v-else>
+            <QuizQuestion
+              :key="question.id + '@' + question.position"
+              :question="question"
+              :choisi="choisi"
+              :correction="correction"
+              :envoi="envoi"
+              :numero="question.position + 1"
+              @choisir="repondre"
+              @passer="passer"
+            />
+
+            <QuizCorrection
+              v-if="correction"
+              :correction="correction"
+              :question="question"
+            />
+
+            <div
+              v-if="correction"
+              class="mt-6 flex flex-wrap items-center gap-3"
+            >
+              <UButton
+                size="lg"
+                color="primary"
+                trailing-icon="i-lucide-arrow-right"
+                :loading="chargement"
+                :label="session && session.position >= session.longueur ? 'Voir le bilan' : 'Question suivante'"
+                @click="suivante"
+              />
+              <span class="text-xs text-dimmed">Entrée</span>
+            </div>
+          </template>
+        </div>
+
+        <p
+          v-if="session && !finie"
+          class="mt-4 mb-0 text-center text-xs text-dimmed tabular-nums"
+        >
+          {{ session.longueur - session.position }} question{{ session.longueur - session.position > 1 ? 's' : '' }}
+          dans la file · {{ session.poses }} posée{{ session.poses > 1 ? 's' : '' }} depuis le début
+        </p>
+      </div>
     </div>
   </UContainer>
 </template>

@@ -184,8 +184,15 @@ export interface ExtraitQuiz {
 /** Ce qui s'affiche après une réponse : le verdict, puis de quoi comprendre. */
 export interface CorrectionQuiz {
   juste: boolean
+  /**
+   * Vrai quand on a répondu « je ne sais pas ». La place compte alors comme
+   * manquée — c'en est une — mais le verdict ne reproche rien : il n'y a pas de
+   * mauvaise réponse à montrer, seulement une correction à lire.
+   */
+  passee: boolean
   bonne: string
-  donnee: string
+  /** Lettre donnée, nulle quand la question a été passée. */
+  donnee: string | null
   indice: FragmentContenu | null
   solution: FragmentContenu | null
   extrait: ExtraitQuiz | null

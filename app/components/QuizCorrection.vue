@@ -6,7 +6,6 @@ const props = defineProps<{
   question: QuestionQuiz
 }>()
 
-const indiceOuvert = ref(false)
 const coursOuvert = ref(false)
 
 // Sur une faute, la solution est déjà là : c'est ce qu'on est venu chercher.
@@ -14,10 +13,18 @@ const coursOuvert = ref(false)
 // séance de quarante questions en séance de lecture.
 const solutionOuverte = ref(!props.correction.juste)
 
+// « Je ne sais pas » demande tout, y compris l'indice : c'est la seule fois où
+// l'indice a encore quelque chose à apprendre, puisqu'on n'a pas cherché avec.
+// Après une faute il reste replié — on l'a déjà eu sous les yeux.
+const indiceOuvert = ref(props.correction.passee)
+
 // Le verdict nomme les propositions comme l'écran les a montrées, et non par
 // les lettres de la fiche : le quiz en a brassé l'ordre.
 const etiquettes = computed(() => reperesQuiz(props.question.lettres))
-const donnee = computed(() => etiquettes.value[props.correction.donnee] ?? props.correction.donnee)
+const donnee = computed(() => {
+  const lettre = props.correction.donnee
+  return lettre ? etiquettes.value[lettre] ?? lettre : null
+})
 const bonne = computed(() => etiquettes.value[props.correction.bonne] ?? props.correction.bonne)
 
 const grandEcran = useMediaQuery('(min-width: 48rem)')
@@ -35,15 +42,24 @@ const uiTiroir = computed(() => ({
       class="rounded-lg border px-4 py-3"
       :class="correction.juste
         ? 'border-success bg-success/10'
-        : 'border-error bg-error/10'"
+        : correction.passee
+          ? 'border-warning bg-warning/10'
+          : 'border-error bg-error/10'"
     >
       <p class="m-0 flex items-start gap-2 font-medium text-highlighted">
         <UIcon
-          :name="correction.juste ? 'i-lucide-circle-check' : 'i-lucide-circle-x'"
+          :name="correction.juste
+            ? 'i-lucide-circle-check'
+            : correction.passee ? 'i-lucide-circle-help' : 'i-lucide-circle-x'"
           class="mt-0.5 size-5 shrink-0"
-          :class="correction.juste ? 'text-success' : 'text-error'"
+          :class="correction.juste
+            ? 'text-success'
+            : correction.passee ? 'text-warning' : 'text-error'"
         />
         <span v-if="correction.juste">Juste.</span>
+        <span v-else-if="correction.passee">
+          Passée : la réponse était la <strong class="uppercase">{{ bonne }}</strong>.
+        </span>
         <span v-else>
           Raté : tu as répondu <strong class="uppercase">{{ donnee }}</strong>,
           la bonne réponse était la <strong class="uppercase">{{ bonne }}</strong>.
@@ -92,8 +108,8 @@ const uiTiroir = computed(() => ({
       <UButton
         v-if="correction.extrait"
         size="xs"
-        color="neutral"
-        variant="subtle"
+        :color="correction.passee ? 'primary' : 'neutral'"
+        :variant="correction.passee ? 'solid' : 'subtle'"
         icon="i-lucide-book-open-text"
         label="Le rappel de cours"
         @click="coursOuvert = true"

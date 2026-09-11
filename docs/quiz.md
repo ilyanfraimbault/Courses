@@ -212,6 +212,34 @@ place est une dette : elle n'est éteinte que par une bonne réponse.
 - **Faux** → la place retourne **à la fin de la file**, mais avec une **autre**
   question. La séance ne peut donc pas se terminer avant que tout ait fini par
   tomber juste, et on ne revoit jamais deux fois le même énoncé.
+- **« Je ne sais pas »** → exactement comme une faute.
+
+### « Je ne sais pas » est une réponse, pas une sortie
+
+Devant quatre propositions, ne pas savoir se joue autrement : on coche au hasard
+et on a une chance sur quatre d'être compté juste sans rien avoir appris. C'est
+cette chance-là qu'il fallait retirer, et la seule façon honnête était de rendre
+l'aveu **au moins aussi intéressant** que le tirage au sort.
+
+Le bouton envoie donc la même route que les autres réponses, sans lettre
+(`{ passee: true }`), et le serveur en tire la même conséquence : la place est
+manquée, elle revient à la fin de la file avec une autre question du même point
+de cours, la dette s'inscrit, et le compte des questions posées la retient — la
+part de « justes du premier coup » du bilan reste donc une mesure vraie. Ce que
+l'aveu rapporte, c'est ce qu'on venait chercher : la correction **et** l'indice
+s'ouvrent d'office, là où une faute n'ouvre que la correction — l'indice n'a
+plus rien à apprendre à qui a déjà cherché avec — et le rappel de cours passe au
+premier plan.
+
+Le verdict ne reproche rien : « Passée : la réponse était la B. » Il n'y a pas
+de mauvaise réponse à barrer, puisqu'aucune n'a été donnée.
+
+Au clavier, c'est `0` : le seul chiffre qui ne désigne aucune proposition, donc
+le seul qui puisse dire « aucune ».
+
+La question posée à la place n'est **pas** celle qu'on vient de passer. C'est la
+même règle que pour une faute, et pour la même raison : réciter la solution
+qu'on vient de lire ne prouverait rien.
 
 Le tirage initial existe entièrement dès l'ouverture : c'est ce qui donne un
 dénominateur honnête — « douze acquises sur quarante » veut dire quelque chose
@@ -301,7 +329,7 @@ d'où la règle « un préchargement vide ne s'utilise pas, il se refait ».
 | `GET /api/quiz/session/:id` | reprend une séance là où elle s'était arrêtée |
 | `DELETE /api/quiz/session/:id` | clôt une séance sans l'effacer |
 | `GET /api/quiz/session/:id/question?position=` | une question de la file, pour le préchargement |
-| `POST /api/quiz/session/:id/reponse` | corrige, allonge la file s'il le faut, rend la correction |
+| `POST /api/quiz/session/:id/reponse` | corrige, allonge la file s'il le faut, rend la correction — `{ passee: true }` sans lettre pour « je ne sais pas » |
 | `GET /api/quiz/historique` | les séances passées, et ce qui résiste |
 | `POST /api/fautes` | les fautes commises sur une fiche — hors quiz, mais même mémoire |
 
@@ -437,6 +465,9 @@ Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 - **aucune question n'est posée deux fois** dans une séance ;
 - une séance finit par se terminer, même en répondant faux exprès ;
 - répondre deux fois à la même position rend une 409 sans rien corrompre ;
+- « je ne sais pas » n'est jamais compté juste, n'invente aucune réponse,
+  révèle la bonne, renvoie la place à la fin de la file et compte pour une
+  posée et une manquée — et une réponse sans lettre ni aveu est refusée ;
 - chaque question d'un bloc à énoncé commun rend cet énoncé, une entête marquée
   `introduction` n'est jamais rappelée, et la part de questions concernées reste
   dans la bande attendue sur un large tirage — attention, un tirage n'est pas un
@@ -453,6 +484,13 @@ clavier répond, et que rien ne déborde à 390 px de large. Il signale aussi
 toute divergence d'hydratation : elle ne casse rien à l'œil et casse tout à
 l'usage.
 
+Il tient aussi deux témoins de mise en page, parce que les deux défauts qu'ils
+gardent étaient invisibles au code et criants à l'écran : **l'écart entre le
+centre de la lettre et le centre de sa proposition** — la lettre flottait 20 px
+au-dessus de sa formule, le paragraphe de la proposition ayant gardé les marges
+de la prose — et **la réserve entre la frise et la carte de la question**, dont
+l'anneau de la place en cours venait mordre le bord.
+
 Playwright n'est pas une dépendance du projet. `import()` ne suivant pas
 `NODE_PATH`, une installation globale se désigne par son chemin :
 
@@ -460,6 +498,10 @@ Playwright n'est pas une dépendance du projet. `import()` ne suivant pas
 npm i -g playwright && playwright install chromium
 PLAYWRIGHT_MODULE=$(npm root -g)/playwright/index.mjs pnpm verif:quiz:rendu
 ```
+
+Quand un Chromium est déjà là mais dans une autre version que celle que ce
+Playwright irait chercher, `PLAYWRIGHT_CHROMIUM` désigne son exécutable et
+évite un second téléchargement.
 
 Le script se crée un compte jetable : il faut donc un `NUXT_CODE_INSCRIPTION`
 dans le `.env` local, et le même dans `CODE` (`code-de-classe` par défaut). Sans

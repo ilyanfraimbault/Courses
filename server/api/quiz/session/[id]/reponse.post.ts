@@ -3,6 +3,7 @@ import type { CorrectionQuiz, SessionQuiz } from '~~/shared/types/quiz'
 interface CorpsReponse {
   position?: unknown
   lettre?: unknown
+  passee?: unknown
 }
 
 /**
@@ -24,6 +25,12 @@ interface CorpsReponse {
  * enregistrer qu'un laisserait une question réussie invisible dans son
  * exercice. Voir `reporterSurLaFiche`.
  *
+ * « Je ne sais pas » emprunte exactement ce chemin, sans lettre. C'est une
+ * réponse et non une échappatoire : la place retourne à la fin de la file, la
+ * dette s'inscrit, et le compte des questions posées le retient. Deviner au
+ * hasard plutôt que de l'avouer n'apporte donc rien, et la séance garde une
+ * mesure honnête de ce qui passe du premier coup.
+ *
  * La même transaction tient la **dette** : une faute inscrit la question dans
  * `faute`, une bonne réponse l'éteint. C'est ce qui donne son contenu à la
  * sélection « ce que j'ai raté », et c'est symétrique du report sur la fiche —
@@ -39,8 +46,9 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
 
   const corps = await readBody<CorpsReponse>(event)
   const position = Number(corps?.position)
+  const passee = corps?.passee === true
   const lettre = typeof corps?.lettre === 'string' ? corps.lettre : null
-  if (!Number.isInteger(position) || position < 0 || !lettre) {
+  if (!Number.isInteger(position) || position < 0 || (!lettre && !passee)) {
     throw createError({ statusCode: 400, statusMessage: 'position et lettre sont requises' })
   }
 
@@ -85,13 +93,16 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
     })
   }
 
-  if (!posee.lue.lettres.includes(lettre)) {
+  if (lettre && !posee.lue.lettres.includes(lettre)) {
     throw createError({ statusCode: 400, statusMessage: 'cette proposition n\'existe pas' })
   }
 
-  const juste = lettre === posee.lue.bonne
+  // Une place passée est manquée : rien n'a été coché, mais la notion n'est pas
+  // acquise pour autant, et c'est la seule chose que la file ait à savoir.
+  const donnee = passee ? null : lettre
+  const juste = donnee !== null && donnee === posee.lue.bonne
   entree.etat = juste ? 'juste' : 'manquee'
-  entree.reponse = lettre
+  if (donnee) entree.reponse = donnee
 
   ligne.poses += 1
   if (juste) ligne.justes += 1
@@ -130,7 +141,7 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
     `).run(ligne.id, position, candidate.id, candidate.theme, candidate.notionCle, candidate.section, juste ? 1 : 0, maj)
     const cible = [{ chemin: candidate.chemin, bloc: candidate.bloc, label: candidate.label }]
     if (juste) {
-      reporterSurLaFiche(db, uid, candidate, lettre, maj)
+      reporterSurLaFiche(db, uid, candidate, posee.lue.bonne, maj)
       rattraperFautes(db, uid, cible, maj)
     } else {
       enregistrerFautes(db, uid, cible, maj)
@@ -144,8 +155,9 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
   return {
     correction: {
       juste,
+      passee,
       bonne: posee.lue.bonne,
-      donnee: lettre,
+      donnee,
       indice: posee.lue.indice,
       solution: posee.lue.solution,
       extrait: posee.lue.extrait,
