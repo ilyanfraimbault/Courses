@@ -16,7 +16,9 @@
  *
  * `QUIZ_BASE` change l'adresse visée. `PLAYWRIGHT_MODULE` donne le chemin du
  * module quand il est installé globalement : `import()` ne suit pas `NODE_PATH`,
- * et un `npm i -g` n'est donc pas résolvable autrement.
+ * et un `npm i -g` n'est donc pas résolvable autrement. `PLAYWRIGHT_CHROMIUM`
+ * désigne un navigateur déjà présent sur la machine, quand sa version ne
+ * correspond pas à celle que ce Playwright-là irait télécharger.
  */
 const BASE = process.env.QUIZ_BASE ?? 'http://localhost:3000'
 const CODE = process.env.NUXT_CODE_INSCRIPTION ?? 'code-de-classe'
@@ -42,7 +44,8 @@ function verifier(nom, condition, detail = '') {
   if (!condition) echecs.push(nom)
 }
 
-const navigateur = await chromium.launch()
+const navigateur = await chromium.launch(
+  process.env.PLAYWRIGHT_CHROMIUM ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM } : {})
 const page = await navigateur.newPage({ viewport: { width: 1280, height: 1100 } })
 page.on('pageerror', (e) => {
   echecs.push('erreur JS : ' + e.message)
@@ -152,6 +155,67 @@ await page.keyboard.press('Enter')
 await page.waitForTimeout(1500)
 verifier('la touche Entrée enchaîne',
   (await page.locator('.cours-enonce').first().innerText()) !== apres)
+
+console.log('\n— « Je ne sais pas »')
+// Ce qu'on vient y chercher, c'est la correction : ce qui se vérifie, c'est
+// qu'elle est **dépliée**, et pas seulement proposée derrière un bouton de plus.
+const avantPassage = await page.locator('.cours-enonce').first().innerText()
+await page.getByRole('button', { name: 'Je ne sais pas' }).click()
+await page.getByRole('button', { name: /Question suivante|Voir le bilan/ }).waitFor({ timeout: 20000 })
+const verdictPassage = await page.locator('.cours-body').last().innerText()
+verifier('le verdict d\'une question passée ne reproche rien',
+  /Passée : la réponse était la/.test(verdictPassage), verdictPassage.split('\n')[0])
+verifier('la place passée revient à la fin', /revient à la fin/.test(verdictPassage))
+const panneauSolution = page.locator('.cours-panel-solution').first()
+verifier('la correction est dépliée d\'office',
+  await panneauSolution.count() === 0 || await panneauSolution.isVisible())
+const panneauIndice = page.locator('.cours-panel-indice').first()
+verifier('l\'indice est déplié d\'office',
+  await panneauIndice.count() === 0 || await panneauIndice.isVisible())
+verifier('le rappel de cours est mis en avant',
+  await page.getByRole('button', { name: 'Le rappel de cours' }).count() > 0)
+await page.getByRole('button', { name: /Question suivante|Voir le bilan/ }).click()
+await page.waitForTimeout(1500)
+verifier('la question change après un passage',
+  (await page.locator('.cours-enonce').first().innerText()) !== avantPassage)
+// La touche « 0 » doit faire la même chose que le bouton : c'est le seul
+// chiffre qui ne désigne aucune proposition.
+const avantTouche = await page.locator('.cours-enonce').first().innerText()
+await page.keyboard.press('0')
+await page.getByRole('button', { name: /Question suivante|Voir le bilan/ }).waitFor({ timeout: 20000 })
+verifier('la touche « 0 » passe la question',
+  /Passée : la réponse était la/.test(await page.locator('.cours-body').last().innerText()))
+await page.getByRole('button', { name: /Question suivante|Voir le bilan/ }).click()
+await page.waitForTimeout(1500)
+verifier('la file enchaîne après la touche « 0 »',
+  (await page.locator('.cours-enonce').first().innerText()) !== avantTouche)
+
+console.log('\n— La lettre et sa proposition')
+// La lettre qui repère une proposition doit être à la hauteur de ce qu'elle
+// repère. Le défaut se mesure : une formule est plus haute qu'une ligne de
+// texte, et la lettre flottait 20 px au-dessus d'elle.
+const ecarts = await page.evaluate(() => [...document.querySelectorAll('[role="radio"]')].map((b) => {
+  const lettre = [...b.children].find(c => /^[a-z]$/i.test(c.textContent.trim()))
+  const contenu = b.querySelector('.cours-qcm-choix')
+  if (!lettre || !contenu) return null
+  const l = lettre.getBoundingClientRect()
+  const c = contenu.getBoundingClientRect()
+  return Math.abs((l.top + l.height / 2) - (c.top + c.height / 2))
+}).filter(e => e !== null))
+verifier('la lettre est centrée sur sa proposition',
+  ecarts.length > 0 && ecarts.every(e => e < 1.5),
+  'écarts : ' + ecarts.map(e => e.toFixed(1)).join(', ') + ' px')
+
+console.log('\n— L\'entête ne mord pas sur la question')
+// La frise marque la place en cours d'un anneau qui déborde de sa case : elle
+// venait s'asseoir sur le bord de la carte. Le témoin est un vrai écart.
+const reserve = await page.evaluate(() => {
+  const frise = document.querySelector('[role="img"]')
+  const carte = document.querySelector('[role="radiogroup"]')?.closest('div[class*="rounded-xl"]')
+  if (!frise || !carte) return null
+  return +(carte.getBoundingClientRect().top - frise.getBoundingClientRect().bottom).toFixed(1)
+})
+verifier('la frise garde ses distances avec la carte', reserve !== null && reserve >= 16, reserve + ' px')
 
 console.log('\n— L\'énoncé commun du bloc')
 // On ouvre une séance sur la section du plan complexe, dont les exercices

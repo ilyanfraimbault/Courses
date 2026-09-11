@@ -44,7 +44,15 @@ function etat(lettre: string): Etat {
   return 'neutre'
 }
 
-const BASE = 'flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition-colors'
+/*
+ * Les propositions s'alignent au **centre** et non en tête : le contenu d'une
+ * proposition est une formule, dont la boîte est plus haute qu'une ligne de
+ * texte, et la lettre qui la repère flottait alors au-dessus d'elle. L'alignement
+ * sur la ligne de base, qui serait le bon réflexe, ne marche pas ici : la
+ * proposition défile horizontalement (`overflow-x`), et une boîte de défilement
+ * n'expose pas de ligne de base à son parent flex.
+ */
+const BASE = 'flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors'
 
 const HABILLAGE: Record<Etat, { classe: string, icone: string, teinte: string }> = {
   juste: { classe: 'border-success bg-success/10', icone: 'i-lucide-circle-check', teinte: 'text-success' },
@@ -77,7 +85,7 @@ function habillage(lettre: string) {
     >
       <UIcon
         :name="habillage(lettre).icone"
-        class="size-4 shrink-0 mt-1"
+        class="size-4 shrink-0"
         :class="habillage(lettre).teinte"
       />
       <span class="shrink-0 font-medium text-muted uppercase">{{ etiquettes?.[lettre] ?? lettre }}</span>

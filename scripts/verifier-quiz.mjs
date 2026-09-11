@@ -129,6 +129,33 @@ if (correction.juste) {
 r = await api(`/api/quiz/session/${session.id}/reponse`, { method: 'POST', body: { position: 0, lettre: premiere.lettres[0] } })
 verifier('répondre deux fois à la même place rend une 409', r.statut === 409, 'statut ' + r.statut)
 
+console.log('\n— « Je ne sais pas »')
+// C'est une réponse et non une échappatoire : la place doit revenir à la fin de
+// la file exactement comme après une faute, et la correction partir quand même.
+// Le contrôle porte sur la file, parce que c'est là que se jouerait la
+// tricherie — une place passée qui resterait acquise viderait la séance.
+const avantPassage = { longueur: session.longueur, poses: session.poses, fautes: session.fautes, place: session.file[session.position].place }
+const posee = (await api(`/api/quiz/session/${session.id}/question?position=${session.position}`)).corps.question
+r = await api(`/api/quiz/session/${session.id}/reponse`, { method: 'POST', body: { position: posee.position, passee: true } })
+verifier('une question se passe sans lettre', r.statut === 200, 'statut ' + r.statut)
+if (r.statut === 200) {
+  const passee = r.corps.correction
+  session = r.corps.session
+  verifier('la question passée n\'est pas comptée juste', passee.juste === false && passee.passee === true)
+  verifier('aucune réponse n\'est inventée', passee.donnee === null)
+  verifier('la bonne réponse est révélée', typeof passee.bonne === 'string' && passee.bonne.length > 0)
+  verifier('la correction part avec le verdict',
+    Array.isArray(passee.solution) && passee.solution.length > 0)
+  verifier('la place passée revient à la fin',
+    session.longueur === avantPassage.longueur + 1 && session.file.at(-1).place === avantPassage.place,
+    `longueur ${avantPassage.longueur} → ${session.longueur}, place ${session.file.at(-1).place}`)
+  verifier('la reprise est annoncée', passee.reprise !== null)
+  verifier('une question passée compte comme posée et manquée',
+    session.poses === avantPassage.poses + 1 && session.fautes === avantPassage.fautes + 1)
+}
+r = await api(`/api/quiz/session/${session.id}/reponse`, { method: 'POST', body: { position: session.position } })
+verifier('une réponse sans lettre ni aveu est refusée', r.statut === 400, 'statut ' + r.statut)
+
 console.log('\n— On va au bout, en se trompant')
 // On répond toujours « la première proposition » : les places tombent juste
 // quand la bonne lettre est la première, et les autres reviennent. C'est le

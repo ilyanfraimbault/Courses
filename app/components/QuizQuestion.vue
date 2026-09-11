@@ -13,7 +13,7 @@ const props = defineProps<{
   numero: number
 }>()
 
-const emit = defineEmits<{ choisir: [lettre: string] }>()
+const emit = defineEmits<{ choisir: [lettre: string], passer: [] }>()
 
 const corrige = computed(() => !!props.correction)
 
@@ -25,13 +25,23 @@ const corrige = computed(() => !!props.correction)
 const etiquettes = computed(() => reperesQuiz(props.question.lettres))
 const reperes = computed(() => props.question.lettres.map(l => etiquettes.value[l] ?? l))
 
-/** Les lettres déjà fausses : ici, il n'y en a qu'une, celle qu'on vient de donner. */
-const errones = computed(() =>
-  props.correction && !props.correction.juste ? [props.correction.donnee] : [])
+/**
+ * Les lettres déjà fausses : ici, il n'y en a qu'une, celle qu'on vient de
+ * donner — et aucune quand on a passé la question, où il n'y a rien à barrer.
+ */
+const errones = computed(() => {
+  const c = props.correction
+  return c && !c.juste && c.donnee ? [c.donnee] : []
+})
 
 function choisir(lettre: string) {
   if (corrige.value || props.envoi) return
   emit('choisir', lettre)
+}
+
+function passer() {
+  if (corrige.value || props.envoi) return
+  emit('passer')
 }
 
 /**
@@ -45,6 +55,13 @@ function auClavier(evenement: KeyboardEvent) {
   if (corrige.value || props.envoi) return
   if (evenement.metaKey || evenement.ctrlKey || evenement.altKey) return
   const touche = evenement.key.toLowerCase()
+  // `0` avoue qu'on ne sait pas : le seul chiffre qui ne désigne aucune
+  // proposition, donc le seul qui puisse dire « aucune ».
+  if (touche === '0') {
+    evenement.preventDefault()
+    passer()
+    return
+  }
   // Chiffres et lettres désignent tous deux un **rang** : « b » coche la
   // deuxième proposition affichée, quelle que soit la lettre qu'elle porte dans
   // la fiche. C'est ce que l'œil voit, donc ce que la main attend.
@@ -139,16 +156,31 @@ useEventListener(document, 'keydown', auClavier)
       </template>
     </ChoixReponses>
 
-    <p
+    <!-- « Je ne sais pas » n'est pas un abandon : c'est la réponse honnête, et
+         elle ouvre la correction au lieu de la faire mériter par un tirage au
+         sort entre quatre propositions. La place revient plus loin comme après
+         une faute — deviner ne rapporte donc rien de plus qu'avouer. -->
+    <div
       v-if="!corrige"
-      class="mt-4 mb-0 text-xs text-dimmed"
+      class="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2"
     >
-      <template v-if="envoi">
-        Correction en cours…
-      </template>
-      <template v-else>
-        Au clavier : {{ reperes.join(', ') }} ou 1 à {{ reperes.length }}.
-      </template>
-    </p>
+      <UButton
+        size="sm"
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-circle-help"
+        label="Je ne sais pas"
+        :disabled="envoi"
+        @click="passer"
+      />
+      <p class="m-0 text-xs text-dimmed">
+        <template v-if="envoi">
+          Correction en cours…
+        </template>
+        <template v-else>
+          Au clavier : {{ reperes.join(', ') }} ou 1 à {{ reperes.length }} — 0 pour passer.
+        </template>
+      </p>
+    </div>
   </div>
 </template>

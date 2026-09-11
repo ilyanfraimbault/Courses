@@ -72,7 +72,15 @@ function choisir(lettre: string) {
 
 /** Habillage d'une proposition : neutre avant correction, verdict après. */
 function classesChoix(lettre: string) {
-  const base = 'flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition-colors'
+  /*
+   * Les propositions s'alignent au **centre** et non en tête : le contenu d'une
+   * proposition est une formule, dont la boîte est plus haute qu'une ligne de
+   * texte, et la lettre qui la repère flottait alors au-dessus d'elle. L'alignement
+   * sur la ligne de base, qui serait le bon réflexe, ne marche pas ici : la
+   * proposition défile horizontalement (`overflow-x`), et une boîte de défilement
+   * n'expose pas de ligne de base à son parent flex.
+   */
+  const base = 'flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors'
   if (!corrige.value) {
     return choisi.value === lettre
       ? `${base} border-primary bg-primary/10`
@@ -142,7 +150,7 @@ const uiSolution = { content: 'cours-body max-w-3xl' }
       >
         <UIcon
           :name="icone(lettre)"
-          class="size-4 shrink-0 mt-1"
+          class="size-4 shrink-0"
           :class="classesIcone(lettre)"
         />
         <span class="shrink-0 font-medium text-muted uppercase">{{ lettre }}</span>
