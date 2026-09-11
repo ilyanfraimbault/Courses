@@ -75,10 +75,10 @@ function classesChoix(lettre: string) {
   /*
    * Les propositions s'alignent au **centre** et non en tête : le contenu d'une
    * proposition est une formule, dont la boîte est plus haute qu'une ligne de
-   * texte, et la lettre qui la repère flottait alors au-dessus d'elle. L'alignement
-   * sur la ligne de base, qui serait le bon réflexe, ne marche pas ici : la
-   * proposition défile horizontalement (`overflow-x`), et une boîte de défilement
-   * n'expose pas de ligne de base à son parent flex.
+   * texte, et la lettre qui la repère flottait alors au-dessus d'elle. La ligne de
+   * base, qui serait le bon réflexe, a été écartée quand la proposition défilait
+   * encore (`overflow-x`) : une boîte de défilement n'en expose pas à son parent
+   * flex. Elle ne défile plus, la ligne de base redevient possible — pas mesurée.
    */
   const base = 'flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors'
   if (!corrige.value) {
