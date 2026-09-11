@@ -12,7 +12,7 @@ Chaque chapitre se lit en trois pages, et chaque lien ci-dessous porte une pasti
 - **Exercices** — les exercices du TD, dans l'ordre du sujet. Sous chaque question, trois boutons qui ouvrent une fenêtre sans quitter l'énoncé : un **indice**, la **solution** détaillée, et le **rappel de cours** utile à cette question précise.
 - **Entraînement** — quinze questions en cinq paliers de difficulté croissante, qui partent de zéro et mènent au niveau du TD. Mêmes trois boutons, plus un exemple similaire entièrement traité, glissé dans la fenêtre d'indice.
 
-Deux chapitres ont une **seconde** page d'exercices. Les fonctions d'une variable réelle avec les révisions dérivées, où les types de fonctions sont volontairement mélangés ; les nombres complexes avec les révisions, qui vont bien plus loin que le TD. Et la trigonométrie n'a pas de TD : son cours est un guide suivi construit autour d'un **cercle manipulable** que l'on retrouve ensuite dans les autres chapitres. C'est par là qu'il vaut mieux commencer.
+Deux chapitres ont une **seconde** page d'exercices. Les fonctions d'une variable réelle avec les révisions dérivées, où les types de fonctions sont volontairement mélangés ; les nombres complexes avec les révisions, qui vont bien plus loin que le TD. Et la trigonométrie n'a pas de TD : son cours est un guide suivi construit autour d'un **cercle manipulable** que l'on retrouve ensuite dans les autres chapitres. C'est par là qu'il vaut mieux commencer — et c'est aussi le seul chapitre doté d'un **formulaire**, qui rassemble toutes ses formules sur une page, chacune avec un exemple.
 
 Les résultats ont été vérifiés par calcul formel puis confrontés aux éléments de correction officiels ; les rares écarts sont signalés directement dans la solution concernée.
 
@@ -23,7 +23,10 @@ Les résultats ont été vérifiés par calcul formel puis confrontés aux élé
 
 ## Trigonométrie
 
-::carte-lien{to="/cours/a1/remise-a-niveau-maths/trigonometrie/cours" titre="Comprendre le cercle trigonométrique" description="Le cercle expliqué de zéro, figure interactive à l'appui : radians, valeurs remarquables, angles associés, équations, arccos et arcsin — avec la liste de ce qu'il faut réellement savoir par cœur" type="cours" meta="11 sections · 41 questions"}
+::carte-lien{to="/cours/a1/remise-a-niveau-maths/trigonometrie/cours" titre="Comprendre le cercle trigonométrique" description="Le cercle expliqué de zéro, figure interactive à l'appui : radians, valeurs remarquables, angles associés, équations, arccos et arcsin — avec la liste de ce qu'il faut réellement savoir par cœur" type="cours" meta="11 sections · 48 questions"}
+::
+
+::carte-lien{to="/cours/a1/remise-a-niveau-maths/trigonometrie/formulaire" titre="Le formulaire de trigonométrie" description="Toutes les formules sur une page, chacune avec un exemple : conversions sinus-cosinus, addition, duplication, équations, arccos, arcsin, arctan, dérivées et primitives" type="formulaire" meta="17 sections"}
 ::
 
 ::carte-lien{to="/cours/a1/remise-a-niveau-maths/trigonometrie/entrainement" titre="Trigonométrie" description="Du radian aux équations et aux fonctions réciproques, en cinq paliers" type="entrainement" meta="15 questions"}

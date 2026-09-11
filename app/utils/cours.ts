@@ -12,7 +12,7 @@
  * de pages qui ne se lisent pas de la même façon : on les distingue par une
  * pastille, dans les listes de liens comme en tête de la page elle-même.
  */
-export type CoursType = 'cours' | 'exercices' | 'entrainement' | 'qcm'
+export type CoursType = 'cours' | 'exercices' | 'entrainement' | 'qcm' | 'formulaire'
 
 export interface CoursTypeInfo {
   label: string
@@ -46,6 +46,14 @@ export const coursTypes: Record<CoursType, CoursTypeInfo> = {
     icone: 'i-lucide-circle-check-big',
     couleur: 'warning',
     aide: 'Vingt questions à choix unique : on répond à tout, puis on corrige d\'un coup.'
+  },
+  // Une page sans questions, qu'on garde ouverte à côté des exercices : la
+  // pastille « Cours » promettrait une lecture suivie qu'elle ne propose pas.
+  formulaire: {
+    label: 'Formulaire',
+    icone: 'i-lucide-book-marked',
+    couleur: 'neutral',
+    aide: 'Toutes les formules du chapitre, chacune avec un exemple : une page à consulter, pas à lire dans l\'ordre.'
   }
 }
 

@@ -6,7 +6,7 @@ const props = defineProps<{
   icone?: string
   /** Mention courte affichée à droite, par exemple « 10 exercices ». */
   meta?: string
-  /** Nature de la page visée : « cours », « exercices » ou « entrainement ». */
+  /** Nature de la page visée, l'une des clés de `coursTypes` : « cours », « formulaire »… */
   type?: string
 }>()
 

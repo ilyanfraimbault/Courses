@@ -11,9 +11,10 @@ export default defineContentConfig({
       schema: z.object({
         // Affiche les commandes « tout afficher / tout masquer » en tête de page.
         interactif: z.boolean().optional(),
-        // Nature de la page, affichée en pastille : cours, exercices du TD, ou
-        // fiche d'entraînement progressive. Absente sur les pages de sommaire.
-        type: z.enum(['cours', 'exercices', 'entrainement', 'qcm']).optional(),
+        // Nature de la page, affichée en pastille : cours, exercices du TD, fiche
+        // d'entraînement progressive, QCM ou formulaire. Absente sur les pages de
+        // sommaire. Les intitulés vivent dans `coursTypes` (app/utils/cours.ts).
+        type: z.enum(['cours', 'exercices', 'entrainement', 'qcm', 'formulaire']).optional(),
         annee: z.string().optional(),
         matiere: z.string().optional(),
         ordre: z.number().optional(),
