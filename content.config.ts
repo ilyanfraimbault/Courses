@@ -56,6 +56,8 @@ export default defineContentConfig({
           interrogeable: z.boolean(),
           notion: z.string().nullable(),
           notionTitre: z.string().nullable(),
+          // Le chemin du chapitre, « /cours/a1/…/trigonometrie » : la matière et
+          // l'année s'en déduisent (`shared/utils/niveaux.ts`).
           theme: z.string().nullable(),
           // « /chemin/de/la/page#ancre » : la section du cours dont la question
           // relève, second niveau de la sélection du quiz.

@@ -68,15 +68,21 @@ const rows=db.prepare('SELECT path, questions FROM _content_cours ORDER BY path'
 "
 ```
 
-Attendu aujourd'hui : `473 / 473 aucun écart`.
+Attendu aujourd'hui : `353 / 353 aucun écart`.
+
+Le compte porte sur le texte `cours-question` dans le HTML, et le serveur de
+développement garde les commentaires de gabarit : un commentaire qui cite ce nom
+de classe fait doubler le compte sans que rien ne soit cassé (voir
+`.claude/pieges.md`). Un écart d'exactement ×2 sur toutes les pages désigne le
+compteur, pas le contenu.
 
 Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/content`,
 `@nuxtjs/mdc` ou `remark-mdc` — c'est le seul moyen de voir la panne.
 
-Le même hook relève l'index des questions. Il en a **473**, autant que le
+Le même hook relève l'index des questions. Il en a **353**, autant que le
 comptage — chacune vit dans un bloc et porte un repère, donc chacune a une
-identité et peut être rangée dans un domaine. Parmi elles, **432** sont
-interrogeables, réparties sur quatre chapitres : c'est la banque du quiz,
+identité et peut être rangée dans un domaine. Parmi elles, **312** sont
+interrogeables, réparties sur les quatre chapitres d'une matière : c'est la banque du quiz,
 décrite dans `docs/quiz.md`. Ce second témoin vaut d'être relu au même moment
 qu'un changement de contenu — une question qui cesse d'être relevée disparaît du
 quiz et d'un domaine sans que rien ne le signale.
@@ -92,15 +98,15 @@ for (const r of rows) {
   for (const q of JSON.parse(r.releve||'[]')) {
     relevees++;
     if (q.interrogeable) interrogeables++;
-    if (q.notion) notions.add((q.theme||'?')+'/'+q.notion); else sansRenvoi++;
+    if (q.notion) notions.add((q.theme||'?')+'#'+q.notion); else sansRenvoi++;
   }
 }
 console.log({relevees, comptees, interrogeables, notions: notions.size, sansRenvoi});
 "
 ```
 
-Attendu aujourd'hui : `{ relevees: 473, comptees: 473, interrogeables: 432,
-notions: 102, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
+Attendu aujourd'hui : `{ relevees: 353, comptees: 353, interrogeables: 312,
+notions: 67, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
 signalerait une question hors bloc ou sans repère : elle se rendrait bien, mais
 n'aurait pas d'identité, donc pas de mémoire.
 
@@ -127,12 +133,46 @@ console.log(orphelines.length ? 'HORS BLOC : ' + orphelines.map(r => r.path).joi
 
 Attendu : `aucune question hors bloc`.
 
+## Toute fiche porte son type
+
+Un « : » non protégé dans un `title` ou une `description` de frontmatter fait
+lire la valeur comme un objet, et le YAML perd **tout ce qui suit** — `type`,
+`navigation`, `ordre` — sans une erreur. La page s'affiche ; elle perd sa
+pastille, son bouton de to-do, et disparaît du catalogue de la to-do, qui écarte
+les pages sans `type`. Guillemets doubles dès qu'une valeur contient « : » ou
+« # ».
+
+Le témoin : les fichiers qui écrivent un `type:` doivent tous l'avoir dans la
+base de contenu.
+
+```bash
+node -e "
+const fs=require('fs'),path=require('path'),{DatabaseSync}=require('node:sqlite');
+const ecrits=[];(function p(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=path.join(d,e.name);e.isDirectory()?p(f):f.endsWith('.md')&&/^type:/m.test(fs.readFileSync(f,'utf8').split(/^---$/m)[1]??'')&&ecrits.push(f)}})('content');
+const types=new DatabaseSync('.data/content/contents.sqlite').prepare('SELECT COUNT(*) n FROM _content_cours WHERE type IS NOT NULL').get().n;
+console.log(types, '/', ecrits.length, types===ecrits.length?'':'ÉCART : un frontmatter ne se lit plus');
+"
+```
+
+Attendu aujourd'hui : `15 / 15`.
+
 ## Structure
 
 Une seule collection, `cours`, dont la source est `cours/**/*.md`. Le chemin
 d'URL découle de l'arborescence : `content/cours/a1/remise-a-niveau-maths/…`
 donne `/cours/a1/remise-a-niveau-maths/…`. Les chemins sont **identiques** à ceux
 du portfolio d'origine, volontairement.
+
+L'arborescence **est** la hiérarchie du site : `/cours/<année>/<matière>/<chapitre>/<fiche>`.
+`shared/utils/niveaux.ts` la lit dans le chemin, et c'est la seule règle qui
+existe — le relevé du build, la banque du quiz, les domaines, le tableau de bord
+et la barre latérale l'appellent tous. Une nouvelle matière est donc un dossier
+de plus sous son année, avec un `index.md` qui la nomme ; une nouvelle année, un
+dossier sous `cours/`. Rien d'autre à déclarer.
+
+Un chapitre se désigne par son chemin et non par son slug, puisque deux matières
+peuvent en avoir un du même nom. La page d'index d'un dossier lui donne son
+intitulé, son icône et son rang (`ordre`).
 
 Frontmatter : `title`, `description`, `type` (`cours` | `exercices` |
 `entrainement` | `qcm` | `formulaire`), `annee`, `matiere`, `ordre`, `icone`,
@@ -141,7 +181,8 @@ quatre champs **remplis au build**, à ne jamais écrire à la main : `questions
 (le compte de la page), `blocs` (les exercices et QCM, avec leur dénominateur),
 `sections` (les titres de niveau 2 de la page, par ancre — ils nomment les cases
 de la sélection du quiz) et `releve` (une entrée par question, avec son bloc,
-son repère, le point de cours qu'elle vise, sa section et son chapitre — voir
+son repère, le point de cours qu'elle vise, sa section et le chemin de son
+chapitre — voir
 `docs/quiz.md` pour la banque du quiz qu'on en tire, et `docs/domaines.md` pour
 la progression par point de cours).
 

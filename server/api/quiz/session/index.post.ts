@@ -1,8 +1,8 @@
 import type { FiltreQuiz, QuestionQuiz, SessionQuiz } from '~~/shared/types/quiz'
-import type { RangCandidat } from '../../../utils/quiz-banque.ts'
 import type { EtatFile, LigneSession } from '../../../utils/quiz-session.ts'
 
 interface CorpsSession {
+  matiere?: unknown
   themes?: unknown
   sections?: unknown
   notions?: unknown
@@ -12,41 +12,6 @@ interface CorpsSession {
 
 function listeDeChaines(valeur: unknown): string[] {
   return Array.isArray(valeur) ? [...new Set(valeur.filter((v): v is string => typeof v === 'string' && !!v))] : []
-}
-
-/**
- * Le rang de chaque candidat au tirage, du plus urgent au moins utile.
- *
- * C'est ce qui empêche une banque de quatre cent trente-deux questions de
- * reposer avant-hier ce qu'on a vu hier. Quatre paliers :
- *
- * 0. **en dette** — ratée quelque part et pas encore retrouvée depuis ;
- * 1. **jamais posée au quiz** — du neuf, tant qu'il en reste ;
- * 2. **posée il y a plus de deux semaines** — le temps d'oublier ;
- * 3. **posée récemment** — en dernier recours, faute de mieux dans la sélection.
- *
- * Le tri n'a lieu qu'**à l'intérieur** d'un point de cours : l'étalement du
- * tirage sur les chapitres et les notions reste premier, sans quoi une séance
- * de vingt questions se réduirait aux vingt dettes du même chapitre.
- */
-function rangDe(db: ReturnType<typeof useBase>, uid: number, enDette: Set<string>): RangCandidat {
-  const vues = new Map<string, number>()
-  const lignes = db.prepare(`
-    SELECT r.question AS question, MAX(r.t) AS t
-    FROM quiz_reponse r
-    JOIN quiz_session s ON s.id = r.session_id
-    WHERE s.utilisateur_id = ?
-    GROUP BY r.question
-  `).all(uid) as unknown as { question: string, t: number }[]
-  for (const l of lignes) vues.set(l.question, l.t)
-
-  const maintenant = Date.now()
-  return (entree) => {
-    if (enDette.has(entree.id)) return 0
-    const vue = vues.get(entree.id)
-    if (vue === undefined) return 1
-    return maintenant - vue > REPOS ? 2 : 3
-  }
 }
 
 /**
@@ -63,6 +28,9 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
 
   const corps = await readBody<CorpsSession>(event)
   const filtre: FiltreQuiz = {
+    // La matière cadre tout le reste. L'écran la fixe toujours ; une requête qui
+    // l'omet garde le site entier pour cadre, comme avant qu'il y en ait deux.
+    matiere: typeof corps?.matiere === 'string' && corps.matiere ? corps.matiere : null,
     themes: listeDeChaines(corps?.themes),
     sections: listeDeChaines(corps?.sections),
     // Un point de cours précis, tel que « Mes domaines » le désigne par lien.
@@ -90,7 +58,7 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
 
   // Demander plus de questions que le filtre n'en contient n'est pas une erreur :
   // on en donne autant qu'il y en a, et la taille de la séance le dit.
-  const tirees = tirer(candidats, Math.min(demandee, candidats.length), rangDe(db, uid, enDette))
+  const tirees = tirer(candidats, Math.min(demandee, candidats.length), rangDuTirage(db, uid, enDette))
 
   const etat: EtatFile = {
     version: 1,

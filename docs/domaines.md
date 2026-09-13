@@ -17,8 +17,9 @@ par question, avec le chapitre déduit de la `source` de l'extrait — exactemen
 la même déduction que celle du quiz, et pour la même raison : un QCM mélange les
 chapitres exprès, donc le dossier d'une question ne dit pas de quoi elle parle.
 
-Aujourd'hui : **473 questions**, **103 domaines** répartis sur quatre chapitres.
-Cent deux d'entre eux sont des points de cours nommés ; le dernier est le tas
+Aujourd'hui : **353 questions**, **68 domaines** répartis sur les quatre chapitres
+d'une matière. Soixante-sept d'entre eux sont des points de cours nommés ; le
+dernier est le tas
 « Sans renvoi au cours » — **48 questions** qui ne pointent vers aucun extrait,
 regroupées par chapitre pour que la somme des domaines tombe sur le total du
 chapitre. Sans ce tas, la barre du haut ne collerait plus à celles du bas. Il
@@ -53,17 +54,26 @@ est-ce que ça coince », et l'ordre du cours ne répond pas à cette question-l
 part égale, le domaine le plus fourni passe devant — c'est celui qui pèse le
 plus. Les chapitres, eux, gardent l'ordre du cours.
 
+## Matière par matière
+
+La page range matière, chapitre, domaine — la hiérarchie du site. Chaque matière
+porte sa propre barre et son bouton « m'interroger sur la matière » : deux cours
+ne partagent pas un pourcentage, qui ne dirait rien de l'un ni de l'autre. La
+barre du haut reste, pour la vue d'ensemble, et la somme des matières tombe sur
+elle comme la somme des chapitres tombe sur leur matière.
+
 ## D'où viennent les chiffres
 
-`GET /api/progression/domaines`, une requête, trois lectures qui ne dépendent
+`GET /api/progression/domaines`, une requête, quatre lectures qui ne dépendent
 pas les unes des autres :
 
 - **`reussite`** dit ce qui est acquis. C'est la même mémoire que les fiches et
   que le report du quiz : une question trouvée est une question trouvée, quel
   que soit l'écran où elle l'a été.
-- **`quiz_reponse`** (les `juste = 0`) et **`qcm_tentative.ratees`** disent ce
-  qui a coûté une faute. Le quiz range l'identité entière, un QCM ne retient que
-  les repères de ses questions ratées — d'où la recomposition côté serveur.
+- **`quiz_reponse`** (les `juste = 0`), **`qcm_tentative.ratees`** et
+  **`qcm_compose_copie.ratees`** disent ce qui a coûté une faute. Le quiz et les
+  QCM composés rangent l'identité entière, un QCM de contenu ne retient que les
+  repères de ses questions ratées — d'où la recomposition côté serveur.
 
 Le croisement a lieu **au serveur**, comme le reste. La table de correspondance
 question → point de cours est le relevé du build ; l'envoyer au navigateur pour
@@ -81,12 +91,12 @@ compte, au quiz.
 
 ## Le relevé a dû s'élargir
 
-Il ne portait que les 432 questions à choix, celles que le quiz sait poser. Une
+Il ne portait que les questions à choix, celles que le quiz sait poser. Une
 vue qui range **toute** la progression ne pouvait pas s'en contenter : les 41
 questions ouvertes se cochent comme les autres, et les laisser dehors aurait
 fait afficher « 12 / 13 » sur un domaine qui en compte 15.
 
-Le relevé porte donc les 473 questions, et un champ `interrogeable` dit
+Le relevé porte donc les 353 questions, et un champ `interrogeable` dit
 lesquelles le quiz peut poser. Un seul relevé plutôt que deux côte à côte, qui
 se seraient contredits le jour où l'un aurait changé. Le catalogue du quiz, lui,
 ne compte toujours que les interrogeables : annoncer « 18 questions » sur une
@@ -95,8 +105,10 @@ tôt que promis.
 
 ## De la page au quiz
 
-Chaque domaine porte un bouton qui ouvre `/quiz?notion=<chapitre/identifiant>`,
-et chaque chapitre `/quiz?theme=<chapitre>`. La page de quiz relit ces clés,
+Chaque domaine porte un bouton qui ouvre `/quiz?notion=<chemin-du-chapitre#identifiant>`,
+chaque chapitre `/quiz?theme=<chemin-du-chapitre>`, et chaque matière
+`/quiz?matiere=<chemin-de-la-matière>`. La page de quiz relit ces clés, en
+déduit la matière à ouvrir,
 les **confronte au catalogue**, et n'en retient que ce qu'il connaît : un lien
 mis en favori survit ainsi à un cours renommé — il ouvre le quiz sur tout, au
 lieu de préparer une séance vide.
@@ -110,20 +122,25 @@ La page ne se vérifie pas au `curl` : comme le reste du site, elle ne lit la
 progression qu'au montage — le HTML servi est le même pour tout le monde.
 
 Le contrôle qui compte est que **les comptes se réconcilient** : la somme des
-domaines d'un chapitre vaut le total du chapitre, et la somme des chapitres vaut
-473. Serveur en marche et compte connecté :
+domaines d'un chapitre vaut le total du chapitre, celle des chapitres le total de
+leur matière, et celle des matières 353. Serveur en marche et compte connecté :
 
 ```bash
 curl -s --cookie "$COOKIE" localhost:3000/api/progression/domaines | node -e "
 const d=JSON.parse(require('fs').readFileSync(0,'utf8'));
-let s=0;
-for (const c of d.chapitres) {
-  const somme=c.domaines.reduce((n,x)=>n+x.questions,0);
-  if (somme!==c.questions) console.log('ÉCART', c.cle, somme, '!=', c.questions);
-  s+=c.questions;
+let s=0, n=0;
+for (const m of d.matieres) {
+  const chapitres=m.chapitres.reduce((k,c)=>k+c.questions,0);
+  if (chapitres!==m.questions) console.log('ÉCART', m.cle, chapitres, '!=', m.questions);
+  for (const c of m.chapitres) {
+    const somme=c.domaines.reduce((k,x)=>k+x.questions,0);
+    if (somme!==c.questions) console.log('ÉCART', c.cle, somme, '!=', c.questions);
+    n+=c.domaines.length;
+  }
+  s+=m.questions;
 }
-console.log(s, '==', d.total.questions, '|', d.chapitres.reduce((n,c)=>n+c.domaines.length,0), 'domaines');
+console.log(s, '==', d.total.questions, '|', n, 'domaines');
 "
 ```
 
-Attendu aujourd'hui : `473 == 473 | 103 domaines`.
+Attendu aujourd'hui : `353 == 353 | 68 domaines`.

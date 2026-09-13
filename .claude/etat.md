@@ -1,6 +1,6 @@
 # Où en est le projet
 
-Dernière mise à jour : 11 septembre 2026.
+Dernière mise à jour : 13 septembre 2026.
 
 ## En ligne
 
@@ -13,17 +13,32 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 
 ## Ce qui fonctionne
 
-- Les 28 fiches, 473 questions, KaTeX, cercle trigonométrique, tableaux de
-  variations — tout le contenu du portfolio, aux mêmes URLs.
+- 15 fiches et 353 questions, rangées par **année, matière et chapitre** — KaTeX,
+  cercle trigonométrique, tableaux de variations — aux URLs du portfolio. Le 13
+  septembre, les QCM 1 à 6 (120 questions) et le plan de révision de l'examen du
+  11 septembre ont été retirés : seule la réplique du sujet initial reste en
+  contenu, et les textes des fiches ont été harmonisés.
+- **La matière partout.** La hiérarchie se lit dans le chemin
+  (`shared/utils/niveaux.ts`). La barre latérale ne montre que la matière de la
+  page ; le quiz, les QCM composés, « Mes domaines », le tableau de bord et la
+  to-do rangent par matière. Une seule existe aujourd'hui : en ajouter une est un
+  dossier de plus, rien à déclarer.
+- **Une seule présentation des questions** (`QuestionCadre`) : exercice, cours,
+  QCM de contenu et QCM composé ont les mêmes propositions et les mêmes boutons
+  Indice, Solution, Cours, dépliés sous la question. Plus de fenêtre modale.
+- **Mes QCM** (`/mes-qcm`) : des QCM composés depuis le site, par tirage à la
+  manière du quiz ou question par question, rangés sur le compte. Page fixe,
+  correction au serveur, report sur les fiches et dans la dette. Voir
+  `docs/mes-qcm.md`.
 - Une 29ᵉ fiche, propre à ce site : le **formulaire de trigonométrie**
   (`/cours/a1/remise-a-niveau-maths/trigonometrie/formulaire`), toutes les
   formules avec un exemple chacune. Type `formulaire`, aucune question — il ne
-  change ni les 473 questions, ni le quiz, ni les domaines.
+  change ni le compte des questions, ni le quiz, ni les domaines.
 - Comptes multiples (pseudo + mot de passe haché en scrypt), inscription par
   code, isolation des données vérifiée entre deux comptes.
 - Progression et historique de QCM en base, synchronisés entre appareils.
 - **Mode quiz** : une question à la fois — avec l'énoncé commun de son bloc —
-  tirée dans les 432 questions à choix du site, filtrable par chapitre ou par
+  tirée dans les 312 questions à choix d'une matière, filtrable par chapitre ou par
   **section du cours** (34 cases, qui couvrent chaque chapitre sans reste). Une
   question gagnée est cochée sur sa fiche.
   Une faute renvoie la place à la fin de la file avec une *autre* question du
@@ -38,8 +53,8 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   quiz entre en dette, et n'en sort qu'en étant retrouvée — où que ce soit. Elle
   alimente la sélection « seulement ce que j'ai raté », les compteurs du
   catalogue et le panneau « ce qui résiste ».
-- **Progression par domaine** (`/mes-domaines`) : les 473 questions rangées par
-  point de cours — 103 domaines sous quatre chapitres — avec, sur une même
+- **Progression par domaine** (`/mes-domaines`) : les 353 questions rangées par
+  point de cours — 68 domaines sous quatre chapitres, matière par matière — avec, sur une même
   barre, ce qui est tombé juste du premier coup et ce qu'il a fallu reprendre.
   Le moins acquis en tête, et un bouton par domaine qui ouvre le quiz sur ce
   point de cours. La sélection du quiz, elle, se fait par plan du chapitre : le
@@ -84,6 +99,17 @@ changement de code.
 
 ## Dette et points ouverts
 
+**Les traces des QCM 1 à 6 restent en base.** Leurs lignes de `fiche`,
+`reussite`, `qcm_tentative` et `faute` n'ont pas été effacées : elles ne visent
+plus aucune question du contenu, et tout ce qui compte passe par le relevé — le
+tableau de bord, le catalogue, « ce qui résiste » et les domaines les ignorent
+donc. Elles ressortent seulement dans l'export JSON. Les purger demanderait une
+migration qui connaisse la liste des chemins retirés ; rien ne presse.
+
+**Un QCM composé ne se modifie pas** : il se renomme ou se supprime. Retoucher la
+liste d'un QCM déjà passé rendrait ses notes incomparables ; si le besoin se
+présente, ce serait « composer une copie modifiable », pas éditer en place.
+
 **Un compte de diagnostic traîne en production** : `diagnostic-eesm1`, créé
 pour éprouver le parcours d'import sans toucher au compte d'Ilyan. Il n'existe
 pas de suppression de compte — à ajouter si on veut le retirer.
@@ -123,7 +149,7 @@ main. Le dernier a besoin de Playwright, qui n'est pas une dépendance du
 projet : `PLAYWRIGHT_MODULE=$(npm root -g)/playwright/index.mjs` désigne une
 installation globale, `import()` ne suivant pas `NODE_PATH`.
 
-**Le quiz n'entre pas dans l'export JSON.** `resultats-cours` transporte les
+**Le quiz et les QCM composés n'entrent pas dans l'export JSON.** `resultats-cours` transporte les
 fiches, les QCM et la to-do, pas les séances de quiz. Le format est partagé avec
 le portfolio d'origine ; l'y ajouter serait un champ facultatif de plus, à faire
 le jour où une sauvegarde des séances aura de la valeur.

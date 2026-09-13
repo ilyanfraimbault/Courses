@@ -6,6 +6,16 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "cours-verif",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "NUXT_CODE_INSCRIPTION=code-de-classe",
+        "NUXT_BASE_FICHIER=.data/verif/cours.sqlite",
+        "pnpm", "run", "dev"
+      ],
+      "port": 3000
     }
   ]
 }

@@ -7,15 +7,26 @@ const { items, marquer, supprimer, reordonner } = useTodo()
 const catalogue = useCatalogueCibles()
 const toast = useToast()
 
+/**
+ * L'intitulé d'un groupe. Tant qu'il n'y a qu'une matière, le chapitre suffit ;
+ * dès qu'il y en a deux, il se préfixe de la sienne — deux « Introduction » de
+ * deux cours se fondraient sinon dans le même groupe, puisque c'est l'intitulé
+ * qui le désigne.
+ */
+const plusieursMatieres = computed(() => new Set(catalogue.value.map(c => c.matiere)).size > 1)
+const libelleChapitre = (c: { titre: string, matiere: string | null }) =>
+  (plusieursMatieres.value && c.matiere ? `${c.matiere} › ${c.titre}` : c.titre)
+
 /** Toutes les cibles du catalogue, à plat, pour retrouver l'une d'elles par sa clé. */
 const parCle = computed(() => {
   const table = new Map<string, { titre: string, questions: number, chapitre: string, fiche: string | null }>()
   for (const c of catalogue.value) {
-    table.set(c.cle, { titre: c.titre, questions: c.questions, chapitre: c.titre, fiche: null })
+    const chapitre = libelleChapitre(c)
+    table.set(c.cle, { titre: c.titre, questions: c.questions, chapitre, fiche: null })
     for (const f of c.fiches) {
-      table.set(f.cle, { titre: f.titre, questions: f.questions, chapitre: c.titre, fiche: f.titre })
+      table.set(f.cle, { titre: f.titre, questions: f.questions, chapitre, fiche: f.titre })
       for (const b of f.blocs) {
-        table.set(b.cle, { titre: b.titre, questions: b.questions, chapitre: c.titre, fiche: f.titre })
+        table.set(b.cle, { titre: b.titre, questions: b.questions, chapitre, fiche: f.titre })
       }
     }
   }

@@ -58,6 +58,9 @@ function pris(chapitre: ChapitreCatalogue): number {
   )
 }
 
+/** Le nom de la matière ne s'affiche que s'il distingue quelque chose. */
+const plusieursMatieres = computed(() => new Set(catalogue.value.map(c => c.matiere)).size > 1)
+
 async function basculerCible(c: CibleCatalogue) {
   enCours.value = c.cle
   try {
@@ -133,7 +136,10 @@ async function basculerCible(c: CibleCatalogue) {
             :class="dedans(chapitre) ? 'text-primary' : 'text-dimmed'"
           />
           <span class="min-w-0 flex-1 truncate text-sm font-semibold text-highlighted">
-            {{ chapitre.titre }}
+            <span
+              v-if="plusieursMatieres && chapitre.matiere"
+              class="font-normal text-dimmed"
+            >{{ chapitre.matiere }} › </span>{{ chapitre.titre }}
           </span>
         </button>
         <span class="shrink-0 text-xs text-muted tabular-nums">

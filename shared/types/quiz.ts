@@ -47,6 +47,9 @@ export interface QuestionRelevee {
    * Chapitre auquel la question se rattache. Il vient de l'extrait de cours
    * qu'elle vise — un QCM mélange les chapitres, mais chacune de ses questions
    * renvoie au cours d'un seul — et, à défaut, du chapitre de la fiche.
+   *
+   * Désigné par son chemin, « /cours/a1/…/trigonometrie » : deux matières
+   * peuvent avoir un chapitre du même nom.
    */
   theme: string | null
   /**
@@ -93,7 +96,7 @@ export interface SectionCatalogue {
 
 /** Un point de cours : l'intitulé d'un rappel, et ce qu'il pèse. */
 export interface NotionCatalogue {
-  /** « chapitre/identifiant-extrait » : le même identifiant sert dans deux chapitres. */
+  /** « /chemin/du/chapitre#identifiant-extrait » : le même identifiant sert dans deux chapitres. */
   cle: string
   titre: string
   questions: number
@@ -101,7 +104,7 @@ export interface NotionCatalogue {
 }
 
 export interface ThemeCatalogue {
-  /** Slug du chapitre : « trigonometrie ». */
+  /** Chemin du chapitre : « /cours/a1/remise-a-niveau-maths/trigonometrie ». */
   cle: string
   titre: string
   icone: string | null
@@ -112,11 +115,31 @@ export interface ThemeCatalogue {
   sections: SectionCatalogue[]
 }
 
-export interface CatalogueQuiz {
-  total: number
-  /** Questions en dette, tous chapitres confondus. */
+/**
+ * Une matière, premier niveau du catalogue.
+ *
+ * On ne se fait pas interroger « sur tout » : deux matières mélangées dans une
+ * même séance ne révisent ni l'une ni l'autre. La sélection commence donc par
+ * la matière, et « rien de coché » y veut dire « toute la matière ».
+ */
+export interface MatiereCatalogue {
+  /** Chemin de la matière : « /cours/a1/remise-a-niveau-maths ». */
+  cle: string
+  titre: string
+  /** Intitulé de l'année qui la porte : « Première année ». */
+  annee: string | null
+  icone: string | null
+  chemin: string | null
+  questions: number
   ratees: number
   themes: ThemeCatalogue[]
+}
+
+export interface CatalogueQuiz {
+  total: number
+  /** Questions en dette, toutes matières confondues. */
+  ratees: number
+  matieres: MatiereCatalogue[]
   /** Bornes acceptées pour la taille d'un tirage, pour que le client n'invente rien. */
   tailleMin: number
   tailleMax: number
@@ -124,6 +147,12 @@ export interface CatalogueQuiz {
 
 /** Ce sur quoi on demande à être interrogé. Vide de tout côté = tout le catalogue. */
 export interface FiltreQuiz {
+  /**
+   * Le chemin de la matière. Elle **restreint** tout le reste : rien de coché
+   * veut dire toute la matière, et une dette prise seule ne déborde pas sur une
+   * autre. Nulle dans les séances ouvertes avant qu'il y ait des matières.
+   */
+  matiere?: string | null
   themes: string[]
   sections: string[]
   /**
@@ -148,6 +177,7 @@ export interface QuestionQuiz {
   label: string
   theme: string | null
   themeTitre: string | null
+  matiereTitre: string | null
   /** L'intitulé de la section du cours, tel qu'il s'affiche en tête de question. */
   sectionTitre: string | null
   notionTitre: string | null
@@ -249,6 +279,8 @@ export interface ResumeSessionQuiz {
   filtre: FiltreQuiz
   /** Intitulés des thèmes du filtre, résolus côté serveur. */
   themes: string[]
+  /** La matière de la séance, en clair. */
+  matiereTitre: string | null
 }
 
 /**
@@ -263,6 +295,7 @@ export interface SectionResistante {
   titre: string
   theme: string | null
   themeTitre: string | null
+  matiere: string | null
   /** Questions de la section ratées et pas encore retrouvées. */
   enDette: number
   /** Fautes accumulées sur ces questions, toutes occasions confondues. */

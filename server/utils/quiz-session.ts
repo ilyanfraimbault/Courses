@@ -52,6 +52,9 @@ export function lireFiltre(json: string): FiltreQuiz {
   try {
     const brut = JSON.parse(json) as Partial<FiltreQuiz>
     return {
+      // Absente des séances ouvertes avant qu'il y ait plusieurs matières : elles
+      // gardent alors tout le site pour cadre, ce qui était leur sens d'origine.
+      matiere: typeof brut?.matiere === 'string' && brut.matiere ? brut.matiere : null,
       themes: chaines(brut?.themes),
       sections: chaines(brut?.sections),
       erreurs: brut?.erreurs === true,

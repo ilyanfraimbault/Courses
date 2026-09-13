@@ -7,6 +7,7 @@
 // `slugifier`, il importe **la** fonction — voir l'avertissement en tête de
 // `app/utils/cours.ts`, qui doit rester libre de tout import Nuxt.
 import { cheminCanonique, slugifier } from './app/utils/cours'
+import { niveauxDuChemin } from './shared/utils/niveaux'
 
 /** Les trois balises qui posent une question, quel que soit le format de la fiche. */
 const BALISES_QUESTION = new Set(['exo-question', 'qcm-question', 'question'])
@@ -169,14 +170,17 @@ function releverExtraits(noeuds: unknown, sortie: Record<string, ExtraitReleve> 
 }
 
 /**
- * Le chapitre auquel un chemin appartient : « …/trigonometrie/cours » donne
- * « trigonometrie ». C'est l'avant-dernier segment, et non un rang fixe : le
- * jour où une seconde matière existera, la règle tiendra encore.
+ * Le chapitre auquel un chemin appartient, désigné par **son chemin** :
+ * « /cours/a1/remise-a-niveau-maths/trigonometrie/cours » donne
+ * « /cours/a1/remise-a-niveau-maths/trigonometrie ».
+ *
+ * Ce fut longtemps le seul slug « trigonometrie », tant qu'une seule matière
+ * existait. Le site est fait pour en porter plusieurs, et deux matières peuvent
+ * avoir chacune un chapitre « introduction » : le slug les aurait fondus en un
+ * seul thème sans rien signaler. Voir `shared/utils/niveaux.ts`.
  */
 function chapitreDe(chemin: string | undefined): string | null {
-  if (!chemin) return null
-  const segments = chemin.split('#')[0]!.split('/').filter(Boolean)
-  return segments.length >= 2 ? segments[segments.length - 2]! : null
+  return niveauxDuChemin(chemin).chapitre
 }
 
 /**

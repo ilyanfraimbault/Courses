@@ -1,8 +1,9 @@
 import type { H3Event } from 'h3'
 import type {
-  CatalogueQuiz, ExtraitQuiz, FiltreQuiz, FragmentContenu,
+  CatalogueQuiz, ExtraitQuiz, FiltreQuiz, FragmentContenu, MatiereCatalogue,
   NatureQuestion, NotionCatalogue, QuestionQuiz, QuestionRelevee, SectionCatalogue, ThemeCatalogue
 } from '~~/shared/types/quiz'
+import { niveauxDuChemin } from '~~/shared/utils/niveaux'
 
 /** Bornes du tirage. Au-delà, la file cesse d'être une séance et devient une corvée. */
 export const TAILLE_MIN = 5
@@ -21,6 +22,12 @@ export interface EntreeBanque extends QuestionRelevee {
    * une fiche « commencée » sans savoir sur combien.
    */
   ficheQuestions: number
+  /**
+   * Chemin de la matière, déduit du chapitre. Une question de QCM qui vise le
+   * cours d'un chapitre appartient à la matière de ce chapitre — c'est la même
+   * déduction que pour le thème, un niveau plus haut.
+   */
+  matiere: string | null
   /**
    * Clé de la notion, préfixée par le thème : le même identifiant d'extrait sert
    * dans deux chapitres — `cours-quotient` désigne le quotient de fonctions ici,
@@ -64,6 +71,22 @@ interface PageContenu {
   releve?: QuestionRelevee[] | null
 }
 
+/** Ce qu'une page d'index apprend d'un niveau : son nom, son icône, son rang. */
+export interface MetaNiveau {
+  titre: string
+  icone: string | null
+  /** Chemin de la page d'index, nul quand le dossier n'en a pas. */
+  chemin: string | null
+  ordre: number
+}
+
+export interface MetaMatiere extends MetaNiveau {
+  /** Intitulé de l'année : « Première année ». */
+  annee: string | null
+  /** Chemin de l'année, qui ordonne les matières d'une année à l'autre. */
+  anneeChemin: string | null
+}
+
 interface Banque {
   /**
    * Toutes les questions identifiables du site, questions ouvertes comprises.
@@ -77,8 +100,10 @@ interface Banque {
    * filtres et le catalogue voient : le reste ne se corrige pas tout seul.
    */
   interrogeables: EntreeBanque[]
-  /** Chapitre → intitulé, icône et sommaire, relevés sur la page d'index du chapitre. */
-  chapitres: Map<string, { titre: string, icone: string | null, chemin: string, ordre: number }>
+  /** Chemin du chapitre → intitulé, icône et rang, relevés sur sa page d'index. */
+  chapitres: Map<string, MetaNiveau>
+  /** Chemin de la matière → la même chose, et son année. */
+  matieres: Map<string, MetaMatiere>
 }
 
 /**
@@ -134,12 +159,6 @@ function lisible(ancre: string): string {
   return texte ? texte.charAt(0).toUpperCase() + texte.slice(1) : ancre
 }
 
-/** Le dernier segment d'un chemin : « /cours/a1/…/trigonometrie » → « trigonometrie ». */
-function dernierSegment(chemin: string): string {
-  const segments = chemin.split('/').filter(Boolean)
-  return segments[segments.length - 1] ?? ''
-}
-
 export async function chargerBanque(event: H3Event): Promise<Banque> {
   if (banque && Date.now() < banque.expire) return banque.valeur
 
@@ -167,7 +186,8 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
         chemin,
         ficheTitre: page.title,
         ficheQuestions: page.questions ?? 0,
-        notionCle: q.notion ? `${q.theme ?? '?'}/${q.notion}` : null,
+        matiere: niveauxDuChemin(q.theme ?? chemin).matiere,
+        notionCle: q.notion ? `${q.theme ?? '?'}#${q.notion}` : null,
         // Une ancre qui ne se résout pas est un titre renommé sans que les
         // `source` qui le visaient aient suivi. On garde la section quand même,
         // sous une forme lisible : la faire disparaître du catalogue rendrait
@@ -178,24 +198,35 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
     }
   }
 
-  // Le chapitre d'un thème est la page dont le dernier segment porte son nom :
-  // « …/remise-a-niveau-maths/trigonometrie » est le sommaire du chapitre
-  // « trigonometrie ». C'est elle qui lui donne son intitulé et son icône,
+  // Un chapitre et une matière sont nommés par leur page d'index — celle dont le
+  // chemin est le leur. C'est elle qui leur donne intitulé, icône et rang,
   // plutôt qu'une table écrite à la main qui vieillirait en silence.
-  const themes = new Set(entrees.map(e => e.theme).filter((t): t is string => !!t))
-  const chapitres = new Map<string, { titre: string, icone: string | null, chemin: string, ordre: number }>()
-  for (const page of pages) {
-    const segment = dernierSegment(page.path)
-    if (!themes.has(segment) || chapitres.has(segment)) continue
-    chapitres.set(segment, {
-      titre: page.title,
-      icone: page.icone ?? null,
-      chemin: cheminCanonique(page.path),
-      ordre: page.ordre ?? 999
-    })
+  const parChemin = new Map(pages.map(p => [cheminCanonique(p.path), p]))
+  const meta = (chemin: string): MetaNiveau => {
+    const page = parChemin.get(chemin)
+    return {
+      titre: page?.title ?? lisible(chemin.split('/').pop() ?? chemin),
+      icone: page?.icone ?? null,
+      chemin: page ? chemin : null,
+      ordre: page?.ordre ?? 999
+    }
   }
 
-  const valeur: Banque = { entrees, interrogeables: entrees.filter(e => e.interrogeable), chapitres }
+  const chapitres = new Map<string, MetaNiveau>()
+  const matieres = new Map<string, MetaMatiere>()
+  for (const e of entrees) {
+    if (e.theme && !chapitres.has(e.theme)) chapitres.set(e.theme, meta(e.theme))
+    if (e.matiere && !matieres.has(e.matiere)) {
+      const annee = niveauxDuChemin(e.matiere).annee
+      matieres.set(e.matiere, {
+        ...meta(e.matiere),
+        annee: annee ? parChemin.get(annee)?.title ?? null : null,
+        anneeChemin: annee
+      })
+    }
+  }
+
+  const valeur: Banque = { entrees, interrogeables: entrees.filter(e => e.interrogeable), chapitres, matieres }
   banque = { valeur, expire: Date.now() + PEREMPTION }
   return valeur
 }
@@ -215,6 +246,11 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
  * qu'on attend d'une case « seulement » — et l'écran l'écrit ainsi.
  */
 export function filtrer(entrees: EntreeBanque[], filtre: FiltreQuiz, enDette?: Set<string>): EntreeBanque[] {
+  // La matière n'est pas un axe de plus : c'est le cadre. Elle se croise avec
+  // tout le reste, si bien que « rien de coché » prend la matière entière et
+  // non le site entier — et que la dette d'une autre matière ne s'invite pas.
+  if (filtre.matiere) entrees = entrees.filter(e => e.matiere === filtre.matiere)
+
   const themes = new Set(filtre.themes)
   const sections = new Set(filtre.sections)
   // Un point de cours précis. Il ne se coche plus à la main, mais « Mes
@@ -262,8 +298,9 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
     /** Les points de cours de la section, pour résoudre un lien venu de « Mes domaines ». */
     notions: Map<string, NotionCatalogue>
   }
-  const parTheme = new Map<string, Map<string, Compte>>()
-  const totaux = new Map<string, { questions: number, ratees: number }>()
+  interface Cumul { questions: number, ratees: number }
+  interface Chapitre { total: Cumul, sections: Map<string, Compte> }
+  const parMatiere = new Map<string, { total: Cumul, themes: Map<string, Chapitre> }>()
 
   // Les questions ouvertes n'entrent pas au catalogue : annoncer « 18 questions »
   // sur une notion dont le quiz ne sait en poser que 12 ferait une séance qui
@@ -271,13 +308,17 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
   for (const e of banque.interrogeables) {
     const theme = e.theme ?? 'divers'
     const ratee = enDette?.has(e.id) ? 1 : 0
-    const total = totaux.get(theme) ?? { questions: 0, ratees: 0 }
-    total.questions += 1
-    total.ratees += ratee
-    totaux.set(theme, total)
 
-    const sections = parTheme.get(theme) ?? new Map<string, Compte>()
-    parTheme.set(theme, sections)
+    const matiere = parMatiere.get(e.matiere ?? 'divers') ?? { total: { questions: 0, ratees: 0 }, themes: new Map<string, Chapitre>() }
+    parMatiere.set(e.matiere ?? 'divers', matiere)
+    const chapitre = matiere.themes.get(theme) ?? { total: { questions: 0, ratees: 0 }, sections: new Map<string, Compte>() }
+    matiere.themes.set(theme, chapitre)
+    for (const cumul of [matiere.total, chapitre.total]) {
+      cumul.questions += 1
+      cumul.ratees += ratee
+    }
+
+    const sections = chapitre.sections
     const cle = e.section ?? `${theme}#${RESTE}`
     const compte = sections.get(cle) ?? {
       titre: e.section ? e.sectionTitre ?? cle : 'Le reste du chapitre',
@@ -298,9 +339,9 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
     sections.set(cle, compte)
   }
 
-  const themes: ThemeCatalogue[] = [...totaux].map(([cle, total]) => {
+  const composerTheme = ([cle, { total, sections: comptes }]: [string, Chapitre]): ThemeCatalogue => {
     const chapitre = banque.chapitres.get(cle)
-    const sections: SectionCatalogue[] = [...(parTheme.get(cle) ?? new Map<string, Compte>())]
+    const sections: SectionCatalogue[] = [...comptes]
       .map(([c, s]) => ({
         cle: c,
         titre: s.titre,
@@ -323,11 +364,34 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
       ratees: total.ratees,
       sections
     }
+  }
+
+  const matieres: MatiereCatalogue[] = [...parMatiere].map(([cle, m]) => {
+    const meta = banque.matieres.get(cle)
+    const themes = [...m.themes].map(composerTheme).sort((a, b) =>
+      (banque.chapitres.get(a.cle)?.ordre ?? 999) - (banque.chapitres.get(b.cle)?.ordre ?? 999)
+      || a.titre.localeCompare(b.titre, 'fr'))
+    return {
+      cle,
+      titre: meta?.titre ?? cle,
+      annee: meta?.annee ?? null,
+      icone: meta?.icone ?? null,
+      chemin: meta?.chemin ?? null,
+      questions: m.total.questions,
+      ratees: m.total.ratees,
+      themes
+    }
   })
 
-  themes.sort((a, b) =>
-    (banque.chapitres.get(a.cle)?.ordre ?? 999) - (banque.chapitres.get(b.cle)?.ordre ?? 999)
-    || a.titre.localeCompare(b.titre, 'fr'))
+  // L'année d'abord, puis l'ordre de la matière dans son année : c'est l'ordre
+  // du sommaire.
+  matieres.sort((a, b) => {
+    const ma = banque.matieres.get(a.cle)
+    const mb = banque.matieres.get(b.cle)
+    return (ma?.anneeChemin ?? '').localeCompare(mb?.anneeChemin ?? '')
+      || (ma?.ordre ?? 999) - (mb?.ordre ?? 999)
+      || a.titre.localeCompare(b.titre, 'fr')
+  })
 
   return {
     total: banque.interrogeables.length,
@@ -335,7 +399,7 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
     // poser : annoncer « 14 à revoir » dont trois sont des questions ouvertes
     // promettrait une séance plus longue que celle qu'on peut servir.
     ratees: enDette ? banque.interrogeables.filter(e => enDette.has(e.id)).length : 0,
-    themes,
+    matieres,
     tailleMin: TAILLE_MIN,
     tailleMax: TAILLE_MAX
   }
@@ -552,9 +616,33 @@ export interface QuestionLue {
  * visé sont ceux de la fiche, à l'octet près. Une correction du cours corrige le
  * quiz, sans rien à resynchroniser.
  */
-export async function lireQuestion(event: H3Event, entree: EntreeBanque): Promise<QuestionLue | null> {
-  const page = await collectionCours(event).path(entree.chemin).first() as
-    { title?: string, body?: { value?: unknown } } | null
+/** Le corps d'une fiche, tel que la lecture d'une question en a besoin. */
+interface PageLue {
+  title?: string
+  body?: { value?: unknown }
+}
+
+/**
+ * Les fiches déjà lues pendant une même requête.
+ *
+ * Une séance de quiz ne lit qu'une question à la fois, mais un QCM composé en
+ * pose vingt d'un coup, souvent prises dans trois ou quatre fiches : relire la
+ * même fiche vingt fois, c'est désérialiser vingt fois un mégaoctet d'arbre. Le
+ * cache ne vit que le temps de la requête — la règle « les énoncés ne sont
+ * jamais tenus au chaud » reste vraie d'une requête à l'autre.
+ */
+export type CachePages = Map<string, Promise<PageLue | null>>
+
+function lirePage(event: H3Event, chemin: string, cache?: CachePages): Promise<PageLue | null> {
+  const dejaLue = cache?.get(chemin)
+  if (dejaLue) return dejaLue
+  const lecture = collectionCours(event).path(chemin).first() as Promise<PageLue | null>
+  cache?.set(chemin, lecture)
+  return lecture
+}
+
+export async function lireQuestion(event: H3Event, entree: EntreeBanque, cache?: CachePages): Promise<QuestionLue | null> {
+  const page = await lirePage(event, entree.chemin, cache)
   if (!page?.body?.value) return null
 
   // On retrouve le bloc par son **intitulé exact**, celui-là même que le relevé
@@ -654,9 +742,10 @@ export async function poserQuestion(
   entree: EntreeBanque,
   position: number,
   rejouee: boolean,
-  graine: string
+  graine: string,
+  cache?: CachePages
 ): Promise<{ question: QuestionQuiz, lue: QuestionLue } | null> {
-  const lue = await lireQuestion(event, entree)
+  const lue = await lireQuestion(event, entree, cache)
   if (!lue) return null
 
   return {
@@ -666,6 +755,7 @@ export async function poserQuestion(
       label: lue.label,
       theme: entree.theme,
       themeTitre: entree.theme ? banque.chapitres.get(entree.theme)?.titre ?? null : null,
+      matiereTitre: entree.matiere ? banque.matieres.get(entree.matiere)?.titre ?? null : null,
       sectionTitre: entree.sectionTitre,
       notionTitre: entree.notionTitre,
       nature: entree.nature,

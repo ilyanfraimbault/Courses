@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CatalogueQuiz, FiltreQuiz, HistoriqueQuiz, QuestionQuiz, SessionQuiz } from '~~/shared/types/quiz'
+import type { CatalogueQuiz, FiltreQuiz, HistoriqueQuiz, MatiereCatalogue, QuestionQuiz, SessionQuiz } from '~~/shared/types/quiz'
 
 definePageMeta({ layout: 'cours' })
 
@@ -14,24 +14,30 @@ const { data: historique, refresh: relireHistorique } = await useLazyFetch<Histo
   server: false
 })
 
-const filtre = ref<FiltreQuiz>({ themes: [], sections: [], erreurs: false })
+const vide = (matiere: string | null): FiltreQuiz => ({ matiere, themes: [], sections: [], notions: [], erreurs: false })
+
+const filtre = ref<FiltreQuiz>(vide(null))
 const taille = ref(20)
 const lancement = ref(false)
 const erreur = ref<string | null>(null)
 
+const matiere = computed<MatiereCatalogue | null>(() =>
+  catalogue.value?.matieres.find(m => m.cle === filtre.value.matiere) ?? null)
+const plusieursMatieres = computed(() => (catalogue.value?.matieres.length ?? 0) > 1)
+
 /**
- * Un chapitre ou un point de cours passé en adresse présélectionne le filtre :
- * c'est par là que « Mes domaines » envoie ici, avec la case déjà cochée.
+ * Une matière, un chapitre ou un point de cours passés en adresse présélectionnent
+ * le filtre : c'est par là que « Mes domaines » et le tableau de bord envoient
+ * ici, avec la case déjà cochée.
  *
- * Un point de cours ne se coche plus à la main — la liste des sections a
- * remplacé la leur — mais « Mes domaines » raisonne en points de cours, et son
- * lien reste le chemin le plus court entre « c'est là que ça coince » et une
- * séance dessus. Le catalogue les porte donc toujours, rangés sous leur section,
- * pour qu'on puisse les nommer et les compter sans les afficher en liste.
+ * La matière vient en premier, et elle se déduit au besoin : un lien vers un
+ * chapitre ouvre la matière qui le porte. Sans rien en adresse, c'est la
+ * première matière du sommaire.
  *
  * Les clés sont confrontées au catalogue avant d'être retenues. Un lien mis en
- * favori survit ainsi à un cours renommé — il ouvre le quiz sur tout, ce qui est
- * le comportement par défaut, au lieu de préparer une séance vide.
+ * favori survit ainsi à un cours renommé — il ouvre le quiz sur toute la
+ * matière, ce qui est le comportement par défaut, au lieu de préparer une
+ * séance vide.
  */
 const route = useRoute()
 
@@ -39,33 +45,47 @@ function listeQuery(valeur: unknown): string[] {
   return (Array.isArray(valeur) ? valeur : [valeur]).filter((v): v is string => typeof v === 'string' && !!v)
 }
 
-const notionsDuCatalogue = computed(() =>
-  (catalogue.value?.themes ?? []).flatMap(t => t.sections.flatMap(s => s.notions)))
+const notionsDe = (m: MatiereCatalogue) => m.themes.flatMap(t => t.sections.flatMap(s => s.notions))
 
 watch(catalogue, (c) => {
-  if (!c || filtre.value.themes.length || filtre.value.notions?.length) return
-  const themesConnus = new Set(c.themes.map(t => t.cle))
-  const notionsConnues = new Set(notionsDuCatalogue.value.map(n => n.cle))
+  if (!c || filtre.value.matiere) return
+  const themes = listeQuery(route.query.theme)
+  const notions = listeQuery(route.query.notion)
+  const demandee = listeQuery(route.query.matiere)[0]
+  const trouvee = c.matieres.find(m => m.cle === demandee)
+    ?? c.matieres.find(m => m.themes.some(t => themes.includes(t.cle)))
+    ?? c.matieres.find(m => notionsDe(m).some(n => notions.includes(n.cle)))
+    ?? c.matieres[0]
+  if (!trouvee) return
+  const themesConnus = new Set(trouvee.themes.map(t => t.cle))
+  const notionsConnues = new Set(notionsDe(trouvee).map(n => n.cle))
   filtre.value = {
-    themes: listeQuery(route.query.theme).filter(t => themesConnus.has(t)),
-    sections: [],
-    erreurs: false,
-    notions: listeQuery(route.query.notion).filter(n => notionsConnues.has(n))
+    ...vide(trouvee.cle),
+    themes: themes.filter(t => themesConnus.has(t)),
+    notions: notions.filter(n => notionsConnues.has(n))
   }
 }, { immediate: true })
 
+/** Changer de matière repart d'une sélection vierge : des chapitres d'un autre cours n'y ont pas de sens. */
+const matiereChoisie = computed({
+  get: () => filtre.value.matiere ?? null,
+  set: (cle: string | null) => {
+    if (cle !== filtre.value.matiere) filtre.value = vide(cle)
+  }
+})
+
 /** Le compte du filtre, calculé comme le serveur le calculera. */
 const disponibles = computed(() => {
-  const c = catalogue.value
-  if (!c) return 0
+  const m = matiere.value
+  if (!m) return 0
   const erreurs = !!filtre.value.erreurs
   const compte = (e: { questions: number, ratees: number }) => (erreurs ? e.ratees : e.questions)
   const notions = filtre.value.notions ?? []
   if (!filtre.value.themes.length && !filtre.value.sections.length && !notions.length) {
-    return erreurs ? c.ratees : c.total
+    return compte(m)
   }
   let total = 0
-  for (const theme of c.themes) {
+  for (const theme of m.themes) {
     if (filtre.value.themes.includes(theme.cle)) {
       total += compte(theme)
       continue
@@ -104,6 +124,7 @@ async function commencer() {
     const { session } = await $fetch<{ session: SessionQuiz, question: QuestionQuiz | null }>('/api/quiz/session', {
       method: 'POST',
       body: {
+        matiere: filtre.value.matiere,
         themes: filtre.value.themes,
         sections: filtre.value.sections,
         notions: filtre.value.notions ?? [],
@@ -119,10 +140,14 @@ async function commencer() {
   }
 }
 
-/** Reprendre la sélection sur la seule dette, tout le programme confondu. */
+/** Reprendre la sélection sur la seule dette, dans toute la matière. */
 function reviserCeQuiResiste() {
-  filtre.value = { themes: [], sections: [], notions: [], erreurs: true }
+  filtre.value = { ...vide(filtre.value.matiere ?? null), erreurs: true }
 }
+
+/** Ce qui résiste, dans la matière choisie : la dette d'un autre cours n'a rien à faire ici. */
+const resistent = computed(() =>
+  (historique.value?.resistent ?? []).filter(s => !filtre.value.matiere || s.matiere === filtre.value.matiere))
 
 async function clore(id: number) {
   await $fetch(`/api/quiz/session/${id}`, { method: 'DELETE' })
@@ -165,7 +190,7 @@ useSeoMeta({ title: 'Quiz' })
         variant="subtle"
         icon="i-lucide-play"
         title="Une séance est en cours"
-        :description="`${historique.encours.acquises} place${historique.encours.acquises > 1 ? 's' : ''} acquise${historique.encours.acquises > 1 ? 's' : ''} sur ${historique.encours.taille}, ${historique.encours.poses} question${historique.encours.poses > 1 ? 's' : ''} posée${historique.encours.poses > 1 ? 's' : ''} — ${historique.encours.themes.join(', ')}.`"
+        :description="`${historique.encours.acquises} place${historique.encours.acquises > 1 ? 's' : ''} acquise${historique.encours.acquises > 1 ? 's' : ''} sur ${historique.encours.taille}, ${historique.encours.poses} question${historique.encours.poses > 1 ? 's' : ''} posée${historique.encours.poses > 1 ? 's' : ''} — ${[historique.encours.matiereTitre, ...historique.encours.themes].filter(Boolean).join(', ')}.`"
       >
         <template #actions>
           <UButton
@@ -185,103 +210,132 @@ useSeoMeta({ title: 'Quiz' })
         </template>
       </UAlert>
 
-      <div class="mt-8">
-        <h2 class="text-lg font-medium text-highlighted">
-          Sur quoi ?
-        </h2>
-        <p class="mt-1 mb-0 text-sm text-muted">
-          Un chapitre entier, ou quelques parties de son cours. Ce qui est coché s'additionne, et le
-          nombre écrit à droite est celui des questions disponibles derrière la case.
-        </p>
-
-        <!-- L'affichage ne se branche que sur les données, jamais sur l'état de
-             chargement : `pending` ne vaut pas la même chose au rendu serveur et
-             à l'hydratation, et Vue signalait la divergence à chaque visite. -->
-        <QuizFiltre
-          v-if="catalogue"
-          v-model="filtre"
-          class="mt-4"
-          :catalogue="catalogue"
-        />
-        <div
-          v-else
-          class="mt-4 flex items-center gap-2 text-sm text-muted"
-        >
-          <UIcon
-            name="i-lucide-loader-circle"
-            class="size-4 animate-spin"
-          />
-          <span>Chargement du catalogue…</span>
-        </div>
-      </div>
-
+      <!-- L'affichage ne se branche que sur les données, jamais sur l'état de
+           chargement : `pending` ne vaut pas la même chose au rendu serveur et
+           à l'hydratation, et Vue signalait la divergence à chaque visite. -->
       <div
-        v-if="catalogue"
-        class="mt-8"
+        v-if="!catalogue"
+        class="mt-8 flex items-center gap-2 text-sm text-muted"
       >
-        <h2 class="text-lg font-medium text-highlighted">
-          Combien de questions ?
-        </h2>
-        <p class="mt-1 mb-0 text-sm text-muted">
-          C'est le nombre de places à acquérir. Chaque erreur en rallonge la file, jamais le compte.
-        </p>
-
-        <div class="mt-4 flex flex-wrap items-center gap-2">
-          <UButton
-            v-for="n in raccourcis"
-            :key="n"
-            size="sm"
-            :color="taille === n ? 'primary' : 'neutral'"
-            :variant="taille === n ? 'solid' : 'outline'"
-            class="tabular-nums"
-            :label="String(n)"
-            @click="taille = n"
-          />
-          <span class="text-sm text-muted tabular-nums">
-            <strong class="text-highlighted">{{ taille }}</strong> question{{ taille > 1 ? 's' : '' }}
-          </span>
-        </div>
-
-        <USlider
-          v-model="taille"
-          class="mt-4 max-w-md"
-          :min="tailleMin"
-          :max="tailleMax"
-          :step="1"
-          :aria-label="'Nombre de questions'"
+        <UIcon
+          name="i-lucide-loader-circle"
+          class="size-4 animate-spin"
         />
-
-        <p
-          v-if="disponibles < taille"
-          class="mt-3 mb-0 text-sm text-warning"
-        >
-          La sélection ne contient que {{ disponibles }} question{{ disponibles > 1 ? 's' : '' }} :
-          la séance en comptera autant.
-        </p>
-
-        <UAlert
-          v-if="erreur"
-          class="mt-4"
-          color="error"
-          variant="subtle"
-          icon="i-lucide-triangle-alert"
-          :description="erreur"
-        />
-
-        <UButton
-          class="mt-5"
-          size="lg"
-          color="primary"
-          icon="i-lucide-play"
-          :loading="lancement"
-          :disabled="!disponibles"
-          label="Commencer la séance"
-          @click="commencer"
-        />
+        <span>Chargement du catalogue…</span>
       </div>
 
+      <template v-else>
+        <div class="mt-8">
+          <h2 class="text-lg font-medium text-highlighted">
+            Quelle matière ?
+          </h2>
+          <p class="mt-1 mb-0 text-sm text-muted">
+            Une séance reste dans une matière : deux cours mélangés ne se révisent ni l'un ni l'autre.
+          </p>
+          <MatiereChoix
+            v-model="matiereChoisie"
+            class="mt-4"
+            :matieres="catalogue.matieres"
+          />
+        </div>
+
+        <div
+          v-if="matiere"
+          class="mt-8"
+        >
+          <h2 class="text-lg font-medium text-highlighted">
+            Sur quoi ?
+          </h2>
+          <p class="mt-1 mb-0 text-sm text-muted">
+            Un chapitre entier, ou quelques parties de son cours. Ce qui est coché s'additionne, et le
+            nombre écrit à droite est celui des questions disponibles derrière la case.
+          </p>
+
+          <QuizFiltre
+            :key="matiere.cle"
+            v-model="filtre"
+            class="mt-4"
+            :catalogue="matiere"
+          />
+        </div>
+
+        <div
+          v-if="matiere"
+          class="mt-8"
+        >
+          <h2 class="text-lg font-medium text-highlighted">
+            Combien de questions ?
+          </h2>
+          <p class="mt-1 mb-0 text-sm text-muted">
+            C'est le nombre de places à acquérir. Chaque erreur en rallonge la file, jamais le compte.
+          </p>
+
+          <div class="mt-4 flex flex-wrap items-center gap-2">
+            <UButton
+              v-for="n in raccourcis"
+              :key="n"
+              size="sm"
+              :color="taille === n ? 'primary' : 'neutral'"
+              :variant="taille === n ? 'solid' : 'outline'"
+              class="tabular-nums"
+              :label="String(n)"
+              @click="taille = n"
+            />
+            <span class="text-sm text-muted tabular-nums">
+              <strong class="text-highlighted">{{ taille }}</strong> question{{ taille > 1 ? 's' : '' }}
+            </span>
+          </div>
+
+          <USlider
+            v-model="taille"
+            class="mt-4 max-w-md"
+            :min="tailleMin"
+            :max="tailleMax"
+            :step="1"
+            :aria-label="'Nombre de questions'"
+          />
+
+          <p
+            v-if="disponibles < taille"
+            class="mt-3 mb-0 text-sm text-warning"
+          >
+            La sélection ne contient que {{ disponibles }} question{{ disponibles > 1 ? 's' : '' }} :
+            la séance en comptera autant.
+          </p>
+
+          <UAlert
+            v-if="erreur"
+            class="mt-4"
+            color="error"
+            variant="subtle"
+            icon="i-lucide-triangle-alert"
+            :description="erreur"
+          />
+
+          <div class="mt-5 flex flex-wrap items-center gap-2">
+            <UButton
+              size="lg"
+              color="primary"
+              icon="i-lucide-play"
+              :loading="lancement"
+              :disabled="!disponibles"
+              label="Commencer la séance"
+              @click="commencer"
+            />
+            <UButton
+              size="lg"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-list-plus"
+              label="Composer un QCM plutôt"
+              :to="{ path: '/mes-qcm/nouveau', query: { matiere: matiere.cle } }"
+            />
+          </div>
+        </div>
+      </template>
+
       <div
-        v-if="historique?.resistent?.length"
+        v-if="resistent.length"
         class="mt-10"
       >
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -303,7 +357,7 @@ useSeoMeta({ title: 'Quiz' })
         </p>
         <div class="flex flex-col gap-2">
           <div
-            v-for="section in historique.resistent"
+            v-for="section in resistent"
             :key="section.cle"
             class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-default px-3 py-2"
           >
@@ -346,7 +400,10 @@ useSeoMeta({ title: 'Quiz' })
               :label="`${s.acquises} / ${s.taille}`"
             />
             <span class="min-w-0 flex-1 truncate text-sm text-highlighted">
-              {{ s.themes.join(', ') }}
+              <span
+                v-if="plusieursMatieres && s.matiereTitre"
+                class="text-dimmed"
+              >{{ s.matiereTitre }} · </span>{{ s.themes.join(', ') }}
             </span>
             <span class="shrink-0 text-xs text-muted tabular-nums">
               {{ s.poses }} posée{{ s.poses > 1 ? 's' : '' }},

@@ -16,11 +16,11 @@ au bout de N questions : elle se termine quand les N **places** sont acquises.
 Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 `qcm_tentative`, une séance de quiz dans `quiz_session`.
 
-## La banque : 432 questions, aucune écrite pour le quiz
+## La banque : 312 questions, aucune écrite pour le quiz
 
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
-les exercices du TD, les fiches d'entraînement, les révisions et les sept QCM.
-Sur les 473 questions du site, **432** sont exploitables — celles qui portent
+les exercices du TD, les fiches d'entraînement, les révisions, le cours et le QCM
+de contenu. Sur les 353 questions du site, **312** sont exploitables — celles qui portent
 une lettre attendue et au moins deux propositions. Les **41** autres sont des
 questions ouvertes, qui s'auto-évaluent : une file qui doit savoir si la réponse
 était juste ne peut rien en faire.
@@ -36,8 +36,9 @@ resynchroniser.
 Beaucoup de questions ne portent pas tout leur énoncé. « Donner l'affixe du
 vecteur $\overrightarrow{M_2M_4}$ » n'a de sens qu'avec « les points lus sur la
 figure sont $M_1(2,1)$, $M_2(0,3)$… », écrit **une fois** en tête de l'exercice
-et valable pour toutes ses questions. C'est le cas de **251 des 473** questions
-du site.
+et valable pour toutes ses questions. C'était le cas de **251 des 473** questions
+du site quand le défaut a été relevé, avant le retrait des QCM 1 à 6 — dont
+aucun bloc n'avait d'énoncé commun.
 
 Le quiz relit donc, avec chaque question, l'énoncé commun de son bloc — tout ce
 qui précède la première question — et l'affiche au-dessus, en retrait. En
@@ -90,7 +91,7 @@ par question, **de quoi la choisir et la classer, jamais de quoi la poser**.
 L'ensemble se charge une fois en mémoire ; les énoncés, eux, ne sont jamais mis
 en cache.
 
-Le relevé porte les **473** questions du site et non les seules 432 du quiz. Le
+Le relevé porte les **353** questions du site et non les seules 312 du quiz. Le
 champ `interrogeable` fait le tri, et la banque n'est que la part vraie de ce
 champ. C'est la progression par domaine qui a demandé cet élargissement — elle
 compte aussi les questions ouvertes, sans quoi le total d'un chapitre ne
@@ -112,7 +113,16 @@ console.log(n, t);
 "
 ```
 
-Attendu aujourd'hui : `432 { trigonometrie: 77, 'fonctions-variable-reelle': 153, 'fonctions-usuelles': 69, 'nombres-complexes': 133 }`.
+Attendu aujourd'hui, les chapitres désignés par leur chemin :
+
+```
+312 {
+  '/cours/a1/remise-a-niveau-maths/trigonometrie': 63,
+  '/cours/a1/remise-a-niveau-maths/fonctions-variable-reelle': 109,
+  '/cours/a1/remise-a-niveau-maths/fonctions-usuelles': 38,
+  '/cours/a1/remise-a-niveau-maths/nombres-complexes': 102
+}
+```
 
 Un thème `null` dans ce relevé signalerait une question que le catalogue ne
 saurait pas classer — aujourd'hui il n'y en a aucune. Une `section` nulle est
@@ -125,7 +135,7 @@ d'ancre.
 C'est la décision qui rend la catégorisation utilisable. Un QCM **mélange les
 chapitres exprès** : le classer par son dossier mettrait ses vingt questions
 dans un thème « qcm » dont personne ne veut, et « m'interroger sur la trigo »
-ne trouverait rien dans les six QCM.
+ne trouverait rien dans un QCM.
 
 Mais chaque question renvoie au rappel de cours exact qui lui manquait
 (`::qcm-question{cours="qcm-g-derivees"}`), et ce rappel porte une `source` qui
@@ -135,8 +145,30 @@ pointe vers une section d'un chapitre :
 ::extrait-cours{id="qcm-g-derivees" source="/cours/…/fonctions-variable-reelle/cours#_5-les-formes-composées"}
 ```
 
-Le thème est donc l'avant-dernier segment de cette source. Une question sans
-rappel retombe sur le chapitre de sa fiche. Rien n'est écrit à la main : une
+Le thème est donc le chapitre de cette source, désigné par **son chemin** —
+`/cours/a1/remise-a-niveau-maths/fonctions-variable-reelle` — et non plus par
+son slug : deux matières peuvent avoir un chapitre du même nom, et le slug les
+aurait fondus en un seul thème, dette comprise. La règle vit dans
+`shared/utils/niveaux.ts`. Une question sans rappel retombe sur le chapitre de sa
+fiche.
+
+## La matière d'abord
+
+Le site porte plusieurs matières, et une séance ne les mélange pas : deux cours
+révisés dans la même file ne se révisent ni l'un ni l'autre. Le catalogue a donc
+un niveau de plus, au-dessus des chapitres (`CatalogueQuiz.matieres`), et la
+page commence par le choix de la matière — affiché même quand il n'y en a
+qu'une, parce que c'est ce qui dit de quel cours viennent les questions.
+
+Dans le filtre, `matiere` ne s'**ajoute** pas aux chapitres et aux sections : elle
+les **croise**. « Rien de coché » prend toute la matière, pas tout le site, et
+« seulement ce que j'ai raté » ne tire pas la dette d'un autre cours. Une séance
+ouverte avant les matières n'en porte pas, et garde le site entier pour cadre.
+
+La matière d'une question se déduit de son chapitre, un niveau plus haut : une
+question de QCM qui vise le cours de trigonométrie appartient à la matière de ce
+cours. Les liens venus d'ailleurs — `?matiere=`, `?theme=`, `?notion=` —
+présélectionnent la matière qui porte la clé reçue. Rien n'est écrit à la main : une
 table de correspondance vieillirait en silence, la `source` non.
 
 ## Le second niveau, c'est le plan du chapitre
@@ -165,15 +197,15 @@ par construction, et une question sans rappel se rattache au **titre de niveau 2
 qui la précède dans sa propre page** — ce qui est précisément la section dont
 elle parle, puisqu'un contrôle express est écrit sous le cours qu'il vérifie.
 
-Le relevé donne aujourd'hui **34 cases pour 432 questions**, et chaque chapitre
+Le relevé donne aujourd'hui **34 cases pour 312 questions**, et chaque chapitre
 est couvert sans reste :
 
 | Chapitre | Cases | Questions |
 |---|---|---|
-| Trigonométrie | 12 | 77 |
-| Fonctions d'une variable réelle | 6 | 153 |
-| Fonctions usuelles | 8 | 69 |
-| Nombres complexes | 8 | 133 |
+| Trigonométrie | 12 | 63 |
+| Fonctions d'une variable réelle | 6 | 109 |
+| Fonctions usuelles | 8 | 38 |
+| Nombres complexes | 8 | 102 |
 
 Huit questions n'ont pas de section : deux rappels de cours pointent vers une
 page sans ancre. Elles tombent dans une case « Le reste du chapitre », qui
@@ -199,7 +231,7 @@ conséquence :
   disant lesquelles.
 
 Une notion vit dans une seule section, les deux venant de la même `source`.
-Sa clé est `chapitre/identifiant`, deux chapitres pouvant employer le même
+Sa clé est `/chemin/du/chapitre#identifiant`, deux chapitres pouvant employer le même
 identifiant d'extrait — `cours-quotient` désigne le quotient de fonctions ici,
 le quotient de complexes ailleurs.
 
@@ -281,7 +313,7 @@ du plus urgent au moins utile :
 3. **posée il y a plus de deux semaines** — le temps d'oublier ;
 4. **posée récemment** — faute de mieux dans la sélection.
 
-Sans ce classement, une banque de 432 questions finit par reposer avant-hier ce
+Sans ce classement, une banque de trois cents questions finit par reposer avant-hier ce
 qu'on a vu hier, et une séance n'apprend plus qu'à reconnaître des énoncés. Le
 tri est **stable** et n'intervient qu'après le mélange : à palier égal, l'ordre
 reste aléatoire. Et il reste **subordonné à l'étalement**, sans quoi une séance
@@ -324,7 +356,7 @@ d'où la règle « un préchargement vide ne s'utilise pas, il se refait ».
 
 | Route | Rôle |
 |---|---|
-| `GET /api/quiz/catalogue` | chapitres et sections du cours, avec leurs comptes et leur dette |
+| `GET /api/quiz/catalogue` | matières, chapitres et sections du cours, avec leurs comptes et leur dette |
 | `POST /api/quiz/session` | ouvre une séance, tire les places, rend la première question |
 | `GET /api/quiz/session/:id` | reprend une séance là où elle s'était arrêtée |
 | `DELETE /api/quiz/session/:id` | clôt une séance sans l'effacer |
@@ -452,8 +484,9 @@ QUIZ_BASE=http://localhost:3210 NUXT_CODE_INSCRIPTION=essai pnpm verif:quiz
 
 Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 
-- 432 questions dans la banque, réparties sur quatre chapitres et 34 sections
-  de cours, chaque chapitre couvert **sans reste** et sans intitulé en double ;
+- 312 questions dans la banque, rangées par matière puis sur quatre chapitres
+  désignés par leur chemin et 34 sections de cours, chaque chapitre couvert
+  **sans reste** et sans intitulé en double ;
 - la bonne réponse n'est pas dans la charge utile d'une question ;
 - l'ordre des propositions est brassé, et deux lectures d'une même place
   rendent le même ordre ;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChapitreProgression, DomaineProgression, ProgressionDomaines } from '~~/shared/types/domaines'
+import type { ChapitreProgression, CompteProgression, DomaineProgression, ProgressionDomaines } from '~~/shared/types/domaines'
 
 definePageMeta({ layout: 'cours' })
 
@@ -9,11 +9,10 @@ definePageMeta({ layout: 'cours' })
  */
 const { data, status } = await useLazyFetch<ProgressionDomaines>('/api/progression/domaines', { server: false })
 
-const chapitres = computed(() => data.value?.chapitres ?? [])
+const matieres = computed(() => data.value?.matieres ?? [])
 const total = computed(() => data.value?.total ?? { questions: 0, acquises: 0, hesitantes: 0, interrogeables: 0 })
-const domainesComptes = computed(() => chapitres.value.reduce((n, c) => n + c.domaines.length, 0))
-
-type Compte = { questions: number, acquises: number, hesitantes: number }
+const domainesComptes = computed(() =>
+  matieres.value.reduce((n, m) => n + m.chapitres.reduce((k, c) => k + c.domaines.length, 0), 0))
 
 /**
  * Les deux segments d'une barre. Ils se lisent l'un après l'autre : ce qui est
@@ -23,7 +22,7 @@ type Compte = { questions: number, acquises: number, hesitantes: number }
  * Une question retrouvée après une faute reste **acquise** : elle ne perd pas le
  * terrain gagné, elle dit seulement qu'il a coûté quelque chose.
  */
-function segments(c: Compte, avecIntitules: boolean) {
+function segments(c: CompteProgression, avecIntitules: boolean) {
   const sures = Math.max(0, c.acquises - c.hesitantes)
   return [
     {
@@ -43,7 +42,7 @@ function segments(c: Compte, avecIntitules: boolean) {
   ]
 }
 
-function pourcentage(c: Compte) {
+function pourcentage(c: CompteProgression) {
   return c.questions ? Math.round(100 * c.acquises / c.questions) : 0
 }
 
@@ -65,7 +64,7 @@ useSeoMeta({ title: 'Mes domaines' })
   <UPage>
     <UPageHeader
       title="Mes domaines"
-      description="La progression rangée par point de cours plutôt que par fiche. Une fiche est un contenant ; un point de cours est un sujet — c'est de lui qu'on veut savoir s'il est tenu. Dans chaque chapitre, ce qui résiste le plus est en tête."
+      description="La progression rangée par point de cours plutôt que par fiche, matière par matière. Une fiche est un contenant ; un point de cours est un sujet — c'est de lui qu'on veut savoir s'il est tenu. Dans chaque chapitre, ce qui résiste le plus est en tête."
     />
 
     <UPageBody>
@@ -97,88 +96,141 @@ useSeoMeta({ title: 'Mes domaines' })
         </p>
 
         <section
-          v-for="chapitre of chapitres"
-          :key="chapitre.cle"
-          class="mt-10"
+          v-for="matiere of matieres"
+          :key="matiere.cle"
+          class="mt-12"
         >
-          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <!-- La matière porte sa propre barre : deux cours ne partagent pas un
+               pourcentage, qui ne dirait rien de l'un ni de l'autre. -->
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-default pb-3">
             <UIcon
-              :name="chapitre.icone || 'i-lucide-book-open-text'"
-              class="size-5 shrink-0 text-primary"
+              :name="matiere.icone || 'i-lucide-book-open'"
+              class="size-6 shrink-0 text-primary"
             />
-            <h2 class="text-lg font-medium text-highlighted">
-              <ULink
-                v-if="chapitre.chemin"
-                :to="chapitre.chemin"
-                class="hover:text-primary"
-              >{{ chapitre.titre }}</ULink>
-              <template v-else>
-                {{ chapitre.titre }}
-              </template>
-            </h2>
+            <div class="min-w-0">
+              <p
+                v-if="matiere.annee"
+                class="m-0 text-xs font-medium uppercase tracking-wide text-dimmed"
+              >
+                {{ matiere.annee }}
+              </p>
+              <h2 class="m-0 text-xl font-semibold text-highlighted">
+                <ULink
+                  v-if="matiere.chemin"
+                  :to="matiere.chemin"
+                  class="hover:text-primary"
+                >{{ matiere.titre }}</ULink>
+                <template v-else>
+                  {{ matiere.titre }}
+                </template>
+              </h2>
+            </div>
             <span class="text-sm text-muted tabular-nums">
-              {{ chapitre.acquises }} / {{ chapitre.questions }} · {{ pourcentage(chapitre) }} %
+              {{ matiere.acquises }} / {{ matiere.questions }} · {{ pourcentage(matiere) }} %
             </span>
             <UButton
-              v-if="chapitre.interrogeables"
+              v-if="matiere.interrogeables"
               class="ms-auto"
               size="xs"
-              color="neutral"
+              color="primary"
               variant="subtle"
               icon="i-lucide-zap"
-              label="M'interroger sur le chapitre"
-              :to="`/quiz?theme=${encodeURIComponent(chapitre.cle)}`"
+              label="M'interroger sur la matière"
+              :to="{ path: '/quiz', query: { matiere: matiere.cle } }"
             />
           </div>
 
           <UProgressGroup
             class="mt-3"
             size="md"
-            :max="chapitre.questions"
-            :items="segments(chapitre, false)"
+            :max="matiere.questions"
+            :items="segments(matiere, false)"
           />
 
-          <p
-            v-if="!restant(chapitre)"
-            class="mt-2 text-sm text-success"
+          <section
+            v-for="chapitre of matiere.chapitres"
+            :key="chapitre.cle"
+            class="mt-8"
           >
-            Tout est trouvé dans ce chapitre.
-          </p>
-
-          <ul class="mt-4 flex flex-col divide-y divide-default">
-            <li
-              v-for="domaine of chapitre.domaines"
-              :key="domaine.cle ?? `${chapitre.cle}#sans-renvoi`"
-              class="flex flex-col gap-1.5 py-3"
-            >
-              <div class="flex items-center gap-3">
-                <span
-                  class="min-w-0 flex-1 truncate text-sm"
-                  :class="domaine.cle ? 'text-highlighted' : 'text-muted italic'"
-                >{{ domaine.titre }}</span>
-                <span class="shrink-0 text-xs text-muted tabular-nums">{{ decompte(domaine) }}</span>
-                <UButton
-                  v-if="domaine.cle && domaine.interrogeables"
-                  size="xs"
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-lucide-zap"
-                  :aria-label="`M'interroger sur : ${domaine.titre}`"
-                  :title="`M'interroger sur : ${domaine.titre}`"
-                  :to="`/quiz?notion=${encodeURIComponent(domaine.cle)}`"
-                />
-                <span
-                  v-else
-                  class="size-6 shrink-0"
-                />
-              </div>
-              <UProgressGroup
-                size="sm"
-                :max="domaine.questions"
-                :items="segments(domaine, false)"
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <UIcon
+                :name="chapitre.icone || 'i-lucide-book-open-text'"
+                class="size-5 shrink-0 text-primary"
               />
-            </li>
-          </ul>
+              <h3 class="m-0 text-lg font-medium text-highlighted">
+                <ULink
+                  v-if="chapitre.chemin"
+                  :to="chapitre.chemin"
+                  class="hover:text-primary"
+                >{{ chapitre.titre }}</ULink>
+                <template v-else>
+                  {{ chapitre.titre }}
+                </template>
+              </h3>
+              <span class="text-sm text-muted tabular-nums">
+                {{ chapitre.acquises }} / {{ chapitre.questions }} · {{ pourcentage(chapitre) }} %
+              </span>
+              <UButton
+                v-if="chapitre.interrogeables"
+                class="ms-auto"
+                size="xs"
+                color="neutral"
+                variant="subtle"
+                icon="i-lucide-zap"
+                label="M'interroger sur le chapitre"
+                :to="{ path: '/quiz', query: { theme: chapitre.cle } }"
+              />
+            </div>
+
+            <UProgressGroup
+              class="mt-3"
+              size="sm"
+              :max="chapitre.questions"
+              :items="segments(chapitre, false)"
+            />
+
+            <p
+              v-if="!restant(chapitre)"
+              class="mt-2 text-sm text-success"
+            >
+              Tout est trouvé dans ce chapitre.
+            </p>
+
+            <ul class="mt-4 flex flex-col divide-y divide-default">
+              <li
+                v-for="domaine of chapitre.domaines"
+                :key="domaine.cle ?? `${chapitre.cle}#sans-renvoi`"
+                class="flex flex-col gap-1.5 py-3"
+              >
+                <div class="flex items-center gap-3">
+                  <span
+                    class="min-w-0 flex-1 truncate text-sm"
+                    :class="domaine.cle ? 'text-highlighted' : 'text-muted italic'"
+                  >{{ domaine.titre }}</span>
+                  <span class="shrink-0 text-xs text-muted tabular-nums">{{ decompte(domaine) }}</span>
+                  <UButton
+                    v-if="domaine.cle && domaine.interrogeables"
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-lucide-zap"
+                    :aria-label="`M'interroger sur : ${domaine.titre}`"
+                    :title="`M'interroger sur : ${domaine.titre}`"
+                    :to="{ path: '/quiz', query: { notion: domaine.cle } }"
+                  />
+                  <span
+                    v-else
+                    class="size-6 shrink-0"
+                  />
+                </div>
+                <UProgressGroup
+                  size="sm"
+                  :max="domaine.questions"
+                  :items="segments(domaine, false)"
+                />
+              </li>
+            </ul>
+          </section>
         </section>
       </template>
 

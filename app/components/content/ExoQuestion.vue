@@ -25,25 +25,22 @@ const LETTRES = ['a', 'b', 'c', 'd', 'e'] as const
 const choixPossibles = computed(() => LETTRES.filter(l => !!slots[l]))
 const aChoix = computed(() => !!props.bonne && choixPossibles.value.length > 0)
 
-const uid = useId()
 const indiceOuvert = ref(false)
 const solutionOuverte = ref(false)
-// L'exemple similaire vit dans le panneau d'indice, replié : on lit d'abord la
-// piste, et on ne déroule le calcul complet que si elle n'a pas suffi.
-const exempleDeplie = ref(false)
 // L'auto-évaluation ne s'ouvre qu'une fois la solution lue : se noter avant
 // reviendrait à se noter à l'aveugle.
 const solutionLue = ref(false)
 
 const extraits = useCoursExtraits()
+const reveal = useCoursReveal()
 const progression = useProgression()
 const bloc = useBloc()
 const route = useRoute()
 
 const identite = computed(() => identiteQuestion(route.path, bloc?.slug.value ?? null, props.label))
 
-// Ce que la mémoire du navigateur sait de cette question : la lettre trouvée, ou
-// « auto » si elle s'est auto-évaluée juste.
+// Ce que la mémoire sait de cette question : la lettre trouvée, ou « auto » si
+// elle s'est auto-évaluée juste.
 const memoire = computed(() => progression?.memoire(identite.value) ?? null)
 const trouve = computed(() => memoire.value !== null)
 
@@ -84,215 +81,141 @@ function seNoter(juste: boolean) {
   else progression?.annuler(identite.value)
 }
 
-// La solution reste en fenêtre : elle est longue, et on ne la lit qu'une fois.
-// Son contenu étant téléporté dans <body>, hors de `.cours-body`, la classe doit
-// l'y suivre — sans quoi les formules en bloc ne seraient plus défilables.
-const uiSolution = { content: 'cours-body max-w-3xl' }
-
-watch(indiceOuvert, (ouvert) => {
-  if (!ouvert) exempleDeplie.value = false
+watch(solutionOuverte, (ouverte) => {
+  if (ouverte) solutionLue.value = true
 })
 
-watch(solutionOuverte, (ouvert) => {
-  if (ouvert) solutionLue.value = true
-})
+// « Tout afficher / tout masquer », en tête des pages qui le proposent. Les
+// compteurs laissent à chaque question son état entre deux commandes globales.
+if (reveal) {
+  watch(reveal.openTick, () => {
+    indiceOuvert.value = hasIndice.value
+    solutionOuverte.value = hasSolution.value
+  })
+  watch(reveal.closeTick, () => {
+    indiceOuvert.value = false
+    solutionOuverte.value = false
+  })
+}
 </script>
 
 <template>
-  <div
-    :id="uid"
-    class="cours-question scroll-mt-24 border-l-2 transition-colors pl-4 sm:pl-5 py-1 my-7"
-    :class="trouve ? 'border-success' : 'border-default hover:border-primary/60'"
+  <QuestionCadre
+    v-model:indice-ouvert="indiceOuvert"
+    v-model:solution-ouverte="solutionOuverte"
+    :label="label"
+    :verdict="trouve ? 'juste' : null"
+    :indice="hasIndice"
+    :exemple="hasExemple"
+    :solution="hasSolution"
+    :cours="!!cours"
+    @cours="cours && extraits?.ouvrir(cours)"
   >
-    <div class="flex gap-3 items-baseline">
-      <span
-        v-if="label"
-        class="shrink-0 font-semibold text-highlighted tabular-nums"
-      >{{ label }}</span>
-      <div class="min-w-0 flex-1 cours-enonce">
-        <slot />
-      </div>
-      <UIcon
-        v-if="trouve"
-        name="i-lucide-check"
-        class="size-5 shrink-0 text-success"
-      />
-    </div>
+    <slot />
 
-    <ChoixReponses
+    <template
       v-if="aChoix"
-      :lettres="choixPossibles"
-      :bonne="bonne!"
-      :choisi="affiche"
-      :errones="errones"
-      :revele="trouve"
-      :fige="trouve"
-      :intitule="label ? `Propositions de la question ${label}` : undefined"
-      @choisir="choisir"
+      #choix
     >
-      <template #default="{ lettre }">
-        <slot :name="lettre" />
-      </template>
-    </ChoixReponses>
+      <ChoixReponses
+        :lettres="choixPossibles"
+        :bonne="bonne!"
+        :choisi="affiche"
+        :errones="errones"
+        :revele="trouve"
+        :fige="trouve"
+        :intitule="label ? `Propositions de la question ${label}` : undefined"
+        @choisir="choisir"
+      >
+        <template #default="{ lettre }">
+          <slot :name="lettre" />
+        </template>
+      </ChoixReponses>
+    </template>
 
-    <p
-      v-if="aChoix && !trouve && errones.length"
-      class="mt-3 mb-0 text-sm text-muted"
-    >
-      Ce n'est pas ça.
-      <template v-if="hasIndice">
-        L'indice est ouvert : relis-le, puis retente — autant de fois qu'il faudra.
-      </template>
-      <template v-else>
-        Retente : rien ne limite le nombre d'essais.
-      </template>
-    </p>
-
-    <div class="flex flex-wrap gap-2 mt-3">
-      <UButton
-        v-if="hasIndice"
-        size="xs"
-        color="warning"
-        variant="soft"
-        :icon="indiceOuvert ? 'i-lucide-lightbulb-off' : 'i-lucide-lightbulb'"
-        :label="indiceOuvert ? 'Masquer l\'indice' : 'Indice'"
-        :aria-expanded="indiceOuvert"
-        :aria-controls="`${uid}-indice`"
-        @click="indiceOuvert = !indiceOuvert"
-      />
-      <UButton
-        v-if="hasSolution"
-        size="xs"
-        color="primary"
-        variant="soft"
-        icon="i-lucide-eye"
-        label="Voir la solution"
-        @click="solutionOuverte = true"
-      />
-      <UButton
-        v-if="cours"
-        size="xs"
-        color="neutral"
-        variant="ghost"
-        icon="i-lucide-book-open-text"
-        label="Cours"
-        @click="extraits?.ouvrir(cours)"
-      />
-    </div>
+    <template #message>
+      <p
+        v-if="aChoix && !trouve && errones.length"
+        class="mt-3 mb-0 text-sm text-muted"
+      >
+        Ce n'est pas ça.
+        <template v-if="hasIndice">
+          L'indice est ouvert : relis-le, puis retente — autant de fois qu'il faudra.
+        </template>
+        <template v-else>
+          Retente : rien ne limite le nombre d'essais.
+        </template>
+      </p>
+    </template>
 
     <!-- Question ouverte : rien à cocher, donc on se note soi-même, mais
          seulement une fois la solution lue. -->
-    <div
+    <template
       v-if="!aChoix && solutionLue"
-      class="mt-3 flex flex-wrap items-center gap-2"
+      #apres
     >
-      <template v-if="trouve">
-        <span class="text-sm text-success">Comptée comme réussie.</span>
-        <UButton
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          icon="i-lucide-undo-2"
-          label="Me dédire"
-          @click="seNoter(false)"
-        />
-      </template>
-      <template v-else>
-        <span class="text-sm text-muted">Après lecture :</span>
-        <UButton
-          size="xs"
-          color="success"
-          variant="soft"
-          icon="i-lucide-check"
-          label="J'avais bon"
-          @click="seNoter(true)"
-        />
-        <UButton
-          size="xs"
-          color="neutral"
-          variant="subtle"
-          icon="i-lucide-x"
-          label="J'avais faux"
-          @click="seNoter(false)"
-        />
-      </template>
-    </div>
-
-    <!-- L'indice se déplie sur place plutôt qu'en fenêtre : une modale à chaque
-         mauvaise réponse casserait le geste « je relis et je retente aussitôt ». -->
-    <Transition name="cours-reveal">
-      <div
-        v-show="indiceOuvert"
-        :id="`${uid}-indice`"
-        class="cours-panel cours-panel-indice"
-      >
-        <p class="cours-panel-title">
-          <UIcon
-            name="i-lucide-lightbulb"
-            class="size-4 shrink-0"
+      <div class="mt-3 flex flex-wrap items-center gap-2">
+        <template v-if="trouve">
+          <span class="text-sm text-success">Comptée comme réussie.</span>
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-undo-2"
+            label="Me dédire"
+            @click="seNoter(false)"
           />
-          <span>Indice</span>
-        </p>
-        <div class="cours-panel-body">
-          <slot name="indice" />
-        </div>
-
-        <div
-          v-if="hasExemple"
-          class="mt-4 rounded-lg border border-default bg-default"
-        >
-          <button
-            type="button"
-            class="flex w-full items-center gap-2 px-3 py-2 text-left"
-            :aria-expanded="exempleDeplie"
-            :aria-controls="`${uid}-exemple`"
-            @click="exempleDeplie = !exempleDeplie"
-          >
-            <UIcon
-              name="i-lucide-square-function"
-              class="size-4 shrink-0 text-primary"
-            />
-            <span class="min-w-0 flex-1 text-sm font-medium text-highlighted">
-              Exemple similaire, entièrement traité
-            </span>
-            <UIcon
-              name="i-lucide-chevron-down"
-              class="size-4 shrink-0 text-dimmed transition-transform"
-              :class="exempleDeplie && 'rotate-180'"
-            />
-          </button>
-
-          <div
-            v-show="exempleDeplie"
-            :id="`${uid}-exemple`"
-            class="cours-panel-body border-t border-default px-3 py-3"
-          >
-            <slot name="exemple" />
-          </div>
-        </div>
+        </template>
+        <template v-else>
+          <span class="text-sm text-muted">Après lecture :</span>
+          <UButton
+            size="xs"
+            color="success"
+            variant="soft"
+            icon="i-lucide-check"
+            label="J'avais bon"
+            @click="seNoter(true)"
+          />
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="subtle"
+            icon="i-lucide-x"
+            label="J'avais faux"
+            @click="seNoter(false)"
+          />
+        </template>
       </div>
-    </Transition>
+    </template>
 
-    <UModal
-      v-model:open="solutionOuverte"
-      title="Solution détaillée"
-      :description="label ? `Question ${label}` : undefined"
-      :ui="uiSolution"
+    <template
+      v-if="hasIndice"
+      #indice
     >
-      <template #body>
-        <p
-          v-if="aChoix && affiche"
-          class="mb-4 text-sm text-muted"
-        >
-          Ta réponse : la <strong class="text-highlighted uppercase">{{ affiche }}</strong>.
-          <template v-if="affiche !== bonne">
-            La bonne est la <strong class="text-highlighted uppercase">{{ bonne }}</strong>.
-          </template>
-        </p>
-        <div class="cours-panel-body cours-overlay-corps">
-          <slot name="solution" />
-        </div>
-      </template>
-    </UModal>
-  </div>
+      <slot name="indice" />
+    </template>
+
+    <template
+      v-if="hasExemple"
+      #exemple
+    >
+      <slot name="exemple" />
+    </template>
+
+    <template
+      v-if="hasSolution"
+      #solution
+    >
+      <p
+        v-if="aChoix && affiche"
+        class="text-sm text-muted"
+      >
+        Ta réponse : la <strong class="text-highlighted uppercase">{{ affiche }}</strong>.
+        <template v-if="affiche !== bonne">
+          La bonne est la <strong class="text-highlighted uppercase">{{ bonne }}</strong>.
+        </template>
+      </p>
+      <slot name="solution" />
+    </template>
+  </QuestionCadre>
 </template>

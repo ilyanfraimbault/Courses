@@ -225,7 +225,7 @@ await page.setViewportSize({ width: 1280, height: 1100 })
 const seance = await page.evaluate(async () => {
   const j = async (u, o) => (await fetch(u, { headers: { 'content-type': 'application/json' }, ...o })).json()
   const catalogue = await j('/api/quiz/catalogue')
-  const section = catalogue.themes.flatMap(t => t.sections).find(s => /affixes/i.test(s.titre))
+  const section = catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections).find(s => /affixes/i.test(s.titre))
   if (!section) return null
   const { session } = await j('/api/quiz/session', {
     method: 'POST', body: JSON.stringify({ sections: [section.cle], taille: 5 })

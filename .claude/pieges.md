@@ -94,6 +94,56 @@ a mis sur la piste, jamais une erreur. Le témoin est désormais dans
 `docs/contenu.md` : une page qui compte des questions doit avoir au moins un
 bloc.
 
+### Un « : » dans une description vide tout le frontmatter
+
+La typographie française met une espace avant les deux-points : « corrigés dans
+l'ordre du sujet : équations, inéquations… ». Écrit tel quel dans un
+`description:` de frontmatter, c'est du YAML qui ne veut plus dire une chaîne —
+`description` devient un objet, et **tout ce qui suit est perdu** : `type`,
+`navigation`, `ordre`. Aucune erreur au build, et la page s'affiche avec son
+titre.
+
+Ce qui disparaît ne se voit qu'ailleurs : la pastille de nature, le bouton
+« to-do » de la fiche, et surtout la fiche entière dans le catalogue de la to-do,
+qui écarte toute page sans `type`. Cinq fiches y sont passées d'un coup lors de
+l'harmonisation des descriptions.
+
+Guillemets doubles dès qu'une valeur contient « : » ou « # ».
+
+**Ce qui l'a démasqué** : un compte qui ne tombait pas juste — 10 pages typées
+dans la base de contenu pour 15 fichiers qui portaient un `type:`. Le témoin est
+désormais dans `docs/contenu.md`.
+
+### Un commentaire de gabarit se compte dans le HTML de développement
+
+Le contrôle de rendu compte les occurrences de `cours-question` dans le HTML
+servi. Un commentaire `<!-- … -->` du gabarit qui citait ce nom de classe l'a
+fait doubler : 706 questions rendues pour 353. Le serveur de développement garde
+les commentaires de gabarit dans le HTML ; le build de production les retire, si
+bien que le même contrôle aurait donné deux chiffres différents selon le serveur.
+
+Rien n'était cassé à l'écran — la panne était dans le témoin. Le commentaire vit
+maintenant dans le bloc `<script>` de `QuestionCadre.vue`, qui n'est pas rendu.
+
+**Ce qui l'a démasqué** : un écart d'exactement ×2 sur **toutes** les pages. Une
+question perdue fait un écart irrégulier ; un facteur constant désigne le
+compteur.
+
+### Une prop booléenne absente vaut `false`, pas `undefined`
+
+`QuestionCadre` montrait l'aide « sauf si on la retient » : prop `aide?: boolean`,
+gabarit `v-if="aide !== false"`. Vue convertit une prop déclarée booléenne et
+**non passée** en `false`. Toutes les questions des fiches, qui ne passent pas la
+prop, ont donc perdu leurs boutons Indice, Solution et Cours — seul le QCM, qui
+la passe, les avait.
+
+Aucun contrôle automatique ne l'a vu : le compte des questions rendues était
+juste, les propositions répondaient, le message « Ce n'est pas ça » s'affichait.
+Un défaut par défaut s'écrit avec `withDefaults`, jamais par une comparaison.
+
+**Ce qui l'a démasqué** : cliquer dans la page — la liste des boutons d'une
+question revenait vide.
+
 ### `navigation.title` sert deux fois
 
 Il nomme l'entrée dans la barre latérale **et** l'entête d'accordéon du dossier.
