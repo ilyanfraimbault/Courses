@@ -53,11 +53,14 @@ onBeforeUnmount(() => {
 })
 
 // Le conteneur remet les réponses à zéro en sortant du mode corrigé : la question
-// suit le mouvement plutôt que de garder un choix orphelin. Une question déjà
-// gagnée le reste en revanche : recommencer un QCM ne défait pas la progression.
+// suit le mouvement plutôt que de garder un choix orphelin, et referme l'aide
+// qu'elle avait dépliée. Une question déjà gagnée le reste en revanche :
+// recommencer un QCM ne défait pas la progression.
 watch(corrige, (actif) => {
   if (!actif) {
     choisi.value = null
+    indiceOuvert.value = false
+    solutionOuverte.value = false
     return
   }
   if (juste.value && choisi.value) progression?.reussir(identite.value, choisi.value)
@@ -70,175 +73,80 @@ function choisir(lettre: string) {
   qcm?.repondre(uid, choisi.value)
 }
 
-/** Habillage d'une proposition : neutre avant correction, verdict après. */
-function classesChoix(lettre: string) {
-  /*
-   * Les propositions s'alignent au **centre** et non en tête : le contenu d'une
-   * proposition est une formule, dont la boîte est plus haute qu'une ligne de
-   * texte, et la lettre qui la repère flottait alors au-dessus d'elle. La ligne de
-   * base, qui serait le bon réflexe, a été écartée quand la proposition défilait
-   * encore (`overflow-x`) : une boîte de défilement n'en expose pas à son parent
-   * flex. Elle ne défile plus, la ligne de base redevient possible — pas mesurée.
-   */
-  const base = 'flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors'
-  if (!corrige.value) {
-    return choisi.value === lettre
-      ? `${base} border-primary bg-primary/10`
-      : `${base} border-default hover:border-primary/60 hover:bg-elevated/50`
-  }
-  if (lettre === props.bonne) return `${base} border-success bg-success/10`
-  if (lettre === choisi.value) return `${base} border-error bg-error/10`
-  return `${base} border-default opacity-60`
-}
+const verdict = computed(() => (corrige.value ? (juste.value ? 'juste' : 'faux') : null))
 
-function icone(lettre: string) {
-  if (!corrige.value) return choisi.value === lettre ? 'i-lucide-circle-dot' : 'i-lucide-circle'
-  if (lettre === props.bonne) return 'i-lucide-circle-check'
-  if (lettre === choisi.value) return 'i-lucide-circle-x'
-  return 'i-lucide-circle'
-}
-
-function classesIcone(lettre: string) {
-  if (!corrige.value) return choisi.value === lettre ? 'text-primary' : 'text-dimmed'
-  if (lettre === props.bonne) return 'text-success'
-  if (lettre === choisi.value) return 'text-error'
-  return 'text-dimmed'
-}
-
-// Le contenu d'un overlay est téléporté dans <body>, hors de `.cours-body` : sans
-// ce report de classe, les formules en bloc ne seraient plus défilables.
-const uiIndice = { content: 'cours-body max-w-2xl' }
-const uiSolution = { content: 'cours-body max-w-3xl' }
+// Une fois la copie rendue, la lettre donnée reste barrée si elle était fausse.
+const errones = computed(() => (corrige.value && choisi.value && !juste.value ? [choisi.value] : []))
 </script>
 
 <template>
-  <div
-    :id="uid"
-    class="cours-question cours-qcm-question scroll-mt-24 border-l-2 transition-colors pl-4 sm:pl-5 py-1 my-7"
-    :class="corrige ? (juste ? 'border-success' : 'border-error') : 'border-default hover:border-primary/60'"
+  <QuestionCadre
+    v-model:indice-ouvert="indiceOuvert"
+    v-model:solution-ouverte="solutionOuverte"
+    :ancre="uid"
+    :label="label"
+    :verdict="verdict"
+    :aide="corrige"
+    :indice="!!slots.indice"
+    :solution="!!slots.solution"
+    :cours="!!cours"
+    @cours="cours && extraits?.ouvrir(cours)"
   >
-    <div class="flex gap-3 items-baseline">
-      <span
-        v-if="label"
-        class="shrink-0 font-semibold text-highlighted tabular-nums"
-      >{{ label }}</span>
-      <div class="min-w-0 flex-1 cours-enonce">
-        <slot />
-      </div>
-      <UIcon
-        v-if="corrige"
-        :name="juste ? 'i-lucide-check' : 'i-lucide-x'"
-        class="size-5 shrink-0"
-        :class="juste ? 'text-success' : 'text-error'"
-      />
-    </div>
+    <slot />
 
-    <div
-      class="mt-3 flex flex-col gap-2"
-      role="radiogroup"
-      :aria-label="label ? `Propositions de la question ${label}` : 'Propositions'"
-    >
-      <button
-        v-for="lettre in choixPossibles"
-        :key="lettre"
-        type="button"
-        role="radio"
-        :aria-checked="choisi === lettre"
-        :disabled="corrige"
-        :class="classesChoix(lettre)"
-        @click="choisir(lettre)"
+    <template #choix>
+      <ChoixReponses
+        :lettres="choixPossibles"
+        :bonne="bonne"
+        :choisi="choisi"
+        :errones="errones"
+        :revele="corrige"
+        :fige="corrige"
+        :intitule="label ? `Propositions de la question ${label}` : undefined"
+        @choisir="choisir"
       >
-        <UIcon
-          :name="icone(lettre)"
-          class="size-4 shrink-0"
-          :class="classesIcone(lettre)"
-        />
-        <span class="shrink-0 font-medium text-muted uppercase">{{ lettre }}</span>
-        <span class="min-w-0 flex-1 cours-qcm-choix">
+        <template #default="{ lettre }">
           <slot :name="lettre" />
-        </span>
-      </button>
-    </div>
+        </template>
+      </ChoixReponses>
+    </template>
 
-    <p
-      v-if="corrige && !juste"
-      class="mt-3 mb-0 text-sm text-muted"
-    >
-      <template v-if="choisi === null">
-        Aucune réponse donnée. La bonne était la <strong class="text-highlighted uppercase">{{ bonne }}</strong>.
-      </template>
-      <template v-else>
-        Réponse attendue : la <strong class="text-highlighted uppercase">{{ bonne }}</strong>.
-      </template>
-      <template v-if="rateeAvant">
-        <br>
-        <span class="text-error">Déjà ratée au passage précédent</span> — ouvre le cours plutôt que la solution.
-      </template>
-    </p>
-    <p
-      v-else-if="corrige && rateeAvant"
-      class="mt-3 mb-0 text-sm text-muted"
-    >
-      <span class="text-success">Ratée au passage précédent, juste aujourd'hui.</span>
-    </p>
+    <template #message>
+      <p
+        v-if="corrige && !juste"
+        class="mt-3 mb-0 text-sm text-muted"
+      >
+        <template v-if="choisi === null">
+          Aucune réponse donnée. La bonne était la <strong class="text-highlighted uppercase">{{ bonne }}</strong>.
+        </template>
+        <template v-else>
+          Réponse attendue : la <strong class="text-highlighted uppercase">{{ bonne }}</strong>.
+        </template>
+        <template v-if="rateeAvant">
+          <br>
+          <span class="text-error">Déjà ratée au passage précédent</span> — ouvre le cours plutôt que la solution.
+        </template>
+      </p>
+      <p
+        v-else-if="corrige && rateeAvant"
+        class="mt-3 mb-0 text-sm text-muted"
+      >
+        <span class="text-success">Ratée au passage précédent, juste aujourd'hui.</span>
+      </p>
+    </template>
 
-    <div
-      v-if="corrige"
-      class="flex flex-wrap gap-2 mt-3"
+    <template
+      v-if="slots.indice"
+      #indice
     >
-      <UButton
-        v-if="slots.indice"
-        size="xs"
-        color="warning"
-        variant="soft"
-        icon="i-lucide-lightbulb"
-        label="Indice"
-        @click="indiceOuvert = true"
-      />
-      <UButton
-        v-if="slots.solution"
-        size="xs"
-        color="primary"
-        variant="soft"
-        icon="i-lucide-eye"
-        label="Voir la solution"
-        @click="solutionOuverte = true"
-      />
-      <UButton
-        v-if="cours"
-        size="xs"
-        color="neutral"
-        variant="ghost"
-        icon="i-lucide-book-open-text"
-        label="Cours"
-        @click="extraits?.ouvrir(cours)"
-      />
-    </div>
+      <slot name="indice" />
+    </template>
 
-    <UModal
-      v-model:open="indiceOuvert"
-      title="Indice"
-      description="Le raisonnement à tenir, sans le résultat."
-      :ui="uiIndice"
+    <template
+      v-if="slots.solution"
+      #solution
     >
-      <template #body>
-        <div class="cours-panel-body cours-overlay-corps">
-          <slot name="indice" />
-        </div>
-      </template>
-    </UModal>
-
-    <UModal
-      v-model:open="solutionOuverte"
-      title="Solution détaillée"
-      :description="label ? `Question ${label}` : undefined"
-      :ui="uiSolution"
-    >
-      <template #body>
-        <div class="cours-panel-body cours-overlay-corps">
-          <slot name="solution" />
-        </div>
-      </template>
-    </UModal>
-  </div>
+      <slot name="solution" />
+    </template>
+  </QuestionCadre>
 </template>

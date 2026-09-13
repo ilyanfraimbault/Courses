@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { ContentNavigationItem } from '@nuxt/content'
-
-const navigation = inject<Ref<ContentNavigationItem[]>>('navigation')
+const sommaire = useSommaire()
 
 /**
  * L'état de la barre, retenu d'une page à l'autre et d'une visite à l'autre.
@@ -34,10 +32,21 @@ watch(repliee, (valeur) => {
     <UPage :ui="{ left: repliee ? 'lg:hidden' : '' }">
       <template #left>
         <UPageAside :ui="{ root: 'lg:w-72' }">
-          <div class="mb-3 flex items-center justify-between gap-2">
-            <span class="text-xs font-medium uppercase tracking-wide text-dimmed">
-              Sommaire
-            </span>
+          <div class="mb-3 flex items-start justify-between gap-2">
+            <!-- La matière en tête : c'est elle qui dit de quel cours sont les
+                 chapitres ci-dessous, et elle mène à son sommaire. -->
+            <ULink
+              :to="sommaire.chemin"
+              class="min-w-0 flex-1 group"
+            >
+              <span
+                v-if="sommaire.annee"
+                class="block text-xs font-medium uppercase tracking-wide text-dimmed"
+              >{{ sommaire.annee }}</span>
+              <span class="block text-sm font-semibold text-highlighted group-hover:text-primary">
+                {{ sommaire.titre }}
+              </span>
+            </ULink>
             <UButton
               icon="i-lucide-panel-left-close"
               color="neutral"
@@ -51,7 +60,7 @@ watch(repliee, (valeur) => {
 
           <UContentNavigation
             highlight
-            :navigation="navigation"
+            :navigation="sommaire.liens"
           />
         </UPageAside>
       </template>

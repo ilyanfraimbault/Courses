@@ -245,6 +245,85 @@ const MIGRATIONS: string[] = [
   ALTER TABLE quiz_reponse ADD COLUMN section TEXT;
 
   CREATE INDEX quiz_reponse_par_section ON quiz_reponse (section);
+  `,
+
+  // v5 — un chapitre se désigne par son chemin, plus par son slug.
+  //
+  // Le site porte plusieurs matières, et deux d'entre elles peuvent avoir un
+  // chapitre du même nom : « trigonometrie » ne suffit plus à le désigner, il
+  // faut « /cours/a1/remise-a-niveau-maths/trigonometrie ». Les points de cours
+  // suivent, et prennent un « # » pour séparer le chapitre de l'identifiant :
+  // « …/nombres-complexes#cours-module ».
+  //
+  // Ce qu'on réécrit ici, ce sont les clés déjà stockées — les filtres des
+  // séances et la colonne « theme » des réponses. Sans cela, une séance ouverte
+  // au moment de la mise en ligne ne trouverait plus de candidats pour ses
+  // reprises. Le préfixe est écrit en dur, et c'est exact : à cette migration,
+  // une seule matière existait, et tous les slugs stockés en venaient. Les
+  // clés déjà écrites en chemin (« /… ») ne sont pas touchées, ce qui rend la
+  // réécriture sans effet si on la rejoue.
+  `
+  UPDATE quiz_session SET filtre = json_set(filtre,
+    '$.themes', json((
+      SELECT json_group_array(CASE WHEN value LIKE '/%' THEN value
+        ELSE '/cours/a1/remise-a-niveau-maths/' || value END)
+      FROM json_each(filtre, '$.themes'))),
+    '$.notions', json((
+      SELECT json_group_array(CASE WHEN value LIKE '/%' OR instr(value, '/') = 0 THEN value
+        ELSE '/cours/a1/remise-a-niveau-maths/' || substr(value, 1, instr(value, '/') - 1)
+          || '#' || substr(value, instr(value, '/') + 1) END)
+      FROM json_each(filtre, '$.notions')))
+  ) WHERE json_valid(filtre);
+
+  UPDATE quiz_reponse SET theme = '/cours/a1/remise-a-niveau-maths/' || theme
+  WHERE theme IS NOT NULL AND theme NOT LIKE '/%';
+
+  UPDATE quiz_reponse SET notion = '/cours/a1/remise-a-niveau-maths/'
+    || substr(notion, 1, instr(notion, '/') - 1) || '#' || substr(notion, instr(notion, '/') + 1)
+  WHERE notion IS NOT NULL AND notion NOT LIKE '/%' AND instr(notion, '/') > 0;
+  `,
+
+  // v6 — les QCM composés.
+  //
+  // Un QCM composé n'a pas de page de contenu : c'est une liste de questions
+  // choisies dans les fiches, rangée sur le compte de qui l'a composée. Il vit
+  // donc en base, et se crée en production sans redéployer.
+  //
+  // La liste est un JSON d'identités « /chemin#bloc#label », dans l'ordre du
+  // QCM. Elle ne recopie **aucun** énoncé : les questions sont relues dans les
+  // fiches à chaque ouverture, comme au quiz, si bien que corriger un cours
+  // corrige tous les QCM qui l'empruntent.
+  `
+  CREATE TABLE qcm_compose (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    utilisateur_id INTEGER NOT NULL,
+    titre          TEXT    NOT NULL,
+    -- Le chemin de la matière : un QCM composé n'en mélange pas deux.
+    matiere        TEXT    NOT NULL,
+    questions      TEXT    NOT NULL,
+    cree_le        INTEGER NOT NULL,
+    maj            INTEGER NOT NULL,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT;
+
+  CREATE INDEX qcm_compose_par_utilisateur ON qcm_compose (utilisateur_id, maj DESC);
+
+  -- Une ligne par copie rendue, comme qcm_tentative — mais les questions ratées
+  -- y sont des identités complètes et non des repères : un QCM composé mêle
+  -- des blocs où « 3. » revient dix fois. L'unicité (compose_id, t) rend un
+  -- double clic sur « Corriger » inoffensif.
+  CREATE TABLE qcm_compose_copie (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    compose_id INTEGER NOT NULL,
+    t          INTEGER NOT NULL,
+    justes     INTEGER NOT NULL,
+    total      INTEGER NOT NULL,
+    ratees     TEXT    NOT NULL,
+    UNIQUE (compose_id, t),
+    FOREIGN KEY (compose_id) REFERENCES qcm_compose(id) ON DELETE CASCADE
+  ) STRICT;
+
+  CREATE INDEX qcm_compose_copie_par_qcm ON qcm_compose_copie (compose_id, t DESC);
   `
 ]
 

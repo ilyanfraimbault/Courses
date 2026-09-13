@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CatalogueQuiz, FiltreQuiz } from '~~/shared/types/quiz'
+import type { FiltreQuiz, MatiereCatalogue } from '~~/shared/types/quiz'
 
 /**
  * Le choix de ce sur quoi on se fait interroger.
@@ -20,7 +20,12 @@ import type { CatalogueQuiz, FiltreQuiz } from '~~/shared/types/quiz'
  * écrit avec son unité. Un chiffre nu à côté d'un titre ne se devine pas.
  */
 const props = defineProps<{
-  catalogue: CatalogueQuiz
+  /**
+   * La matière dans laquelle on choisit. Le filtre ne sort jamais d'une
+   * matière : c'est la page qui la fixe, et « rien de coché » veut dire elle
+   * toute entière.
+   */
+  catalogue: MatiereCatalogue
   modelValue: FiltreQuiz
 }>()
 
@@ -38,7 +43,7 @@ const deplies = ref<string[]>([])
  */
 watch(() => props.modelValue.notions, (notions) => {
   for (const notion of notions ?? []) {
-    const chapitre = notion.split('/')[0]
+    const chapitre = notion.split('#')[0]
     if (chapitre && !deplies.value.includes(chapitre)) deplies.value.push(chapitre)
   }
 }, { immediate: true })
@@ -81,7 +86,7 @@ function basculerErreurs() {
 }
 
 function tout() {
-  emit('update:modelValue', { themes: [], sections: [], notions: [], erreurs: false })
+  emit('update:modelValue', { ...props.modelValue, themes: [], sections: [], notions: [], erreurs: false })
 }
 
 function oublierPoints() {
@@ -118,7 +123,7 @@ function compte(entree: { questions: number, ratees: number }) {
  */
 const disponibles = computed(() => {
   if (rienDeCoche.value) {
-    return props.modelValue.erreurs ? props.catalogue.ratees : props.catalogue.total
+    return props.modelValue.erreurs ? props.catalogue.ratees : props.catalogue.questions
   }
   let total = 0
   for (const theme of props.catalogue.themes) {
@@ -190,8 +195,8 @@ defineExpose({ disponibles })
       <p class="m-0 text-sm text-muted">
         <template v-if="vierge">
           Rien de coché : la séance pioche dans
-          <strong class="text-highlighted tabular-nums">{{ catalogue.total }}</strong> questions,
-          tout le programme confondu.
+          <strong class="text-highlighted tabular-nums">{{ catalogue.questions }}</strong> questions,
+          toute la matière.
         </template>
         <template v-else>
           <strong class="text-highlighted tabular-nums">{{ disponibles }}</strong>
@@ -204,7 +209,7 @@ defineExpose({ disponibles })
         color="neutral"
         variant="ghost"
         icon="i-lucide-eraser"
-        label="Tout le programme"
+        label="Toute la matière"
         @click="tout"
       />
     </div>

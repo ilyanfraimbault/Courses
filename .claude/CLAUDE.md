@@ -1,7 +1,8 @@
 # Le projet, en bref
 
-Cahier de révisions personnel : fiches de cours, exercices corrigés et QCM, un
-mode quiz qui pioche dans toutes leurs questions, avec suivi de progression,
+Cahier de révisions personnel, rangé par année puis par matière : fiches de
+cours, exercices corrigés et QCM, un mode quiz qui pioche dans leurs questions,
+des QCM qu'on compose soi-même à partir d'elles, avec suivi de progression,
 to-do et tableau de bord. Nuxt 4, Nuxt UI, Nuxt Content, SQLite, déployé en
 conteneur sur un VPS Hostinger.
 
@@ -55,13 +56,39 @@ que le bloc relevé et l'identité écrite en base désignent la même chose. En
 contrepartie, `app/utils/cours.ts` doit rester **libre de tout import Nuxt** :
 il est chargé au moment de lire la configuration, hors de toute application.
 
+**La hiérarchie se lit dans le chemin.** `/cours/<année>/<matière>/<chapitre>/<fiche>` :
+c'est `niveauxDuChemin` (`shared/utils/niveaux.ts`) qui le dit, et personne
+d'autre — pas un champ de frontmatter, qui finirait par diverger d'une fiche à
+l'autre. Un chapitre et une matière se désignent par **leur chemin**, jamais par
+leur slug : deux matières peuvent avoir chacune un chapitre « introduction ».
+Comme `app/utils/cours.ts`, ce fichier est importé par `nuxt.config.ts` et reste
+libre de tout import Nuxt.
+
+**On ne mélange pas deux matières.** Une séance de quiz, un QCM composé, une
+barre de « Mes domaines » restent dans leur matière. Dans un filtre, la matière
+se **croise** avec la sélection au lieu de s'y ajouter : « rien de coché » veut
+dire toute la matière, pas tout le site.
+
+**Une question n'a qu'un habillage.** `QuestionCadre` dessine toutes les
+questions — exercice, cours, QCM de contenu, QCM composé : l'énoncé, les
+propositions, puis Indice, Solution et Cours, dépliés sous la question. Chaque
+contexte garde sa règle de correction ; aucun ne redessine la question. Sa racine
+porte la seule classe `cours-question` de la question, celle que le contrôle de
+rendu compte.
+
+**Un QCM composé ne retient que des identités.** Il vit en base, sur le compte
+qui l'a composé, et relit énoncés et corrections dans les fiches à chaque
+ouverture. La copie se corrige au serveur ; une question juste y est cochée sur
+sa fiche et une ratée entre dans la dette, dans la même transaction que la copie.
+Voir `docs/mes-qcm.md`.
+
 **Un seul relevé de questions, pas deux.** Le hook du build écrit un champ
 `releve` par page : **toutes** les questions identifiables, et un booléen
 `interrogeable` qui dit lesquelles le quiz sait poser. Le quiz lit la part vraie
 de ce booléen, la progression par domaine lit tout. Deux relevés côte à côte se
 contrediraient le jour où l'un changerait.
 
-**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 432 questions
+**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 312 questions
 sont celles des fiches, découpées dans l'arbre de la page au moment de les
 poser — énoncé, propositions, indice, solution et rappel de cours compris.
 Corriger un cours corrige le quiz. Le thème d'une question vient du rappel de
@@ -149,10 +176,13 @@ pnpm verif:quiz:rendu               # le quiz dans un vrai navigateur (Playwrigh
 ```
 
 Elles ne sont pas dans la CI : elles ont besoin d'une base réelle, et leur rôle
-est d'être relancées quand on touche au schéma ou aux routes.
+est d'être relancées quand on touche au schéma ou aux routes. La configuration
+`cours-verif` de `.claude/launch.json` lance le serveur avec un code
+d'inscription et une base à part (`.data/verif/`), ce qu'elles demandent.
 
 Le contrôle qui compte pour le contenu — rendu contre comptage du build — est
-dans `docs/contenu.md`. Aujourd'hui : **473 questions rendues sur 473**.
+dans `docs/contenu.md`. Aujourd'hui : **353 questions rendues sur 353**, et les
+15 fiches portent leur `type`.
 
 ## Où lire la suite
 
@@ -162,7 +192,9 @@ dans `docs/contenu.md`. Aujourd'hui : **473 questions rendues sur 473**.
   rappel de cours, la file qui rejoue une place ratée, et ce qu'il n'écrit pas.
 - `docs/domaines.md` — la progression rangée par point de cours : d'où viennent
   les domaines, ce que les deux segments d'une barre veulent dire, et pourquoi
-  le relevé porte les 473 questions et non les seules 432 du quiz.
+  le relevé porte les 353 questions et non les seules 312 du quiz.
+- `docs/mes-qcm.md` — les QCM composés : pourquoi en base plutôt qu'en fichier,
+  ce qu'ils empruntent aux fiches, et les règles tenues au serveur.
 - `docs/comptes.md` — comptes, hachage, isolation des données.
 - `docs/deploiement.md` — conteneur, CI/CD, VPS, domaine, sauvegarde.
 - `.claude/pieges.md` — les pièges rencontrés, avec ce qui les a démasqués.

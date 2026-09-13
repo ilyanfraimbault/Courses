@@ -1,36 +1,103 @@
 <script setup lang="ts">
+import { niveauxDuChemin } from '~~/shared/utils/niveaux'
+
 definePageMeta({ layout: 'cours' })
 
 const comptes = useComptesQuestions()
 const resume = useResumeProgression()
 const { items: todo } = useTodo()
 
-/** Toutes les fiches qui portent des questions, avec ce qu'on en sait. */
-const { data: fiches } = await useAsyncData('cours-fiches', async () => {
+/**
+ * Toutes les pages du contenu : les fiches qui portent des questions, et les
+ * pages d'index qui nomment les années et les matières.
+ */
+const { data: pages } = await useAsyncData('cours-tableau-de-bord', async () => {
   const lignes = await queryCollection('cours')
-    .select('path', 'title', 'description', 'type', 'annee', 'matiere', 'ordre', 'icone', 'questions')
+    .select('path', 'title', 'description', 'type', 'ordre', 'icone', 'questions')
     .all()
-  return lignes
-    .filter(l => (l.questions ?? 0) > 0)
-    .map(l => ({ ...l, chemin: cheminCanonique(l.path) }))
+  return lignes.map(l => ({ ...l, chemin: cheminCanonique(l.path) }))
 }, { default: () => [] })
+
+const parChemin = computed(() => new Map(pages.value.map(p => [p.chemin, p])))
+const fiches = computed(() => pages.value.filter(p => (p.questions ?? 0) > 0))
+
+function part(f: { chemin: string, questions?: number | null }) {
+  const total = comptes.value[f.chemin] ?? f.questions ?? 0
+  const reussies = Math.min(resume.value[f.chemin]?.reussies ?? 0, total)
+  return { total, reussies }
+}
 
 const avancement = computed(() => {
   let total = 0
   let reussies = 0
   for (const f of fiches.value) {
-    const t = comptes.value[f.chemin] ?? f.questions ?? 0
-    total += t
-    reussies += Math.min(resume.value[f.chemin]?.reussies ?? 0, t)
+    const p = part(f)
+    total += p.total
+    reussies += p.reussies
   }
   return { total, reussies, pourcentage: total ? Math.round(100 * reussies / total) : 0 }
 })
+
+/**
+ * L'avancement matière par matière, dans l'ordre du sommaire.
+ *
+ * Un pourcentage de tout le site mêlerait deux cours qui n'ont rien à voir :
+ * c'est matière par matière qu'on sait où on en est. Le chiffre global reste en
+ * tête, pour la vue d'ensemble.
+ */
+const matieres = computed(() => {
+  const groupes = new Map<string, {
+    cle: string
+    titre: string
+    annee: string | null
+    anneeChemin: string | null
+    icone: string | null
+    ordre: number
+    total: number
+    reussies: number
+    fiches: number
+    ouvertes: number
+  }>()
+  for (const f of fiches.value) {
+    const { annee, matiere } = niveauxDuChemin(f.chemin)
+    if (!matiere) continue
+    const page = parChemin.value.get(matiere)
+    const groupe = groupes.get(matiere) ?? {
+      cle: matiere,
+      titre: page?.title ?? matiere,
+      annee: annee ? parChemin.value.get(annee)?.title ?? null : null,
+      anneeChemin: annee,
+      icone: page?.icone ?? null,
+      ordre: page?.ordre ?? 999,
+      total: 0,
+      reussies: 0,
+      fiches: 0,
+      ouvertes: 0
+    }
+    const p = part(f)
+    groupe.total += p.total
+    groupe.reussies += p.reussies
+    groupe.fiches += 1
+    if (resume.value[f.chemin]) groupe.ouvertes += 1
+    groupes.set(matiere, groupe)
+  }
+  return [...groupes.values()].sort((a, b) =>
+    (a.anneeChemin ?? '').localeCompare(b.anneeChemin ?? '')
+    || a.ordre - b.ordre
+    || a.titre.localeCompare(b.titre, 'fr'))
+})
+
+/** « Remise à niveau en maths » pour une fiche : ce qui distingue deux « Exercices » de deux cours. */
+function matiereDe(chemin: string): string | null {
+  const matiere = niveauxDuChemin(chemin).matiere
+  return matiere ? parChemin.value.get(matiere)?.title ?? null : null
+}
 
 /** Les fiches commencées mais pas finies, la plus récemment touchée d'abord. */
 const enCours = computed(() =>
   fiches.value
     .map(f => ({ f, etat: resume.value[f.chemin] }))
-    .filter(({ f, etat }) => etat && etat.reussies > 0 && etat.reussies < (comptes.value[f.chemin] ?? f.questions ?? 0))
+    .filter(({ f, etat }) => etat && etat.reussies > 0 && etat.reussies < part(f).total)
     .sort((a, b) => (b.etat!.maj ?? 0) - (a.etat!.maj ?? 0))
     .slice(0, 4)
 )
@@ -49,10 +116,8 @@ const jamaisOuvertes = computed(() =>
 
 const todoAFaire = computed(() => todo.value.filter(i => !i.fait_le).length)
 
-function part(chemin: string) {
-  const total = comptes.value[chemin] ?? 0
-  const reussies = Math.min(resume.value[chemin]?.reussies ?? 0, total)
-  return { total, reussies }
+function pourcentage(g: { total: number, reussies: number }) {
+  return g.total ? Math.round(100 * g.reussies / g.total) : 0
 }
 
 useSeoMeta({ title: 'Où j\'en suis' })
@@ -62,7 +127,7 @@ useSeoMeta({ title: 'Où j\'en suis' })
   <UPage>
     <UPageHeader
       title="Où j'en suis"
-      :description="`${avancement.reussies} questions trouvées sur ${avancement.total}, toutes fiches confondues.`"
+      :description="`${avancement.reussies} questions trouvées sur ${avancement.total}, toutes matières confondues.`"
     />
 
     <UPageBody>
@@ -104,6 +169,68 @@ useSeoMeta({ title: 'Où j\'en suis' })
         </UCard>
       </div>
 
+      <div class="mt-8">
+        <h2 class="text-lg font-medium text-highlighted">
+          Tes matières
+        </h2>
+        <div class="mt-3 flex flex-col gap-3">
+          <div
+            v-for="matiere in matieres"
+            :key="matiere.cle"
+            class="rounded-lg border border-default px-4 py-3"
+          >
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <UIcon
+                :name="matiere.icone || 'i-lucide-book-open'"
+                class="size-5 shrink-0 text-primary"
+              />
+              <ULink
+                :to="matiere.cle"
+                class="min-w-0 flex-1 group"
+              >
+                <span
+                  v-if="matiere.annee"
+                  class="block text-xs text-dimmed"
+                >{{ matiere.annee }}</span>
+                <span class="block font-medium text-highlighted group-hover:text-primary">{{ matiere.titre }}</span>
+              </ULink>
+              <span class="shrink-0 text-sm text-muted tabular-nums">
+                {{ matiere.reussies }} / {{ matiere.total }} · {{ pourcentage(matiere) }} %
+              </span>
+            </div>
+            <UProgress
+              class="mt-2"
+              size="xs"
+              :color="pourcentage(matiere) === 100 ? 'success' : 'primary'"
+              :model-value="matiere.reussies"
+              :max="matiere.total || 1"
+            />
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <span class="me-auto text-xs text-dimmed">
+                {{ matiere.ouvertes }} fiche{{ matiere.ouvertes > 1 ? 's' : '' }} ouverte{{ matiere.ouvertes > 1 ? 's' : '' }}
+                sur {{ matiere.fiches }}
+              </span>
+              <UButton
+                size="xs"
+                color="primary"
+                variant="subtle"
+                icon="i-lucide-zap"
+                label="Quiz"
+                :to="{ path: '/quiz', query: { matiere: matiere.cle } }"
+              />
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="subtle"
+                icon="i-lucide-list-plus"
+                label="Composer un QCM"
+                :to="{ path: '/mes-qcm/nouveau', query: { matiere: matiere.cle } }"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div
         v-if="reprendre"
         class="mt-8"
@@ -117,6 +244,7 @@ useSeoMeta({ title: 'Où j\'en suis' })
           :titre="reprendre.f.title"
           :description="reprendre.f.description"
           :type="reprendre.f.type"
+          :meta="matiereDe(reprendre.f.chemin) ?? undefined"
         />
       </div>
 
@@ -138,9 +266,15 @@ useSeoMeta({ title: 'Où j\'en suis' })
               :name="f.icone || 'i-lucide-file-text'"
               class="size-4 shrink-0 text-primary"
             />
-            <span class="min-w-0 flex-1 truncate text-sm text-highlighted">{{ f.title }}</span>
+            <span class="min-w-0 flex-1 truncate text-sm text-highlighted">
+              {{ f.title }}
+              <span
+                v-if="matieres.length > 1"
+                class="text-dimmed"
+              >· {{ matiereDe(f.chemin) }}</span>
+            </span>
             <span class="shrink-0 text-xs text-muted tabular-nums">
-              {{ part(f.chemin).reussies }} / {{ part(f.chemin).total }}
+              {{ part(f).reussies }} / {{ part(f).total }}
             </span>
           </ULink>
         </div>
@@ -159,6 +293,13 @@ useSeoMeta({ title: 'Où j\'en suis' })
           icon="i-lucide-zap"
           label="Lancer un quiz"
           color="primary"
+          variant="subtle"
+        />
+        <UButton
+          to="/mes-qcm"
+          icon="i-lucide-list-plus"
+          label="Mes QCM"
+          color="neutral"
           variant="subtle"
         />
         <UButton

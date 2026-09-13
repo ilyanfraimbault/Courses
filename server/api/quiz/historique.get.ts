@@ -18,6 +18,9 @@ const MAX_SECTIONS = 12
  * d'une question vit dans le contenu, pas en base — la recopier à l'écriture la
  * figerait, et un chapitre réorganisé afficherait des sections périmées des mois
  * plus tard.
+ *
+ * Tout est rendu, toutes matières confondues, avec la matière de chaque ligne :
+ * c'est l'écran qui ne montre que celle qu'on a choisie.
  */
 export default defineEventHandler(async (event): Promise<HistoriqueQuiz> => {
   const uid = await idUtilisateur(event)
@@ -44,23 +47,25 @@ export default defineEventHandler(async (event): Promise<HistoriqueQuiz> => {
       commencee_le: ligne.commencee_le,
       maj: ligne.maj,
       filtre,
-      themes: intitules(filtre)
+      themes: intitules(filtre),
+      matiereTitre: filtre.matiere ? banque.matieres.get(filtre.matiere)?.titre ?? null : null
     }
   }
 
   /**
-   * Ce sur quoi la séance portait, en clair. Les clés de section sont des
-   * chemins avec une ancre : c'est la banque qui sait les nommer, et une clé
-   * qui ne s'y trouve plus vaut mieux affichée telle quelle qu'escamotée.
+   * Ce sur quoi la séance portait, en clair. Les clés sont des chemins : c'est
+   * la banque qui sait les nommer, et une clé qui ne s'y trouve plus vaut mieux
+   * affichée telle quelle qu'escamotée.
    */
   function intitules(filtre: ResumeSessionQuiz['filtre']): string[] {
     const noms = [
       ...filtre.themes.map(t => banque.chapitres.get(t)?.titre ?? t),
       ...filtre.sections.map(s => banque.entrees.find(e => e.section === s)?.sectionTitre ?? s),
-      ...(filtre.notions ?? []).map(n => n.split('/').slice(1).join('/'))
+      ...(filtre.notions ?? []).map(n => banque.entrees.find(e => e.notionCle === n)?.notionTitre ?? n.split('#').pop() ?? n)
     ]
+    const tout = filtre.matiere ? 'Toute la matière' : 'Tout le programme'
     if (filtre.erreurs) return noms.length ? [...noms, 'ce qui restait en dette'] : ['Ce que j\'ai raté']
-    return noms.length ? noms : ['Tout le programme']
+    return noms.length ? noms : [tout]
   }
 
   const sessions = lignes.map(resumer)
@@ -82,6 +87,7 @@ export default defineEventHandler(async (event): Promise<HistoriqueQuiz> => {
       titre: entree.sectionTitre ?? entree.section,
       theme: entree.theme,
       themeTitre: entree.theme ? banque.chapitres.get(entree.theme)?.titre ?? null : null,
+      matiere: entree.matiere,
       enDette: 0,
       fautes: 0
     }

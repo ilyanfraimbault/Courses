@@ -146,9 +146,10 @@
   text-align: left;
 }
 
-/* Les propositions sont des boutons : une fois la copie rendue elles sont
-   désactivées, mais leur contenu doit rester parfaitement lisible. */
-.cours-qcm-question button[disabled] {
+/* Les propositions sont des boutons : une fois la question trouvée ou la copie
+   rendue elles sont désactivées, mais leur contenu doit rester parfaitement
+   lisible. */
+.cours-question button[disabled] {
   cursor: default;
   opacity: 1;
 }

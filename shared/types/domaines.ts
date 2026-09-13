@@ -13,18 +13,11 @@
  * trompé comptent toutes les deux, mais ne disent pas la même chose.
  */
 
-export interface DomaineProgression {
-  /**
-   * « chapitre/identifiant-extrait », la clé que le filtre du quiz attend. Elle
-   * est nulle pour les questions qui ne renvoient à aucun rappel de cours : on
-   * les regroupe pour que le compte du chapitre tombe juste, mais le quiz ne
-   * sait pas viser ce tas-là.
-   */
-  cle: string | null
-  titre: string
-  /** Questions du site rattachées à ce domaine, questions ouvertes comprises. */
+/** Ce que toute ligne de la page sait compter, du domaine à la matière. */
+export interface CompteProgression {
+  /** Questions rattachées, questions ouvertes comprises. */
   questions: number
-  /** Celles qui ont fini par être trouvées, sur une fiche ou au quiz. */
+  /** Celles qui ont fini par être trouvées, sur une fiche, au quiz ou dans un QCM. */
   acquises: number
   /**
    * Parmi les acquises, celles qui ont coûté au moins une faute — au quiz ou
@@ -36,27 +29,41 @@ export interface DomaineProgression {
   interrogeables: number
 }
 
-export interface ChapitreProgression {
-  /** Slug du chapitre : « trigonometrie ». */
+export interface DomaineProgression extends CompteProgression {
+  /**
+   * « /chemin/du/chapitre#identifiant-extrait », la clé que le filtre du quiz
+   * attend. Elle est nulle pour les questions qui ne renvoient à aucun rappel de
+   * cours : on les regroupe pour que le compte du chapitre tombe juste, mais le
+   * quiz ne sait pas viser ce tas-là.
+   */
+  cle: string | null
+  titre: string
+}
+
+export interface ChapitreProgression extends CompteProgression {
+  /** Chemin du chapitre : « /cours/a1/remise-a-niveau-maths/trigonometrie ». */
   cle: string
   titre: string
   icone: string | null
   /** Chemin du sommaire du chapitre, quand il existe. */
   chemin: string | null
-  questions: number
-  acquises: number
-  hesitantes: number
-  interrogeables: number
   /** Ses domaines, le moins acquis d'abord : c'est là qu'on a quelque chose à faire. */
   domaines: DomaineProgression[]
 }
 
-export interface ProgressionDomaines {
+/** Une matière et ses chapitres : on ne mêle pas la progression de deux cours. */
+export interface MatiereProgression extends CompteProgression {
+  /** Chemin de la matière : « /cours/a1/remise-a-niveau-maths ». */
+  cle: string
+  titre: string
+  /** Intitulé de l'année qui la porte. */
+  annee: string | null
+  icone: string | null
+  chemin: string | null
   chapitres: ChapitreProgression[]
-  total: {
-    questions: number
-    acquises: number
-    hesitantes: number
-    interrogeables: number
-  }
+}
+
+export interface ProgressionDomaines {
+  matieres: MatiereProgression[]
+  total: CompteProgression
 }

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { ContentNavigationItem } from '@nuxt/content'
-
-const navigation = inject<Ref<ContentNavigationItem[]>>('navigation')
+const sommaire = useSommaire()
 
 const { header } = useAppConfig()
 const { loggedIn, user, clear } = useUserSession()
@@ -9,6 +7,7 @@ const { loggedIn, user, clear } = useUserSession()
 const liens = [
   { label: 'Cours', to: '/cours', icon: 'i-lucide-library' },
   { label: 'Quiz', to: '/quiz', icon: 'i-lucide-zap' },
+  { label: 'Mes QCM', to: '/mes-qcm', icon: 'i-lucide-list-plus' },
   { label: 'Ma to-do', to: '/ma-to-do', icon: 'i-lucide-list-checks' },
   { label: 'Mes domaines', to: '/mes-domaines', icon: 'i-lucide-target' },
   { label: 'Mes résultats', to: '/mes-resultats', icon: 'i-lucide-chart-line' }
@@ -42,6 +41,8 @@ async function deconnecter() {
         class="lg:hidden"
       />
 
+      <!-- Six entrées ne tiennent pas avec leur libellé avant les grands
+           écrans : en dessous, l'icône seule, et le libellé en info-bulle. -->
       <div
         v-if="loggedIn"
         class="hidden items-center gap-1 sm:flex"
@@ -49,10 +50,15 @@ async function deconnecter() {
         <UButton
           v-for="lien of liens"
           :key="lien.to"
-          v-bind="lien"
+          :to="lien.to"
+          :icon="lien.icon"
+          :aria-label="lien.label"
+          :title="lien.label"
           color="neutral"
           variant="ghost"
           size="sm"
+          :ui="{ label: 'hidden xl:inline' }"
+          :label="lien.label"
         />
       </div>
 
@@ -95,9 +101,20 @@ async function deconnecter() {
         />
       </div>
 
+      <ULink
+        :to="sommaire.chemin"
+        class="mb-2 block"
+      >
+        <span
+          v-if="sommaire.annee"
+          class="block text-xs font-medium uppercase tracking-wide text-dimmed"
+        >{{ sommaire.annee }}</span>
+        <span class="block text-sm font-semibold text-highlighted">{{ sommaire.titre }}</span>
+      </ULink>
+
       <UContentNavigation
         highlight
-        :navigation="navigation"
+        :navigation="sommaire.liens"
       />
     </template>
   </UHeader>

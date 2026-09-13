@@ -1,4 +1,5 @@
 import type { TodoItem } from '~~/shared/types/resultats'
+import { niveauxDuChemin } from '~~/shared/utils/niveaux'
 
 export interface CibleTodo {
   chemin: string
@@ -151,6 +152,8 @@ export interface FicheCatalogue extends CibleCatalogue {
 }
 
 export interface ChapitreCatalogue extends CibleCatalogue {
+  /** L'intitulé de la matière du chapitre : deux cours peuvent avoir un chapitre du même nom. */
+  matiere: string | null
   fiches: FicheCatalogue[]
 }
 
@@ -208,6 +211,7 @@ export function useCatalogueCibles() {
         questions: b.questions
       }))
 
+      const cheminMatiere = niveauxDuChemin(cheminChapitre).matiere
       const chapitre = chapitres.get(cheminChapitre) ?? {
         cle: cheminChapitre,
         chemin: cheminChapitre,
@@ -215,6 +219,7 @@ export function useCatalogueCibles() {
         titre: parent.title ?? cheminChapitre,
         type: null,
         questions: 0,
+        matiere: cheminMatiere ? parChemin.get(cheminMatiere)?.title ?? null : null,
         fiches: []
       }
 
