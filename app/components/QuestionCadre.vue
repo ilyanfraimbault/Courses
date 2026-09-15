@@ -57,8 +57,22 @@ const uid = useId()
 // L'exemple similaire se déroule en second, et seulement si la piste n'a pas
 // suffi : refermer l'indice le replie.
 const exempleDeplie = ref(false)
+
+// Un panneau n'est construit qu'à sa première ouverture, puis gardé. Rendues
+// d'avance, les 87 solutions de la fiche de révisions des complexes pesaient
+// 1,5 Mo de formules que le serveur fabriquait à chaque visite pour ne les
+// montrer à personne — et en production le temps de rendu suivait la taille du
+// HTML. Une fois ouvert, le panneau reste dans la page : le refermer puis le
+// rouvrir ne le reconstruit pas.
+const indiceVu = ref(indiceOuvert.value)
+const solutionVue = ref(solutionOuverte.value)
+
 watch(indiceOuvert, (ouvert) => {
-  if (!ouvert) exempleDeplie.value = false
+  if (ouvert) indiceVu.value = true
+  else exempleDeplie.value = false
+})
+watch(solutionOuverte, (ouverte) => {
+  if (ouverte) solutionVue.value = true
 })
 </script>
 
@@ -137,7 +151,7 @@ watch(indiceOuvert, (ouvert) => {
            retente aussitôt », et une solution se lit mieux sous son énoncé. -->
       <Transition name="cours-reveal">
         <div
-          v-if="indice"
+          v-if="indice && indiceVu"
           v-show="indiceOuvert"
           :id="`${uid}-indice`"
           class="cours-panel cours-panel-indice"
@@ -191,7 +205,7 @@ watch(indiceOuvert, (ouvert) => {
 
       <Transition name="cours-reveal">
         <div
-          v-if="solution"
+          v-if="solution && solutionVue"
           v-show="solutionOuverte"
           :id="`${uid}-solution`"
           class="cours-panel cours-panel-solution"
