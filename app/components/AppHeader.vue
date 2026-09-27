@@ -1,18 +1,35 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
+
 const sommaire = useSommaire()
 
 const { header } = useAppConfig()
 const { loggedIn, user, clear } = useUserSession()
 
+/**
+ * Seuls les deux lieux où l'on travaille restent dans la barre : le cours qu'on
+ * lit, le quiz qu'on lance. Tout ce qui est à soi — ce qu'on a composé, prévu ou
+ * mesuré — passe sous le profil, comme sur la plupart des sites : sept entrées
+ * côte à côte ne tenaient qu'en icônes muettes avant les grands écrans.
+ */
 const liens = [
   { label: 'Cours', to: '/cours', icon: 'i-lucide-library' },
-  { label: 'Contrôles', to: '/mes-controles', icon: 'i-lucide-calendar-check' },
-  { label: 'Quiz', to: '/quiz', icon: 'i-lucide-zap' },
-  { label: 'Mes QCM', to: '/mes-qcm', icon: 'i-lucide-list-plus' },
-  { label: 'Ma to-do', to: '/ma-to-do', icon: 'i-lucide-list-checks' },
-  { label: 'Mes domaines', to: '/mes-domaines', icon: 'i-lucide-target' },
-  { label: 'Mes résultats', to: '/mes-resultats', icon: 'i-lucide-chart-line' }
+  { label: 'Quiz', to: '/quiz', icon: 'i-lucide-zap' }
 ]
+
+const menu = computed<DropdownMenuItem[][]>(() => [
+  [{ type: 'label', label: user.value?.pseudo, icon: 'i-lucide-circle-user' }],
+  [
+    { label: 'Mes contrôles', to: '/mes-controles', icon: 'i-lucide-calendar-check' },
+    { label: 'Mes QCM', to: '/mes-qcm', icon: 'i-lucide-list-plus' },
+    { label: 'Ma to-do', to: '/ma-to-do', icon: 'i-lucide-list-checks' }
+  ],
+  [
+    { label: 'Mes domaines', to: '/mes-domaines', icon: 'i-lucide-target' },
+    { label: 'Mes résultats', to: '/mes-resultats', icon: 'i-lucide-chart-line' }
+  ],
+  [{ label: 'Se déconnecter', icon: 'i-lucide-log-out', onSelect: deconnecter }]
+])
 
 async function deconnecter() {
   await $fetch('/api/auth/logout', { method: 'POST' })
@@ -42,8 +59,6 @@ async function deconnecter() {
         class="lg:hidden"
       />
 
-      <!-- Sept entrées ne tiennent pas avec leur libellé avant les grands
-           écrans : en dessous, l'icône seule, et le libellé en info-bulle. -->
       <div
         v-if="loggedIn"
         class="hidden items-center gap-1 sm:flex"
@@ -51,31 +66,32 @@ async function deconnecter() {
         <UButton
           v-for="lien of liens"
           :key="lien.to"
-          :to="lien.to"
-          :icon="lien.icon"
-          :aria-label="lien.label"
-          :title="lien.label"
+          v-bind="lien"
           color="neutral"
           variant="ghost"
           size="sm"
-          :ui="{ label: 'hidden xl:inline' }"
-          :label="lien.label"
         />
       </div>
 
       <UColorModeButton v-if="header?.colorMode" />
 
-      <UButton
+      <UDropdownMenu
         v-if="loggedIn"
-        color="neutral"
-        variant="ghost"
-        size="sm"
-        icon="i-lucide-log-out"
-        :label="user?.pseudo"
-        :aria-label="`Se déconnecter de ${user?.pseudo}`"
-        title="Se déconnecter"
-        @click="deconnecter"
-      />
+        :items="menu"
+        :content="{ align: 'end' }"
+        :ui="{ content: 'w-56' }"
+      >
+        <UButton
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          icon="i-lucide-circle-user"
+          :label="user?.pseudo"
+          trailing-icon="i-lucide-chevron-down"
+          :ui="{ label: 'hidden sm:inline' }"
+          :aria-label="`Menu de ${user?.pseudo}`"
+        />
+      </UDropdownMenu>
 
       <template v-if="header?.links">
         <UButton
