@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { parseDate, type CalendarDate } from '@internationalized/date'
 import type { ValeursControle } from '~~/shared/types/controles'
 import type { FiltreQuiz, MatiereCatalogue } from '~~/shared/types/quiz'
 
@@ -25,6 +26,26 @@ const emit = defineEmits<{ valider: [valeurs: ValeursControle] }>()
 
 const titre = ref(props.initial.titre)
 const jour = ref(props.initial.jour)
+
+/**
+ * Le jour, tel que le champ et le calendrier de Nuxt UI le manipulent. Une
+ * `CalendarDate` n'a ni heure ni fuseau : c'est exactement la date de
+ * calendrier que le serveur attend, « AAAA-MM-JJ », sans conversion qui la
+ * ferait glisser d'un jour.
+ */
+const date = computed<CalendarDate | undefined>({
+  get: () => {
+    try {
+      return jour.value ? parseDate(jour.value) : undefined
+    } catch {
+      return undefined
+    }
+  },
+  set: (valeur) => {
+    jour.value = valeur ? valeur.toString() : ''
+  }
+})
+const calendrier = useTemplateRef('calendrier')
 const filtre = ref<FiltreQuiz>({
   matiere: props.initial.matiere,
   themes: [...props.initial.themes],
@@ -78,11 +99,32 @@ function valider() {
         label="Date"
         required
       >
-        <UInput
-          v-model="jour"
-          type="date"
+        <UInputDate
+          ref="calendrier"
+          v-model="date"
+          locale="fr-FR"
           class="w-full"
-        />
+        >
+          <template #trailing>
+            <UPopover :reference="calendrier?.inputsRef[3]?.$el">
+              <UButton
+                color="neutral"
+                variant="link"
+                size="sm"
+                icon="i-lucide-calendar"
+                aria-label="Choisir la date dans un calendrier"
+                class="px-0"
+              />
+              <template #content>
+                <UCalendar
+                  v-model="date"
+                  locale="fr-FR"
+                  class="p-2"
+                />
+              </template>
+            </UPopover>
+          </template>
+        </UInputDate>
       </UFormField>
     </div>
 
