@@ -117,7 +117,13 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
     // La dette est relue ici et non au tirage : une séance « ce que j'ai raté »
     // ouverte il y a une heure ne doit pas piocher sa reprise dans la dette
     // d'alors, et sans elle le filtre ne rendrait aucun candidat.
-    const candidats = filtrer(banque.interrogeables, lireFiltre(ligne.filtre), questionsEnDette(db, uid))
+    const filtre = lireFiltre(ligne.filtre)
+    // Une séance de révisions reprend dans ce qui reste dû aujourd'hui. Le
+    // fuseau n'accompagne pas la réponse : la fin de journée est celle du site,
+    // ce qui ne décale au pire que d'une heure ou deux le bord du tas.
+    const candidats = filtrer(banque.interrogeables, filtre, questionsEnDette(db, uid),
+      filtre.nonAcquises ? questionsTrouvees(db, uid) : undefined,
+      filtre.aRevoir ? questionsARevoir(db, uid, banque, maintenantPour(event).fin) : undefined)
     const similaire = choisirSimilaire(candidats, candidate, dejaVues)
     etat.entrees.push({
       question: similaire.entree.id,

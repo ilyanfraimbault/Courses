@@ -4,7 +4,9 @@ export default defineAppConfig({
   ui: {
     colors: {
       primary: 'green',
-      neutral: 'slate'
+      // zinc, un gris neutre, comme les modèles de Nuxt UI. slate tirait sur le
+      // bleu, et le fond sombre se lisait bleu nuit plutôt que gris.
+      neutral: 'zinc'
     },
     footer: {
       slots: {

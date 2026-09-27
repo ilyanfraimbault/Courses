@@ -1,6 +1,6 @@
 # Où en est le projet
 
-Dernière mise à jour : 13 septembre 2026.
+Dernière mise à jour : 27 septembre 2026.
 
 ## En ligne
 
@@ -61,6 +61,18 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   point de cours n'y a plus de case, il arrive par ce lien et s'y affiche nommé.
   Voir `docs/domaines.md`.
 
+- **Contrôles** (`/mes-controles`) : une date, une matière, un programme coché sur
+  le plan du cours, et une feuille de route recalculée à chaque lecture — ce qu'il
+  reste à apprendre découpé en journées d'environ dix questions, l'examen blanc
+  (un QCM composé de vingt questions) l'avant-veille, la dette la veille. La
+  séance du jour ne pose que ce qui n'est pas su. Voir `docs/controles.md`.
+- **Révision espacée** : une question sue revient à 1, 3, 7, 16, 35 et 90 jours,
+  déduite de l'histoire sans table à elle. L'accueil s'appelle « Aujourd'hui » et
+  commence par ce qu'il y a à faire : contrôles, révisions, dette, chacun avec son
+  bouton de séance. Voir `docs/revisions.md`.
+- **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
+  PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes
+  silencieuses.
 - To-do manuelle à trois niveaux — chapitre, fiche, bloc — réordonnable par
   glisser ou par flèches, aux deux niveaux.
 - Tableau de bord « où j'en suis », page « mes résultats », export et import
@@ -153,6 +165,15 @@ installation globale, `import()` ne suivant pas `NODE_PATH`.
 fiches, les QCM et la to-do, pas les séances de quiz. Le format est partagé avec
 le portfolio d'origine ; l'y ajouter serait un champ facultatif de plus, à faire
 le jour où une sauvegarde des séances aura de la valeur.
+
+**Deux rappels de la réplique du QCM visent un cours sans ancre**
+(`qcm-r-usuelles`, `qcm-r-equations`) : leurs huit questions tombent dans « Le
+reste du chapitre » des fonctions usuelles. Ils couvrent chacun plusieurs
+sections ; leur choisir une ancre est une décision de contenu.
+
+**La reprise d'une révision ratée se compte sur la journée du site**, pas sur
+celle de l'élève : la réponse au quiz ne porte pas de fuseau. Au pire, le bord
+du tas des questions dues se décale d'une heure ou deux.
 
 **Le classement des entêtes est à tenir à jour.** Un bloc dont l'entête est une
 introduction pédagogique porte `entete="introduction"` ; sans attribut, le quiz

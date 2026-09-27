@@ -162,6 +162,19 @@ export interface FiltreQuiz {
    */
   erreurs?: boolean
   /**
+   * Ne tirer que ce qui n'est pas encore su : jamais trouvé, ou trouvé puis raté
+   * depuis. Il ne se coche pas à l'écran du quiz ; c'est la séance du jour d'un
+   * contrôle qui le demande, pour poser ce qui reste à apprendre plutôt que ce
+   * qu'on sait déjà. Se croise avec la sélection, comme la dette.
+   */
+  nonAcquises?: boolean
+  /**
+   * Ne tirer que les révisions du jour : les questions sues dont l'échéance de
+   * révision espacée est tombée. Comme `nonAcquises`, il ne se coche pas à
+   * l'écran du quiz — c'est la page d'accueil qui ouvre ces séances.
+   */
+  aRevoir?: boolean
+  /**
    * Des points de cours précis. Ils ne se cochent pas à la main — la liste des
    * sections a remplacé la leur — mais un lien venu de « Mes domaines » en
    * désigne un, et les séances ouvertes avant ce changement en portaient. Ils

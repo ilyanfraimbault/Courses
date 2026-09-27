@@ -324,6 +324,40 @@ const MIGRATIONS: string[] = [
   ) STRICT;
 
   CREATE INDEX qcm_compose_copie_par_qcm ON qcm_compose_copie (compose_id, t DESC);
+  `,
+
+  // v7 — les contrôles.
+  //
+  // Un contrôle est une date, une matière et un programme. Il ne retient ni
+  // questions ni feuille de route : ce qui est su, ce qui reste et comment
+  // l'étaler d'ici au jour J se recalculent à chaque lecture, depuis la même
+  // mémoire que le reste du site. Une feuille de route stockée vieillirait dès
+  // la première séance faite ailleurs.
+  `
+  CREATE TABLE controle (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    utilisateur_id INTEGER NOT NULL,
+    titre          TEXT    NOT NULL,
+    matiere        TEXT    NOT NULL,
+    -- Le jour de l'épreuve, « AAAA-MM-JJ » : une date de calendrier et non un
+    -- instant, qui glisserait d'un jour selon le fuseau de qui la lit.
+    jour           TEXT    NOT NULL,
+    -- { themes, sections } : les clés du filtre du quiz. Vide = toute la matière.
+    programme      TEXT    NOT NULL,
+    -- Le dernier examen blanc composé pour ce contrôle. C'est un QCM composé
+    -- comme un autre : le supprimer dans « Mes QCM » détache le lien sans
+    -- toucher au contrôle.
+    examen_blanc   INTEGER REFERENCES qcm_compose(id) ON DELETE SET NULL,
+    -- La note obtenue, une fois l'épreuve passée. Le barème l'accompagne : un
+    -- 14 ne se lit pas sans lui.
+    note           REAL,
+    bareme         REAL,
+    cree_le        INTEGER NOT NULL,
+    maj            INTEGER NOT NULL,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT;
+
+  CREATE INDEX controle_par_utilisateur ON controle (utilisateur_id, jour);
   `
 ]
 

@@ -245,7 +245,13 @@ export async function chargerBanque(event: H3Event): Promise<Banque> {
  * choisi au-dessus, et prend toute la dette quand rien n'est coché. C'est ce
  * qu'on attend d'une case « seulement » — et l'écran l'écrit ainsi.
  */
-export function filtrer(entrees: EntreeBanque[], filtre: FiltreQuiz, enDette?: Set<string>): EntreeBanque[] {
+export function filtrer(
+  entrees: EntreeBanque[],
+  filtre: FiltreQuiz,
+  enDette?: Set<string>,
+  trouvees?: Set<string>,
+  aRevoir?: Set<string>
+): EntreeBanque[] {
   // La matière n'est pas un axe de plus : c'est le cadre. Elle se croise avec
   // tout le reste, si bien que « rien de coché » prend la matière entière et
   // non le site entier — et que la dette d'une autre matière ne s'invite pas.
@@ -263,15 +269,31 @@ export function filtrer(entrees: EntreeBanque[], filtre: FiltreQuiz, enDette?: S
     ? entrees
     : entrees.filter(e =>
         (e.theme && themes.has(e.theme))
-        || (e.section && sections.has(e.section))
+        || sections.has(cleSection(e))
         || (e.notionCle && notions.has(e.notionCle)))
 
-  if (!filtre.erreurs) return choisies
-  return enDette ? choisies.filter(e => enDette.has(e.id)) : []
+  if (filtre.erreurs) return enDette ? choisies.filter(e => enDette.has(e.id)) : []
+  // Les révisions du jour : ce qui est su et dont l'échéance est tombée.
+  if (filtre.aRevoir) return aRevoir ? choisies.filter(e => aRevoir.has(e.id)) : []
+  // « Ce qui me manque » : jamais trouvée, ou trouvée puis ratée depuis. C'est
+  // le tamis de la séance du jour d'un contrôle, qui doit poser ce qui reste à
+  // apprendre et non ce qui est déjà su. Sans la mémoire des réussites, on ne
+  // sait rien écarter : on garde tout plutôt que de ne rien servir.
+  if (filtre.nonAcquises && trouvees) return choisies.filter(e => !trouvees.has(e.id) || !!enDette?.has(e.id))
+  return choisies
 }
 
 /** La case du catalogue où tombent les questions sans section. */
 const RESTE = 'reste'
+
+/**
+ * La case du plan où tombe une question : sa section, ou le reste de son
+ * chapitre. Le catalogue et le filtre la calculent au même endroit — sans quoi
+ * la case « le reste du chapitre », une fois cochée, ne retiendrait rien.
+ */
+export function cleSection(e: EntreeBanque): string {
+  return e.section ?? `${e.theme ?? 'divers'}#${RESTE}`
+}
 
 /**
  * Le catalogue : les chapitres, leurs sections, et de quoi les compter.
@@ -319,7 +341,7 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
     }
 
     const sections = chapitre.sections
-    const cle = e.section ?? `${theme}#${RESTE}`
+    const cle = cleSection(e)
     const compte = sections.get(cle) ?? {
       titre: e.section ? e.sectionTitre ?? cle : 'Le reste du chapitre',
       ordre: e.section ? e.sectionOrdre : 1000,

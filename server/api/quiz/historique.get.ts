@@ -60,11 +60,16 @@ export default defineEventHandler(async (event): Promise<HistoriqueQuiz> => {
   function intitules(filtre: ResumeSessionQuiz['filtre']): string[] {
     const noms = [
       ...filtre.themes.map(t => banque.chapitres.get(t)?.titre ?? t),
-      ...filtre.sections.map(s => banque.entrees.find(e => e.section === s)?.sectionTitre ?? s),
+      ...filtre.sections.map((s) => {
+        const e = banque.entrees.find(q => cleSection(q) === s)
+        return e ? e.sectionTitre ?? 'Le reste du chapitre' : s
+      }),
       ...(filtre.notions ?? []).map(n => banque.entrees.find(e => e.notionCle === n)?.notionTitre ?? n.split('#').pop() ?? n)
     ]
     const tout = filtre.matiere ? 'Toute la matière' : 'Tout le programme'
     if (filtre.erreurs) return noms.length ? [...noms, 'ce qui restait en dette'] : ['Ce que j\'ai raté']
+    if (filtre.aRevoir) return ['Révisions du jour', ...noms]
+    if (filtre.nonAcquises) return noms.length ? [...noms, 'ce qui n\'était pas encore su'] : ['Ce qui n\'était pas encore su']
     return noms.length ? noms : [tout]
   }
 

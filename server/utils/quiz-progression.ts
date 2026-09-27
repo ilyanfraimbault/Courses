@@ -51,3 +51,18 @@ export function reporterSurLaFiche(
           maj = excluded.maj
   `).run(uid, entree.chemin, entree.bloc, entree.label, lettre, maj, maj)
 }
+
+/**
+ * Les identités « /chemin#bloc#label » trouvées un jour, où que ce soit.
+ *
+ * Le quiz ne s'en sert pas pour composer sa file — il repose volontiers une
+ * question déjà trouvée, et une séance n'arrive jamais pré-remplie. Elle ne sert
+ * qu'à **choisir** quand on le demande : la séance du jour d'un contrôle veut ce
+ * qui reste à apprendre, pas ce qui est su.
+ */
+export function questionsTrouvees(db: DatabaseSync, uid: number): Set<string> {
+  const lignes = db.prepare(`
+    SELECT chemin, bloc, label FROM reussite WHERE utilisateur_id = ?
+  `).all(uid) as unknown as { chemin: string, bloc: string, label: string }[]
+  return new Set(lignes.map(l => composerIdentite(l.chemin, l.bloc, l.label)))
+}

@@ -7,6 +7,8 @@ interface CorpsSession {
   sections?: unknown
   notions?: unknown
   erreurs?: unknown
+  nonAcquises?: unknown
+  aRevoir?: unknown
   taille?: unknown
 }
 
@@ -35,7 +37,9 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
     sections: listeDeChaines(corps?.sections),
     // Un point de cours précis, tel que « Mes domaines » le désigne par lien.
     notions: listeDeChaines(corps?.notions),
-    erreurs: corps?.erreurs === true
+    erreurs: corps?.erreurs === true,
+    nonAcquises: corps?.nonAcquises === true,
+    aRevoir: corps?.aRevoir === true
   }
 
   const demandee = Number(corps?.taille)
@@ -46,13 +50,21 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   const db = useBase()
   const banque = await chargerBanque(event)
   const enDette = questionsEnDette(db, uid)
-  const candidats = filtrer(banque.interrogeables, filtre, enDette)
+  const trouvees = filtre.nonAcquises ? questionsTrouvees(db, uid) : undefined
+  // L'échéance se compte jusqu'à la fin de la journée **de l'élève** : le
+  // client passe son fuseau en adresse, comme pour les contrôles.
+  const aRevoir = filtre.aRevoir ? questionsARevoir(db, uid, banque, maintenantPour(event).fin) : undefined
+  const candidats = filtrer(banque.interrogeables, filtre, enDette, trouvees, aRevoir)
   if (!candidats.length) {
     throw createError({
       statusCode: 400,
       statusMessage: filtre.erreurs
         ? 'aucune question ratée ne correspond à cette sélection'
-        : 'aucune question ne correspond à cette sélection'
+        : filtre.nonAcquises
+          ? 'tout est déjà su dans cette sélection'
+          : filtre.aRevoir
+            ? 'rien à revoir aujourd\'hui dans cette sélection'
+            : 'aucune question ne correspond à cette sélection'
     })
   }
 

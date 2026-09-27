@@ -27,6 +27,12 @@ const props = defineProps<{
    */
   catalogue: MatiereCatalogue
   modelValue: FiltreQuiz
+  /**
+   * « programme » quand on ne choisit pas une séance mais ce sur quoi porte un
+   * contrôle : la dette n'y a pas de sens — un programme ne change pas selon ce
+   * qu'on a raté — et le compte ne parle plus de séance.
+   */
+  mode?: 'seance' | 'programme'
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [filtre: FiltreQuiz] }>()
@@ -153,6 +159,7 @@ defineExpose({ disponibles })
          posé sur la sélection. D'où sa place au-dessus de la liste, et le mot
          « seulement » dans son libellé. -->
     <button
+      v-if="mode !== 'programme'"
       type="button"
       role="checkbox"
       :aria-checked="!!modelValue.erreurs"
@@ -191,9 +198,16 @@ defineExpose({ disponibles })
       />
     </button>
 
-    <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+    <div
+      class="flex flex-wrap items-center justify-between gap-2"
+      :class="mode !== 'programme' && 'mt-4'"
+    >
       <p class="m-0 text-sm text-muted">
-        <template v-if="vierge">
+        <template v-if="vierge && mode === 'programme'">
+          Rien de coché : le contrôle porte sur toute la matière,
+          <strong class="text-highlighted tabular-nums">{{ catalogue.questions }}</strong> questions.
+        </template>
+        <template v-else-if="vierge">
           Rien de coché : la séance pioche dans
           <strong class="text-highlighted tabular-nums">{{ catalogue.questions }}</strong> questions,
           toute la matière.

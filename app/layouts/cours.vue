@@ -29,9 +29,13 @@ watch(repliee, (valeur) => {
 
 <template>
   <UContainer>
-    <UPage :ui="{ left: repliee ? 'lg:hidden' : '' }">
+    <!-- La barre a sa propre colonne, de largeur fixe. Elle était taillée à
+         `w-72` dans une grille de dix colonnes dont elle n'occupe que deux :
+         mesuré à 1024 pixels de large, elle finissait à 304 quand le titre de
+         la page commençait à 232, et masquait sa première lettre. -->
+    <UPage :ui="repliee ? { left: 'lg:hidden' } : { root: 'lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]', left: 'lg:col-span-1', center: 'lg:col-span-1' }">
       <template #left>
-        <UPageAside :ui="{ root: 'lg:w-72' }">
+        <UPageAside>
           <div class="mb-3 flex items-start justify-between gap-2">
             <!-- La matière en tête : c'est elle qui dit de quel cours sont les
                  chapitres ci-dessous, et elle mène à son sommaire. -->

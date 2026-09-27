@@ -6,6 +6,7 @@ const { loggedIn, user, clear } = useUserSession()
 
 const liens = [
   { label: 'Cours', to: '/cours', icon: 'i-lucide-library' },
+  { label: 'Contrôles', to: '/mes-controles', icon: 'i-lucide-calendar-check' },
   { label: 'Quiz', to: '/quiz', icon: 'i-lucide-zap' },
   { label: 'Mes QCM', to: '/mes-qcm', icon: 'i-lucide-list-plus' },
   { label: 'Ma to-do', to: '/ma-to-do', icon: 'i-lucide-list-checks' },
@@ -41,7 +42,7 @@ async function deconnecter() {
         class="lg:hidden"
       />
 
-      <!-- Six entrées ne tiennent pas avec leur libellé avant les grands
+      <!-- Sept entrées ne tiennent pas avec leur libellé avant les grands
            écrans : en dessous, l'icône seule, et le libellé en info-bulle. -->
       <div
         v-if="loggedIn"
