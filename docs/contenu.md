@@ -41,6 +41,35 @@ donne 473 questions rendues pour 473 comptées.
 La borne exacte d'apparition du défaut (3.10 ou 3.11) n'a pas été cherchée :
 3.9.0 est la dernière version dont le rendu est vérifié en production.
 
+## Le contrôle en une commande
+
+```bash
+pnpm dev                                 # ou pnpm build : il écrit la base de contenu
+pnpm verif:contenu                       # tout le site
+pnpm verif:contenu /cours/a1/remise-a-niveau-maths --rendu   # une matière, rendu compris
+```
+
+`scripts/verifier-contenu.mjs` rassemble les témoins décrits plus bas, et en
+ajoute : il parcourt l'arbre que le build a produit — pas la source — et
+cherche une question hors bloc ou sans label, deux questions à la même identité,
+deux blocs au même titre, un `bonne` qui ne désigne aucune proposition écrite,
+une lettre manquante au milieu des propositions, un `cours=` sans extrait, une
+`source` d'extrait vers une ancre qui n'existe pas, une carte de lien vers une
+page absente ou qui annonce un compte faux, un dossier sans `index.md`, un
+frontmatter qui ne se lit plus. Il recoupe ses comptes avec ceux du build, et
+avec `--rendu` compte les questions dans le HTML servi.
+
+Il sort en erreur sur une erreur. Ses avertissements signalent ce qui marche
+mais dessert — une question sans indice. Aujourd'hui : **aucune erreur**,
+353 questions dont 312 au quiz, 44 cartes dont le compte tombe juste, et 35
+avertissements, tous connus : les 33 questions des contrôles express du cours de
+trigonométrie n'ont pas d'indice, et deux rappels de la réplique du QCM visent le
+cours des fonctions usuelles sans ancre — leurs huit questions tombent dans « Le
+reste du chapitre ».
+
+C'est le contrôle que le skill `importer-cours` (`.claude/skills/`) fait passer
+à tout cours importé.
+
 ## Vérifier que le contenu se rend en entier
 
 Le hook `content:file:afterParse` de `nuxt.config.ts` compte les questions de

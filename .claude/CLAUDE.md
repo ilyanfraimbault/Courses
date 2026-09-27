@@ -188,8 +188,10 @@ est d'être relancées quand on touche au schéma ou aux routes. La configuratio
 `cours-verif` de `.claude/launch.json` lance le serveur avec un code
 d'inscription et une base à part (`.data/verif/`), ce qu'elles demandent.
 
-Le contrôle qui compte pour le contenu — rendu contre comptage du build — est
-dans `docs/contenu.md`. Aujourd'hui : **353 questions rendues sur 353**, et les
+Le contrôle qui compte pour le contenu tient en une commande, serveur lancé :
+`pnpm verif:contenu --rendu` — rendu contre comptage du build, et toutes les
+pannes silencieuses du contenu. Voir `docs/contenu.md`. Un nouveau cours arrive
+par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : **353 questions rendues sur 353**, et les
 15 fiches portent leur `type`.
 
 ## Où lire la suite
