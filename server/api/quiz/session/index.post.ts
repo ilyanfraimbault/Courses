@@ -7,6 +7,7 @@ interface CorpsSession {
   sections?: unknown
   notions?: unknown
   erreurs?: unknown
+  nonAcquises?: unknown
   taille?: unknown
 }
 
@@ -35,7 +36,8 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
     sections: listeDeChaines(corps?.sections),
     // Un point de cours précis, tel que « Mes domaines » le désigne par lien.
     notions: listeDeChaines(corps?.notions),
-    erreurs: corps?.erreurs === true
+    erreurs: corps?.erreurs === true,
+    nonAcquises: corps?.nonAcquises === true
   }
 
   const demandee = Number(corps?.taille)
@@ -46,13 +48,16 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   const db = useBase()
   const banque = await chargerBanque(event)
   const enDette = questionsEnDette(db, uid)
-  const candidats = filtrer(banque.interrogeables, filtre, enDette)
+  const trouvees = filtre.nonAcquises ? questionsTrouvees(db, uid) : undefined
+  const candidats = filtrer(banque.interrogeables, filtre, enDette, trouvees)
   if (!candidats.length) {
     throw createError({
       statusCode: 400,
       statusMessage: filtre.erreurs
         ? 'aucune question ratée ne correspond à cette sélection'
-        : 'aucune question ne correspond à cette sélection'
+        : filtre.nonAcquises
+          ? 'tout est déjà su dans cette sélection'
+          : 'aucune question ne correspond à cette sélection'
     })
   }
 
