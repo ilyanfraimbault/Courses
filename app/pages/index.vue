@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ResumeControle } from '~~/shared/types/controles'
 import { niveauxDuChemin } from '~~/shared/utils/niveaux'
 
 definePageMeta({ layout: 'cours' })
@@ -6,6 +7,16 @@ definePageMeta({ layout: 'cours' })
 const comptes = useComptesQuestions()
 const resume = useResumeProgression()
 const { items: todo } = useTodo()
+
+/**
+ * Les contrôles à venir, en tête de page : c'est ce qui dit quoi faire
+ * aujourd'hui. Données du compte, donc lues au montage seulement.
+ */
+const { data: controles } = await useLazyFetch<ResumeControle[]>('/api/controles', {
+  server: false,
+  query: { fuseau: fuseauLocal() }
+})
+const prochains = computed(() => (controles.value ?? []).filter(c => c.joursRestants >= 0).slice(0, 3))
 
 /**
  * Toutes les pages du contenu : les fiches qui portent des questions, et les
@@ -127,10 +138,72 @@ useSeoMeta({ title: 'Où j\'en suis' })
   <UPage>
     <UPageHeader
       title="Où j'en suis"
-      :description="`${avancement.reussies} questions trouvées sur ${avancement.total}, toutes matières confondues.`"
+      :description="`${avancement.reussies} question${avancement.reussies > 1 ? 's' : ''} trouvée${avancement.reussies > 1 ? 's' : ''} sur ${avancement.total}, toutes matières confondues.`"
     />
 
     <UPageBody>
+      <div
+        v-if="prochains.length"
+        class="mb-8"
+      >
+        <div class="flex items-center gap-2">
+          <h2 class="m-0 flex-1 text-lg font-medium text-highlighted">
+            Tes prochains contrôles
+          </h2>
+          <UButton
+            to="/mes-controles"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            trailing-icon="i-lucide-chevron-right"
+            label="Tous"
+          />
+        </div>
+        <div class="mt-3 flex flex-col gap-2">
+          <ULink
+            v-for="c in prochains"
+            :key="c.id"
+            :to="`/mes-controles/${c.id}`"
+            class="group flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-default px-4 py-3 transition-colors hover:border-primary/60 hover:bg-elevated/50"
+          >
+            <UIcon
+              name="i-lucide-calendar-check"
+              class="size-5 shrink-0 text-primary"
+            />
+            <span class="min-w-0 flex-1">
+              <span class="block font-medium text-highlighted group-hover:text-primary">{{ c.titre }}</span>
+              <span class="block text-xs text-muted">
+                {{ consigneDuJour(c) }} · prêt à {{ partSue(c.etat) }} %
+              </span>
+            </span>
+            <UBadge
+              :color="c.joursRestants <= 2 ? 'error' : c.joursRestants <= 7 ? 'warning' : 'neutral'"
+              variant="subtle"
+              :label="echeance(c.joursRestants)"
+            />
+          </ULink>
+        </div>
+      </div>
+      <div
+        v-else-if="controles"
+        class="mb-8 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-default px-4 py-3"
+      >
+        <UIcon
+          name="i-lucide-calendar-plus"
+          class="size-5 shrink-0 text-dimmed"
+        />
+        <p class="m-0 min-w-0 flex-1 text-sm text-muted">
+          Un contrôle en vue ? Déclare-le, et le site te dira chaque jour quoi réviser d'ici là.
+        </p>
+        <UButton
+          to="/mes-controles/nouveau"
+          size="sm"
+          variant="subtle"
+          icon="i-lucide-plus"
+          label="Nouveau contrôle"
+        />
+      </div>
+
       <UProgress
         size="md"
         :color="avancement.pourcentage === 100 ? 'success' : 'primary'"

@@ -127,6 +127,13 @@ chapitre**, une case « le reste » servant au besoin de solde. Le point de cour
 survit sous la section, invisible dans la liste : c'est lui que « Mes domaines »
 désigne par lien, et il s'affiche alors nommé.
 
+**Un contrôle ne stocke ni questions ni feuille de route.** Une date, une
+matière, un programme dans la nomenclature du quiz — et c'est tout. Ce qui est
+su, ce qui reste et comment l'étaler d'ici au jour J se recalculent à chaque
+lecture depuis `reussite` et `faute`, dans le fuseau de l'élève. La journée se
+découpe sur ce qu'il restait **ce matin**, pour que la finir ne fasse pas
+glisser demain dedans. Voir `docs/controles.md`.
+
 **Le serveur est maître des règles.** Le plafond de 24 tentatives par QCM,
 l'agrégation d'un chapitre sur ses fiches, l'unicité d'une cible de to-do : tout
 est appliqué en base, pas au client. Une règle vit à un seul endroit.
@@ -173,6 +180,7 @@ node scripts/verifier-comptes.mjs   # inscription, connexion, isolation entre co
 node scripts/verifier-api.mjs       # progression, QCM, to-do, export
 pnpm verif:quiz                     # banque, filtres, file du quiz, isolation
 pnpm verif:quiz:rendu               # le quiz dans un vrai navigateur (Playwright)
+pnpm verif:controles                # feuille de route, séance du jour, examen blanc
 ```
 
 Elles ne sont pas dans la CI : elles ont besoin d'une base réelle, et leur rôle
@@ -193,6 +201,8 @@ dans `docs/contenu.md`. Aujourd'hui : **353 questions rendues sur 353**, et les
 - `docs/domaines.md` — la progression rangée par point de cours : d'où viennent
   les domaines, ce que les deux segments d'une barre veulent dire, et pourquoi
   le relevé porte les 353 questions et non les seules 312 du quiz.
+- `docs/controles.md` — les contrôles : le programme, la feuille de route et
+  son découpage, l'examen blanc, le fuseau de l'élève.
 - `docs/mes-qcm.md` — les QCM composés : pourquoi en base plutôt qu'en fichier,
   ce qu'ils empruntent aux fiches, et les règles tenues au serveur.
 - `docs/comptes.md` — comptes, hachage, isolation des données.
