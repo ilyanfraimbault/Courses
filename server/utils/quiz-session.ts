@@ -59,6 +59,7 @@ export function lireFiltre(json: string): FiltreQuiz {
       sections: chaines(brut?.sections),
       erreurs: brut?.erreurs === true,
       nonAcquises: brut?.nonAcquises === true,
+      aRevoir: brut?.aRevoir === true,
       // Hérité : les séances ouvertes quand le second niveau de la sélection
       // était le rappel de cours visé. On les relit telles quelles pour qu'une
       // séance en cours au moment d'une mise en ligne garde ses candidats

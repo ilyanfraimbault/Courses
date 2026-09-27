@@ -361,11 +361,15 @@ function examenBlanc(db: DatabaseSync, banque: Banque, ligne: LigneControle): Ex
   }
 }
 
-/** Le moment présent, vu par l'élève : le jour qu'il est chez lui, et l'instant où ce jour a commencé. */
-export function maintenantPour(event: H3Event): { aujourdhui: string, debut: number } {
+/**
+ * Le moment présent, vu par l'élève : le jour qu'il est chez lui, et les
+ * instants où ce jour commence et finit. Le fuseau vient de `?fuseau=` ; sans
+ * lui, celui du site.
+ */
+export function maintenantPour(event: H3Event): { aujourdhui: string, debut: number, fin: number } {
   const fuseau = fuseauValide(getQuery(event).fuseau)
   const aujourdhui = jourDe(Date.now(), fuseau)
-  return { aujourdhui, debut: debutDuJour(aujourdhui, fuseau) }
+  return { aujourdhui, debut: debutDuJour(aujourdhui, fuseau), fin: debutDuJour(decalerJour(aujourdhui, 1), fuseau) }
 }
 
 /**

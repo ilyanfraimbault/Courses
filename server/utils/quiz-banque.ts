@@ -249,7 +249,8 @@ export function filtrer(
   entrees: EntreeBanque[],
   filtre: FiltreQuiz,
   enDette?: Set<string>,
-  trouvees?: Set<string>
+  trouvees?: Set<string>,
+  aRevoir?: Set<string>
 ): EntreeBanque[] {
   // La matière n'est pas un axe de plus : c'est le cadre. Elle se croise avec
   // tout le reste, si bien que « rien de coché » prend la matière entière et
@@ -272,6 +273,8 @@ export function filtrer(
         || (e.notionCle && notions.has(e.notionCle)))
 
   if (filtre.erreurs) return enDette ? choisies.filter(e => enDette.has(e.id)) : []
+  // Les révisions du jour : ce qui est su et dont l'échéance est tombée.
+  if (filtre.aRevoir) return aRevoir ? choisies.filter(e => aRevoir.has(e.id)) : []
   // « Ce qui me manque » : jamais trouvée, ou trouvée puis ratée depuis. C'est
   // le tamis de la séance du jour d'un contrôle, qui doit poser ce qui reste à
   // apprendre et non ce qui est déjà su. Sans la mémoire des réussites, on ne

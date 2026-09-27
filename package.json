@@ -15,6 +15,7 @@
     "verif:quiz:rendu": "node scripts/verifier-rendu-quiz.mjs",
     "verif:controles": "node scripts/verifier-controles.mjs",
     "verif:contenu": "node scripts/verifier-contenu.mjs",
+    "verif:revisions": "node scripts/verifier-revisions.mjs",
     "import:resultats": "node scripts/importer-resultats.mjs",
     "verif:comptes": "node scripts/verifier-comptes.mjs"
   },

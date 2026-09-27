@@ -2,8 +2,9 @@
 
 Cahier de révisions personnel, rangé par année puis par matière : fiches de
 cours, exercices corrigés et QCM, un mode quiz qui pioche dans leurs questions,
-des QCM qu'on compose soi-même à partir d'elles, avec suivi de progression,
-to-do et tableau de bord. Nuxt 4, Nuxt UI, Nuxt Content, SQLite, déployé en
+des QCM qu'on compose soi-même à partir d'elles, des contrôles avec leur
+feuille de route, la révision espacée de ce qui est su, avec suivi de
+progression, to-do et tableau de bord. Nuxt 4, Nuxt UI, Nuxt Content, SQLite, déployé en
 conteneur sur un VPS Hostinger.
 
 Le contenu est en **français**, l'interface est en français, et **le code aussi**
@@ -134,6 +135,12 @@ lecture depuis `reussite` et `faute`, dans le fuseau de l'élève. La journée s
 découpe sur ce qu'il restait **ce matin**, pour que la finir ne fasse pas
 glisser demain dedans. Voir `docs/controles.md`.
 
+**La révision espacée ne s'écrit pas, elle se déduit.** Palier et échéance
+d'une question se rejouent à chaque lecture depuis `reussite`, `faute`,
+`quiz_reponse` et les copies de QCM. Une table de révision demanderait un
+événement de plus à chaque bonne réponse, sur chaque écran — la première route
+qui l'oublierait la désaccorderait en silence. Voir `docs/revisions.md`.
+
 **Le serveur est maître des règles.** Le plafond de 24 tentatives par QCM,
 l'agrégation d'un chapitre sur ses fiches, l'unicité d'une cible de to-do : tout
 est appliqué en base, pas au client. Une règle vit à un seul endroit.
@@ -181,6 +188,7 @@ node scripts/verifier-api.mjs       # progression, QCM, to-do, export
 pnpm verif:quiz                     # banque, filtres, file du quiz, isolation
 pnpm verif:quiz:rendu               # le quiz dans un vrai navigateur (Playwright)
 pnpm verif:controles                # feuille de route, séance du jour, examen blanc
+pnpm verif:revisions                # paliers, échéances, séance de révisions
 ```
 
 Elles ne sont pas dans la CI : elles ont besoin d'une base réelle, et leur rôle
@@ -205,6 +213,8 @@ par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : 
   le relevé porte les 353 questions et non les seules 312 du quiz.
 - `docs/controles.md` — les contrôles : le programme, la feuille de route et
   son découpage, l'examen blanc, le fuseau de l'élève.
+- `docs/revisions.md` — la révision espacée, déduite de l'histoire, et
+  l'accueil « Aujourd'hui ».
 - `docs/mes-qcm.md` — les QCM composés : pourquoi en base plutôt qu'en fichier,
   ce qu'ils empruntent aux fiches, et les règles tenues au serveur.
 - `docs/comptes.md` — comptes, hachage, isolation des données.
