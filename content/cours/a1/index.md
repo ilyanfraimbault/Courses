@@ -7,3 +7,6 @@ icone: i-lucide-graduation-cap
 
 ::carte-lien{to="/cours/a1/remise-a-niveau-maths" titre="Remise à niveau en maths" description="Quatre chapitres — le cours, les exercices corrigés, les révisions et l'entraînement — et des QCM de vingt questions" icone="i-lucide-sigma" meta="4 chapitres"}
 ::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur" titre="Mathématiques pour l'ingénieur" description="Le cours de l'année, chapitre par chapitre — en commençant par la logique et les raisonnements" icone="i-lucide-drafting-compass" meta="1 chapitre"}
+::
