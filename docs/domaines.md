@@ -17,8 +17,8 @@ par question, avec le chapitre déduit de la `source` de l'extrait — exactemen
 la même déduction que celle du quiz, et pour la même raison : un QCM mélange les
 chapitres exprès, donc le dossier d'une question ne dit pas de quoi elle parle.
 
-Aujourd'hui : **353 questions**, **68 domaines** répartis sur les quatre chapitres
-d'une matière. Soixante-sept d'entre eux sont des points de cours nommés ; le
+Aujourd'hui : **376 questions**, **75 domaines** répartis sur cinq chapitres de
+deux matières. Soixante-quatorze d'entre eux sont des points de cours nommés ; le
 dernier est le tas
 « Sans renvoi au cours » — **48 questions** qui ne pointent vers aucun extrait,
 regroupées par chapitre pour que la somme des domaines tombe sur le total du
@@ -96,7 +96,7 @@ vue qui range **toute** la progression ne pouvait pas s'en contenter : les 41
 questions ouvertes se cochent comme les autres, et les laisser dehors aurait
 fait afficher « 12 / 13 » sur un domaine qui en compte 15.
 
-Le relevé porte donc les 353 questions, et un champ `interrogeable` dit
+Le relevé porte donc les 376 questions, et un champ `interrogeable` dit
 lesquelles le quiz peut poser. Un seul relevé plutôt que deux côte à côte, qui
 se seraient contredits le jour où l'un aurait changé. Le catalogue du quiz, lui,
 ne compte toujours que les interrogeables : annoncer « 18 questions » sur une
@@ -123,7 +123,7 @@ progression qu'au montage — le HTML servi est le même pour tout le monde.
 
 Le contrôle qui compte est que **les comptes se réconcilient** : la somme des
 domaines d'un chapitre vaut le total du chapitre, celle des chapitres le total de
-leur matière, et celle des matières 353. Serveur en marche et compte connecté :
+leur matière, et celle des matières 376. Serveur en marche et compte connecté :
 
 ```bash
 curl -s --cookie "$COOKIE" localhost:3000/api/progression/domaines | node -e "
@@ -143,4 +143,4 @@ console.log(s, '==', d.total.questions, '|', n, 'domaines');
 "
 ```
 
-Attendu aujourd'hui : `353 == 353 | 68 domaines`.
+Attendu aujourd'hui : `376 == 376 | 75 domaines`.

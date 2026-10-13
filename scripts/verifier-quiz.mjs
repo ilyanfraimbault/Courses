@@ -26,8 +26,9 @@ const MATIERE = '/cours/a1/remise-a-niveau-maths'
 const TRIGO = MATIERE + '/trigonometrie'
 
 // Le compte de référence de la banque. Il suit le contenu : 432 avec les sept
-// QCM de contenu, 312 depuis le retrait des QCM 1 à 6 et de leurs 120 questions.
-const BANQUE = 312
+// QCM de contenu, 312 depuis le retrait des QCM 1 à 6 et de leurs 120 questions,
+// 334 avec le premier chapitre de mathématiques pour l'ingénieur.
+const BANQUE = 334
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)
@@ -564,7 +565,9 @@ r = await api('/api/quiz/session', { method: 'POST', body: { taille: 999 } })
 verifier('une taille hors bornes est refusée', r.statut === 400, 'statut ' + r.statut)
 
 console.log('\n— Étalement du tirage')
-r = await api('/api/quiz/session', { method: 'POST', body: { taille: 40 } })
+// Dans sa matière, comme la page le fait toujours : sans elle, la séance prend
+// le site entier, et le compte des chapitres dépendrait des autres matières.
+r = await api('/api/quiz/session', { method: 'POST', body: { matiere: MATIERE, taille: 40 } })
 const grande = r.corps.session
 const repartition = {}
 for (let p = 0; p < grande.taille; p++) {
