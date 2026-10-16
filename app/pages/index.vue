@@ -8,7 +8,14 @@ definePageMeta({ layout: 'cours' })
 
 const comptes = useComptesQuestions()
 const resume = useResumeProgression()
-const { items: todo } = useTodo()
+
+/**
+ * Le plafond d'une séance du jour. Les paliers de la révision espacée font
+ * monter le compte juste après une période de bachotage — trente-trois à
+ * revoir le lendemain d'un contrôle —, et l'afficher tel quel transforme
+ * l'accueil en liste de reproches. On en pose vingt, le reste glisse à demain.
+ */
+const TAILLE_SEANCE = 20
 
 /**
  * Les contrôles à venir, en tête de page : c'est ce qui dit quoi faire
@@ -27,15 +34,16 @@ const { data: revisions } = await useLazyFetch<Revisions>('/api/revisions', {
 })
 
 /**
- * La liste du jour : ce qu'un contrôle demande, ce qui revient, ce qui est en
- * dette. Rien d'autre — c'est la page qu'on ouvre pour savoir quoi faire, pas
- * pour tout voir.
+ * La liste du jour : ce qu'un contrôle demande, et une séance par matière où
+ * quelque chose attend. Rien d'autre — c'est la page qu'on ouvre pour savoir
+ * quoi faire, pas pour tout voir.
  *
- * Un contrôle n'y entre que s'il demande quelque chose aujourd'hui ; une
- * matière, que si quelque chose y revient ou y est en dette.
+ * La dette et les révisions ne font qu'une séance, pas deux boutons : l'élève
+ * n'a pas à arbitrer entre les deux, l'ordre est connu — la dette d'abord, puis
+ * ce qui revient. Le compte brut reste lisible sur « Mes domaines ».
  */
 const taches = computed(() => {
-  const liste: { cle: string, icone: string, ton: 'primary' | 'warning' | 'error', titre: string, detail: string, action: string, controle?: number, seance?: Record<string, unknown> }[] = []
+  const liste: { cle: string, icone: string, titre: string, detail: string, action: string, controle?: number, seance?: Record<string, unknown> }[] = []
   for (const c of prochains.value) {
     if (!c.aujourdhui) continue
     const consigne = consigneDuJour(c)
@@ -43,7 +51,6 @@ const taches = computed(() => {
     liste.push({
       cle: `controle-${c.id}`,
       icone: 'i-lucide-calendar-check',
-      ton: 'primary',
       titre: c.titre,
       detail: `${consigne} · ${echeance(c.joursRestants)}`,
       action: 'Ouvrir',
@@ -51,28 +58,22 @@ const taches = computed(() => {
     })
   }
   for (const m of revisions.value?.matieres ?? []) {
-    if (m.aRevoir) {
-      liste.push({
-        cle: `revoir-${m.cle}`,
-        icone: 'i-lucide-repeat',
-        ton: 'warning',
-        titre: `${m.aRevoir} question${m.aRevoir > 1 ? 's' : ''} à revoir`,
-        detail: `${m.titre} · sues, et c'est le moment de vérifier qu'elles le restent`,
-        action: 'Réviser',
-        seance: { matiere: m.cle, aRevoir: true, taille: m.aRevoir }
-      })
-    }
-    if (m.enDette) {
-      liste.push({
-        cle: `dette-${m.cle}`,
-        icone: 'i-lucide-rotate-ccw',
-        ton: 'error',
-        titre: `${m.enDette} question${m.enDette > 1 ? 's' : ''} ratée${m.enDette > 1 ? 's' : ''} à retrouver`,
-        detail: `${m.titre} · la dette, ratée quelque part et pas encore retrouvée`,
-        action: 'Reprendre',
-        seance: { matiere: m.cle, erreurs: true, taille: m.enDette }
-      })
-    }
+    if (!m.enDette && !m.aRevoir) continue
+    const dette = Math.min(m.enDette, TAILLE_SEANCE)
+    const revoir = Math.min(m.aRevoir, TAILLE_SEANCE - dette)
+    const reste = m.enDette + m.aRevoir - dette - revoir
+    const total = dette + revoir
+    const morceaux: string[] = []
+    if (dette) morceaux.push(`${dette} ratée${dette > 1 ? 's' : ''} à retrouver`)
+    if (revoir) morceaux.push(`${revoir} à revoir`)
+    liste.push({
+      cle: `seance-${m.cle}`,
+      icone: 'i-lucide-zap',
+      titre: `Ta séance · ${total} question${total > 1 ? 's' : ''}`,
+      detail: `${m.titre} · ${morceaux.join(', puis ')}${reste ? ` · ${reste} de plus attendront demain` : ''}`,
+      action: 'Lancer',
+      seance: { matiere: m.cle, erreurs: dette > 0, aRevoir: revoir > 0, taille: total }
+    })
   }
   return liste
 })
@@ -153,14 +154,10 @@ const matieres = computed(() => {
   const groupes = new Map<string, {
     cle: string
     titre: string
-    annee: string | null
     anneeChemin: string | null
-    icone: string | null
     ordre: number
     total: number
     reussies: number
-    fiches: number
-    ouvertes: number
   }>()
   for (const f of fiches.value) {
     const { annee, matiere } = niveauxDuChemin(f.chemin)
@@ -169,20 +166,14 @@ const matieres = computed(() => {
     const groupe = groupes.get(matiere) ?? {
       cle: matiere,
       titre: page?.title ?? matiere,
-      annee: annee ? parChemin.value.get(annee)?.title ?? null : null,
       anneeChemin: annee,
-      icone: page?.icone ?? null,
       ordre: page?.ordre ?? 999,
       total: 0,
-      reussies: 0,
-      fiches: 0,
-      ouvertes: 0
+      reussies: 0
     }
     const p = part(f)
     groupe.total += p.total
     groupe.reussies += p.reussies
-    groupe.fiches += 1
-    if (resume.value[f.chemin]) groupe.ouvertes += 1
     groupes.set(matiere, groupe)
   }
   return [...groupes.values()].sort((a, b) =>
@@ -197,15 +188,6 @@ function matiereDe(chemin: string): string | null {
   return matiere ? parChemin.value.get(matiere)?.title ?? null : null
 }
 
-/** Les fiches commencées mais pas finies, la plus récemment touchée d'abord. */
-const enCours = computed(() =>
-  fiches.value
-    .map(f => ({ f, etat: resume.value[f.chemin] }))
-    .filter(({ f, etat }) => etat && etat.reussies > 0 && etat.reussies < part(f).total)
-    .sort((a, b) => (b.etat!.maj ?? 0) - (a.etat!.maj ?? 0))
-    .slice(0, 4)
-)
-
 /** Où reprendre : la fiche touchée le plus récemment, finie ou non. */
 const reprendre = computed(() => {
   const candidates = fiches.value
@@ -214,11 +196,6 @@ const reprendre = computed(() => {
     .sort((a, b) => (b.etat!.maj ?? 0) - (a.etat!.maj ?? 0))
   return candidates[0] ?? null
 })
-
-const jamaisOuvertes = computed(() =>
-  fiches.value.filter(f => !resume.value[f.chemin]).length)
-
-const todoAFaire = computed(() => todo.value.filter(i => !i.fait_le).length)
 
 function pourcentage(g: { total: number, reussies: number }) {
   return g.total ? Math.round(100 * g.reussies / g.total) : 0
@@ -257,8 +234,7 @@ useSeoMeta({ title: 'Aujourd\'hui' })
           >
             <UIcon
               :name="t.icone"
-              class="size-5 shrink-0"
-              :class="{ 'text-primary': t.ton === 'primary', 'text-warning': t.ton === 'warning', 'text-error': t.ton === 'error' }"
+              class="size-5 shrink-0 text-primary"
             />
             <span class="min-w-0 flex-1">
               <span class="block font-medium text-highlighted">{{ t.titre }}</span>
@@ -275,9 +251,7 @@ useSeoMeta({ title: 'Aujourd\'hui' })
             <UButton
               v-else-if="t.seance"
               size="sm"
-              :color="t.ton"
-              :variant="t.ton === 'warning' ? 'solid' : 'subtle'"
-              icon="i-lucide-zap"
+              icon="i-lucide-play"
               :label="t.action"
               :loading="lancement === t.cle"
               @click="lancer(t.cle, t.seance)"
@@ -356,25 +330,16 @@ useSeoMeta({ title: 'Aujourd\'hui' })
           </ULink>
         </div>
       </div>
-      <div
+      <p
         v-else-if="controles"
-        class="mb-8 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-default px-4 py-3"
+        class="mb-8 text-sm text-muted"
       >
-        <UIcon
-          name="i-lucide-calendar-plus"
-          class="size-5 shrink-0 text-dimmed"
-        />
-        <p class="m-0 min-w-0 flex-1 text-sm text-muted">
-          Un contrôle en vue ? Déclare-le, et le site te dira chaque jour quoi réviser d'ici là.
-        </p>
-        <UButton
+        Un contrôle en vue ?
+        <ULink
           to="/mes-controles/nouveau"
-          size="sm"
-          variant="subtle"
-          icon="i-lucide-plus"
-          label="Nouveau contrôle"
-        />
-      </div>
+          class="text-primary"
+        >Déclare-le</ULink>, et le site te dira chaque jour quoi réviser d'ici là.
+      </p>
 
       <h2 class="m-0 text-lg font-medium text-highlighted">
         Où j'en suis
@@ -390,62 +355,22 @@ useSeoMeta({ title: 'Aujourd\'hui' })
         :max="avancement.total || 1"
       />
 
-      <div class="mt-6 grid gap-4 sm:grid-cols-3">
-        <UCard>
-          <p class="text-2xl font-medium text-highlighted tabular-nums">
-            {{ avancement.pourcentage }} %
-          </p>
-          <p class="text-sm text-muted">
-            de l'ensemble des questions
-          </p>
-        </UCard>
-        <UCard>
-          <p class="text-2xl font-medium text-highlighted tabular-nums">
-            {{ todoAFaire }}
-          </p>
-          <p class="text-sm text-muted">
-            dans la to-do,
-            <ULink
-              to="/ma-to-do"
-              class="text-primary"
-            >à faire</ULink>
-          </p>
-        </UCard>
-        <UCard>
-          <p class="text-2xl font-medium text-highlighted tabular-nums">
-            {{ jamaisOuvertes }}
-          </p>
-          <p class="text-sm text-muted">
-            fiche{{ jamaisOuvertes > 1 ? 's' : '' }} jamais ouverte{{ jamaisOuvertes > 1 ? 's' : '' }}
-          </p>
-        </UCard>
-      </div>
-
       <div class="mt-8">
         <h2 class="text-lg font-medium text-highlighted">
           Tes matières
         </h2>
-        <div class="mt-3 flex flex-col gap-3">
-          <div
+        <!-- Une ligne par matière : le titre, le score, une barre. Les actions
+             (quiz, QCM composé) ont leurs pages ; les répéter ici sur chaque
+             matière faisait de l'accueil une grille de boutons. -->
+        <div class="mt-3 flex flex-col gap-2">
+          <ULink
             v-for="matiere in matieres"
             :key="matiere.cle"
-            class="rounded-lg border border-default px-4 py-3"
+            :to="matiere.cle"
+            class="group block rounded-lg border border-default px-4 py-3 transition-colors hover:border-primary/60 hover:bg-elevated/50"
           >
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <UIcon
-                :name="matiere.icone || 'i-lucide-book-open'"
-                class="size-5 shrink-0 text-primary"
-              />
-              <ULink
-                :to="matiere.cle"
-                class="min-w-0 flex-1 group"
-              >
-                <span
-                  v-if="matiere.annee"
-                  class="block text-xs text-dimmed"
-                >{{ matiere.annee }}</span>
-                <span class="block font-medium text-highlighted group-hover:text-primary">{{ matiere.titre }}</span>
-              </ULink>
+            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span class="min-w-0 flex-1 text-sm font-medium text-highlighted group-hover:text-primary">{{ matiere.titre }}</span>
               <span class="shrink-0 text-sm text-muted tabular-nums">
                 {{ matiere.reussies }} / {{ matiere.total }} · {{ pourcentage(matiere) }} %
               </span>
@@ -457,29 +382,7 @@ useSeoMeta({ title: 'Aujourd\'hui' })
               :model-value="matiere.reussies"
               :max="matiere.total || 1"
             />
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-              <span class="me-auto text-xs text-dimmed">
-                {{ matiere.ouvertes }} fiche{{ matiere.ouvertes > 1 ? 's' : '' }} ouverte{{ matiere.ouvertes > 1 ? 's' : '' }}
-                sur {{ matiere.fiches }}
-              </span>
-              <UButton
-                size="xs"
-                color="primary"
-                variant="subtle"
-                icon="i-lucide-zap"
-                label="Quiz"
-                :to="{ path: '/quiz', query: { matiere: matiere.cle } }"
-              />
-              <UButton
-                size="xs"
-                color="neutral"
-                variant="subtle"
-                icon="i-lucide-list-plus"
-                label="Composer un QCM"
-                :to="{ path: '/mes-qcm/nouveau', query: { matiere: matiere.cle } }"
-              />
-            </div>
-          </div>
+          </ULink>
         </div>
       </div>
 
@@ -498,38 +401,6 @@ useSeoMeta({ title: 'Aujourd\'hui' })
           :type="reprendre.f.type"
           :meta="matiereDe(reprendre.f.chemin) ?? undefined"
         />
-      </div>
-
-      <div
-        v-if="enCours.length"
-        class="mt-8"
-      >
-        <h2 class="text-lg font-medium text-highlighted">
-          Commencé, pas fini
-        </h2>
-        <div class="mt-3 flex flex-col gap-2">
-          <ULink
-            v-for="{ f } in enCours"
-            :key="f.chemin"
-            :to="f.chemin"
-            class="flex items-center gap-3 rounded-lg border border-default px-3 py-2 hover:border-primary/60"
-          >
-            <UIcon
-              :name="f.icone || 'i-lucide-file-text'"
-              class="size-4 shrink-0 text-primary"
-            />
-            <span class="min-w-0 flex-1 truncate text-sm text-highlighted">
-              {{ f.title }}
-              <span
-                v-if="matieres.length > 1"
-                class="text-dimmed"
-              >· {{ matiereDe(f.chemin) }}</span>
-            </span>
-            <span class="shrink-0 text-xs text-muted tabular-nums">
-              {{ part(f).reussies }} / {{ part(f).total }}
-            </span>
-          </ULink>
-        </div>
       </div>
 
       <div class="mt-8 flex flex-wrap items-center gap-2">

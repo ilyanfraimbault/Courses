@@ -68,8 +68,9 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   séance du jour ne pose que ce qui n'est pas su. Voir `docs/controles.md`.
 - **Révision espacée** : une question sue revient à 1, 3, 7, 16, 35 et 90 jours,
   déduite de l'histoire sans table à elle. L'accueil s'appelle « Aujourd'hui » et
-  commence par ce qu'il y a à faire : contrôles, révisions, dette, chacun avec son
-  bouton de séance. Voir `docs/revisions.md`.
+  commence par ce qu'il y a à faire : la consigne de chaque contrôle, et une
+  seule séance par matière — la dette puis les révisions, vingt questions au
+  plus, un seul bouton. Voir `docs/revisions.md`.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes
   silencieuses.
