@@ -358,6 +358,23 @@ const MIGRATIONS: string[] = [
   ) STRICT;
 
   CREATE INDEX controle_par_utilisateur ON controle (utilisateur_id, jour);
+  `,
+
+  // v8 — les clôtures.
+  //
+  // Clore une matière, un chapitre ou une fiche, c'est dire « j'en ai fini ».
+  // On ne retient que le chemin : ce qu'il contient se lit dans la hiérarchie
+  // des chemins, comme partout ailleurs, et un chapitre ajouté plus tard sous
+  // une matière close y tombe sans rien réécrire. Rien n'est effacé — dette,
+  // réussites et histoire de révision restent, et rouvrir rend tout tel quel.
+  `
+  CREATE TABLE cloture (
+    utilisateur_id INTEGER NOT NULL,
+    chemin         TEXT    NOT NULL,
+    close_le       INTEGER NOT NULL,
+    PRIMARY KEY (utilisateur_id, chemin),
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT;
   `
 ]
 

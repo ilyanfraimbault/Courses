@@ -250,7 +250,8 @@ export function filtrer(
   filtre: FiltreQuiz,
   enDette?: Set<string>,
   trouvees?: Set<string>,
-  aRevoir?: Set<string>
+  aRevoir?: Set<string>,
+  clos?: string[]
 ): EntreeBanque[] {
   // La matière n'est pas un axe de plus : c'est le cadre. Elle se croise avec
   // tout le reste, si bien que « rien de coché » prend la matière entière et
@@ -265,8 +266,11 @@ export function filtrer(
   // elles se retrouveraient sans candidats et ne pourraient plus se terminer.
   const notions = new Set(filtre.notions ?? [])
 
+  // Ce qui est clos sort du « tout », pas du « coché » : un chapitre coché à
+  // la main est pris en entier. Voir `docs/clotures.md`.
+  const fermes = filtre.ignorerClotures ? [] : (clos ?? [])
   const choisies = !themes.size && !sections.size && !notions.size
-    ? entrees
+    ? entrees.filter(e => !entreeClose(e, fermes))
     : entrees.filter(e =>
         (e.theme && themes.has(e.theme))
         || sections.has(cleSection(e))
@@ -317,18 +321,29 @@ export function cleSection(e: EntreeBanque): string {
  * par chapitre, pour que la somme des sections fasse toujours le compte du
  * chapitre. Un chiffre qui ne s'additionne pas est pire qu'un chiffre absent.
  */
-export function composerCatalogue(banque: Banque, enDette?: Set<string>): CatalogueQuiz {
-  interface Compte {
+export function composerCatalogue(
+  banque: Banque,
+  enDette?: Set<string>,
+  aRevoir?: Set<string>,
+  clos: string[] = []
+): CatalogueQuiz {
+  interface Cumul { questions: number, ratees: number, aRevoir: number }
+  interface Compte extends Cumul {
     titre: string
     ordre: number
-    questions: number
-    ratees: number
     /** Les points de cours de la section, pour résoudre un lien venu de « Mes domaines ». */
     notions: Map<string, NotionCatalogue>
   }
-  interface Cumul { questions: number, ratees: number }
   interface Chapitre { total: Cumul, sections: Map<string, Compte> }
   const parMatiere = new Map<string, { total: Cumul, themes: Map<string, Chapitre> }>()
+  const zero = (): Cumul => ({ questions: 0, ratees: 0, aRevoir: 0 })
+  const ajouter = (c: Cumul, ratee: number, due: number) => {
+    c.questions += 1
+    c.ratees += ratee
+    c.aRevoir += due
+  }
+  // Le compte du site entier, qui suit la même règle que celui d'une matière.
+  const site = zero()
 
   // Les questions ouvertes n'entrent pas au catalogue : annoncer « 18 questions »
   // sur une notion dont le quiz ne sait en poser que 12 ferait une séance qui
@@ -336,32 +351,33 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
   for (const e of banque.interrogeables) {
     const theme = e.theme ?? 'divers'
     const ratee = enDette?.has(e.id) ? 1 : 0
+    const due = aRevoir?.has(e.id) ? 1 : 0
 
-    const matiere = parMatiere.get(e.matiere ?? 'divers') ?? { total: { questions: 0, ratees: 0 }, themes: new Map<string, Chapitre>() }
+    const matiere = parMatiere.get(e.matiere ?? 'divers') ?? { total: zero(), themes: new Map<string, Chapitre>() }
     parMatiere.set(e.matiere ?? 'divers', matiere)
-    const chapitre = matiere.themes.get(theme) ?? { total: { questions: 0, ratees: 0 }, sections: new Map<string, Compte>() }
+    const chapitre = matiere.themes.get(theme) ?? { total: zero(), sections: new Map<string, Compte>() }
     matiere.themes.set(theme, chapitre)
-    for (const cumul of [matiere.total, chapitre.total]) {
-      cumul.questions += 1
-      cumul.ratees += ratee
+    // La matière compte ce que donne « rien de coché », donc sans le clos ; le
+    // chapitre et ses sections comptent ce que donne leur case, donc tout.
+    if (!entreeClose(e, clos)) {
+      ajouter(matiere.total, ratee, due)
+      ajouter(site, ratee, due)
     }
+    ajouter(chapitre.total, ratee, due)
 
     const sections = chapitre.sections
     const cle = cleSection(e)
     const compte = sections.get(cle) ?? {
       titre: e.section ? e.sectionTitre ?? cle : 'Le reste du chapitre',
       ordre: e.section ? e.sectionOrdre : 1000,
-      questions: 0,
-      ratees: 0,
+      ...zero(),
       notions: new Map<string, NotionCatalogue>()
     }
-    compte.questions += 1
-    compte.ratees += ratee
+    ajouter(compte, ratee, due)
     if (e.notionCle) {
       const notion = compte.notions.get(e.notionCle)
-        ?? { cle: e.notionCle, titre: e.notionTitre ?? e.notion!, questions: 0, ratees: 0 }
-      notion.questions += 1
-      notion.ratees += ratee
+        ?? { cle: e.notionCle, titre: e.notionTitre ?? e.notion!, ...zero() }
+      ajouter(notion, ratee, due)
       compte.notions.set(e.notionCle, notion)
     }
     sections.set(cle, compte)
@@ -376,6 +392,10 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
         ordre: s.ordre,
         questions: s.questions,
         ratees: s.ratees,
+        aRevoir: s.aRevoir,
+        // « /page#ancre », ou « /chapitre#reste » : le reste du chapitre n'a
+        // pas de page à lui, il suit son chapitre.
+        clos: sousClos(c.split('#')[0], clos),
         notions: [...s.notions.values()].sort((a, b) => a.titre.localeCompare(b.titre, 'fr'))
       }))
       // L'ordre du plan, pas celui du stock : on révise dans l'ordre où on a
@@ -390,6 +410,8 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
       chemin: chapitre?.chemin ?? null,
       questions: total.questions,
       ratees: total.ratees,
+      aRevoir: total.aRevoir,
+      clos: sousClos(cle, clos),
       sections
     }
   }
@@ -407,6 +429,8 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
       chemin: meta?.chemin ?? null,
       questions: m.total.questions,
       ratees: m.total.ratees,
+      aRevoir: m.total.aRevoir,
+      clos: sousClos(cle, clos),
       themes
     }
   })
@@ -422,11 +446,12 @@ export function composerCatalogue(banque: Banque, enDette?: Set<string>): Catalo
   })
 
   return {
-    total: banque.interrogeables.length,
+    total: site.questions,
     // La dette se compte, elle aussi, sur les seules questions que le quiz sait
     // poser : annoncer « 14 à revoir » dont trois sont des questions ouvertes
     // promettrait une séance plus longue que celle qu'on peut servir.
-    ratees: enDette ? banque.interrogeables.filter(e => enDette.has(e.id)).length : 0,
+    ratees: site.ratees,
+    aRevoir: site.aRevoir,
     matieres,
     tailleMin: TAILLE_MIN,
     tailleMax: TAILLE_MAX

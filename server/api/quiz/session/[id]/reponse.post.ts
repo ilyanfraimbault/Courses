@@ -123,7 +123,8 @@ export default defineEventHandler(async (event): Promise<{ correction: Correctio
     // ce qui ne décale au pire que d'une heure ou deux le bord du tas.
     const candidats = filtrer(banque.interrogeables, filtre, questionsEnDette(db, uid),
       filtre.nonAcquises ? questionsTrouvees(db, uid) : undefined,
-      filtre.aRevoir ? questionsARevoir(db, uid, banque, maintenantPour(event).fin) : undefined)
+      filtre.aRevoir ? questionsARevoir(db, uid, banque, maintenantPour(event).fin) : undefined,
+      cheminsClos(db, uid))
     const similaire = choisirSimilaire(candidats, candidate, dejaVues)
     etat.entrees.push({
       question: similaire.entree.id,

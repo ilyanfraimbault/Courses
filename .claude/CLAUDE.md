@@ -141,6 +141,11 @@ d'une question se rejouent à chaque lecture depuis `reussite`, `faute`,
 événement de plus à chaque bonne réponse, sur chaque écran — la première route
 qui l'oublierait la désaccorderait en silence. Voir `docs/revisions.md`.
 
+**Une clôture retire du « tout », jamais du « coché ».** Ce qu'on a clos sort
+des révisions, de la progression et des séances lancées sur toute la matière ;
+un chapitre clos coché à la main est pris en entier, et un contrôle ignore les
+clôtures. Rien n'est effacé : rouvrir rend tout. Voir `docs/clotures.md`.
+
 **Le serveur est maître des règles.** Le plafond de 24 tentatives par QCM,
 l'agrégation d'un chapitre sur ses fiches, l'unicité d'une cible de to-do : tout
 est appliqué en base, pas au client. Une règle vit à un seul endroit.
@@ -189,6 +194,7 @@ pnpm verif:quiz                     # banque, filtres, file du quiz, isolation
 pnpm verif:quiz:rendu               # le quiz dans un vrai navigateur (Playwright)
 pnpm verif:controles                # feuille de route, séance du jour, examen blanc
 pnpm verif:revisions                # paliers, échéances, séance de révisions
+pnpm verif:clotures                 # clore, ce qui en sort, rouvrir, isolation
 ```
 
 Elles ne sont pas dans la CI : elles ont besoin d'une base réelle, et leur rôle
@@ -215,6 +221,8 @@ par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : 
   son découpage, l'examen blanc, le fuseau de l'élève.
 - `docs/revisions.md` — la révision espacée, déduite de l'histoire, et
   l'accueil « Aujourd'hui ».
+- `docs/clotures.md` — clore une matière, un chapitre ou une fiche, et la
+  séance du jour restreinte à quelques chapitres.
 - `docs/mes-qcm.md` — les QCM composés : pourquoi en base plutôt qu'en fichier,
   ce qu'ils empruntent aux fiches, et les règles tenues au serveur.
 - `docs/comptes.md` — comptes, hachage, isolation des données.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ResumeControle } from '~~/shared/types/controles'
-import type { QuestionQuiz, SessionQuiz } from '~~/shared/types/quiz'
+import type { CatalogueQuiz, FiltreQuiz, QuestionQuiz, SessionQuiz } from '~~/shared/types/quiz'
 import type { Revisions } from '~~/shared/types/revisions'
 import { niveauxDuChemin } from '~~/shared/utils/niveaux'
 
@@ -8,6 +8,7 @@ definePageMeta({ layout: 'cours' })
 
 const comptes = useComptesQuestions()
 const resume = useResumeProgression()
+const { closPar } = useClotures()
 
 /**
  * Le plafond d'une séance du jour. Les paliers de la révision espacée font
@@ -43,7 +44,7 @@ const { data: revisions } = await useLazyFetch<Revisions>('/api/revisions', {
  * ce qui revient. Le compte brut reste lisible sur « Mes domaines ».
  */
 const taches = computed(() => {
-  const liste: { cle: string, icone: string, titre: string, detail: string, action: string, controle?: number, seance?: Record<string, unknown> }[] = []
+  const liste: { cle: string, icone: string, titre: string, detail: string, action: string, controle?: number, matiere?: string, seance?: Record<string, unknown> }[] = []
   for (const c of prochains.value) {
     if (!c.aujourdhui) continue
     const consigne = consigneDuJour(c)
@@ -72,6 +73,7 @@ const taches = computed(() => {
       titre: `Ta séance · ${total} question${total > 1 ? 's' : ''}`,
       detail: `${m.titre} · ${morceaux.join(', puis ')}${reste ? ` · ${reste} de plus attendront demain` : ''}`,
       action: 'Lancer',
+      matiere: m.cle,
       seance: { matiere: m.cle, erreurs: dette > 0, aRevoir: revoir > 0, taille: total }
     })
   }
@@ -105,6 +107,38 @@ async function lancer(cle: string, corps: Record<string, unknown>) {
   }
 }
 
+/**
+ * Choisir les chapitres de la séance du jour.
+ *
+ * Le choix vaut pour une séance, il ne se retient pas : ce qui doit durer,
+ * c'est la clôture. Le catalogue n'est lu qu'à la première ouverture — la
+ * plupart des visites lancent la séance telle quelle.
+ */
+const { data: catalogue, execute: lireCatalogue } = useLazyFetch<CatalogueQuiz>('/api/quiz/catalogue', {
+  server: false,
+  immediate: false,
+  query: { fuseau: fuseauLocal() }
+})
+const choix = ref<FiltreQuiz | null>(null)
+const choixOuvert = computed({
+  get: () => !!choix.value,
+  set: (ouvert: boolean) => { if (!ouvert) choix.value = null }
+})
+const matiereChoisie = computed(() => catalogue.value?.matieres.find(m => m.cle === choix.value?.matiere) ?? null)
+const filtreJour = useTemplateRef<{ disponibles: number }>('filtreJour')
+const tailleChoisie = computed(() => Math.min(TAILLE_SEANCE, filtreJour.value?.disponibles ?? 0))
+
+async function choisir(matiere: string) {
+  choix.value = { matiere, themes: [], sections: [], notions: [], erreurs: true, aRevoir: true }
+  await lireCatalogue()
+}
+
+function lancerChoix() {
+  const f = choix.value
+  if (!f || !tailleChoisie.value) return
+  lancer(`choix-${f.matiere}`, { ...f, taille: tailleChoisie.value })
+}
+
 const titreDuJour = computed(() => {
   const jour = revisions.value?.aujourdhui
   if (!jour) return ''
@@ -124,7 +158,9 @@ const { data: pages } = await useAsyncData('cours-tableau-de-bord', async () => 
 }, { default: () => [] })
 
 const parChemin = computed(() => new Map(pages.value.map(p => [p.chemin, p])))
-const fiches = computed(() => pages.value.filter(p => (p.questions ?? 0) > 0))
+// Ce qui est clos sort de l'accueil : de l'avancement, des matières, de
+// « Reprendre ici ». Le sommaire, lui, le garde grisé.
+const fiches = computed(() => pages.value.filter(p => (p.questions ?? 0) > 0 && !closPar(p.chemin)))
 
 function part(f: { chemin: string, questions?: number | null }) {
   const total = comptes.value[f.chemin] ?? f.questions ?? 0
@@ -248,14 +284,23 @@ useSeoMeta({ title: 'Aujourd\'hui' })
               :label="t.action"
               :to="`/mes-controles/${t.controle}`"
             />
-            <UButton
-              v-else-if="t.seance"
-              size="sm"
-              icon="i-lucide-play"
-              :label="t.action"
-              :loading="lancement === t.cle"
-              @click="lancer(t.cle, t.seance)"
-            />
+            <template v-else-if="t.seance">
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-list-filter"
+                label="Choisir"
+                @click="choisir(t.matiere!)"
+              />
+              <UButton
+                size="sm"
+                icon="i-lucide-play"
+                :label="t.action"
+                :loading="lancement === t.cle"
+                @click="lancer(t.cle, t.seance)"
+              />
+            </template>
           </div>
         </div>
         <div
@@ -287,6 +332,62 @@ useSeoMeta({ title: 'Aujourd\'hui' })
           <USkeleton class="h-14 w-full" />
         </div>
       </section>
+
+      <UModal
+        v-model:open="choixOuvert"
+        title="Sur quoi travailler aujourd'hui ?"
+        description="Coche les chapitres ou les parties du cours. La séance y prend la dette, puis ce qui revient."
+        :ui="{ content: 'sm:max-w-2xl' }"
+      >
+        <template #body>
+          <UAlert
+            v-if="erreurSeance && choix"
+            class="mb-3"
+            color="error"
+            variant="subtle"
+            icon="i-lucide-circle-alert"
+            :title="erreurSeance"
+          />
+          <QuizFiltre
+            v-if="matiereChoisie && choix"
+            ref="filtreJour"
+            v-model="choix"
+            :catalogue="matiereChoisie"
+            mode="jour"
+          />
+          <div
+            v-else
+            class="flex flex-col gap-2"
+          >
+            <USkeleton class="h-10 w-full" />
+            <USkeleton class="h-10 w-full" />
+            <USkeleton class="h-10 w-full" />
+          </div>
+        </template>
+        <template #footer>
+          <div class="flex w-full flex-wrap items-center justify-end gap-2">
+            <span
+              v-if="(filtreJour?.disponibles ?? 0) > TAILLE_SEANCE"
+              class="me-auto text-xs text-muted"
+            >
+              {{ TAILLE_SEANCE }} aujourd'hui, le reste attendra demain.
+            </span>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              label="Annuler"
+              @click="choix = null"
+            />
+            <UButton
+              icon="i-lucide-play"
+              :label="tailleChoisie ? `Lancer · ${tailleChoisie} question${tailleChoisie > 1 ? 's' : ''}` : 'Rien à travailler ici'"
+              :disabled="!tailleChoisie"
+              :loading="!!lancement?.startsWith('choix-')"
+              @click="lancerChoix"
+            />
+          </div>
+        </template>
+      </UModal>
 
       <div
         v-if="prochains.length"

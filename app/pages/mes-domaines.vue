@@ -7,7 +7,27 @@ definePageMeta({ layout: 'cours' })
  * La progression est une donnée d'utilisateur : elle se lit au montage, jamais
  * au rendu serveur. Le HTML servi est le même pour tout le monde.
  */
-const { data, status } = await useLazyFetch<ProgressionDomaines>('/api/progression/domaines', { server: false })
+const { data, status, refresh } = await useLazyFetch<ProgressionDomaines>('/api/progression/domaines', { server: false })
+
+/**
+ * Ce qui est clos n'est pas dans la page — c'est ce qu'on a demandé en le
+ * closant. On le nomme en bas, avec de quoi le rouvrir : sans quoi une matière
+ * close disparaîtrait de la seule page qui dit où on en est, sans trace.
+ */
+const { liste: clotures, rouvrir } = useClotures()
+const reouverture = ref<string | null>(null)
+const natures = { matiere: 'Matière', chapitre: 'Chapitre', fiche: 'Fiche' } as const
+
+async function rouvrirEtRelire(chemin: string) {
+  if (reouverture.value) return
+  reouverture.value = chemin
+  try {
+    await rouvrir(chemin)
+    await refresh()
+  } finally {
+    reouverture.value = null
+  }
+}
 
 const matieres = computed(() => data.value?.matieres ?? [])
 const total = computed(() => data.value?.total ?? { questions: 0, acquises: 0, hesitantes: 0, interrogeables: 0 })
@@ -231,6 +251,46 @@ useSeoMeta({ title: 'Mes domaines' })
               </li>
             </ul>
           </section>
+        </section>
+
+        <section
+          v-if="clotures.length"
+          class="mt-12"
+        >
+          <h2 class="m-0 text-lg font-medium text-highlighted">
+            Clos
+          </h2>
+          <p class="mt-1 mb-3 text-sm text-muted">
+            Hors de cette page, des révisions et des séances sur toute la matière. Rien n'est effacé :
+            rouvrir rend tout tel quel.
+          </p>
+          <ul class="m-0 flex list-none flex-col gap-2 p-0">
+            <li
+              v-for="c of clotures"
+              :key="c.chemin"
+              class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-default px-3 py-2"
+            >
+              <UIcon
+                name="i-lucide-archive"
+                class="size-4 shrink-0 text-dimmed"
+              />
+              <ULink
+                :to="c.chemin"
+                class="min-w-0 flex-1 truncate text-sm text-highlighted hover:text-primary"
+              >
+                <span class="text-dimmed">{{ natures[c.nature] }} · </span>{{ c.titre }}
+              </ULink>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-archive-restore"
+                label="Rouvrir"
+                :loading="reouverture === c.chemin"
+                @click="rouvrirEtRelire(c.chemin)"
+              />
+            </li>
+          </ul>
         </section>
       </template>
 

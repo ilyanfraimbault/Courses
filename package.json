@@ -16,6 +16,7 @@
     "verif:controles": "node scripts/verifier-controles.mjs",
     "verif:contenu": "node scripts/verifier-contenu.mjs",
     "verif:revisions": "node scripts/verifier-revisions.mjs",
+    "verif:clotures": "node scripts/verifier-clotures.mjs",
     "import:resultats": "node scripts/importer-resultats.mjs",
     "verif:comptes": "node scripts/verifier-comptes.mjs"
   },
