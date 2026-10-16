@@ -59,24 +59,33 @@ voulu — c'est là qu'une question arrive sans son contexte, comme au contrôle
 qu'il y a à faire, et rien d'autre :
 
 - ce que chaque contrôle demande aujourd'hui ;
-- pour chaque matière, les questions **à revoir** — un bouton ouvre la séance ;
-- pour chaque matière, la **dette** — un bouton ouvre la séance « ce que j'ai raté ».
+- pour chaque matière où quelque chose attend, **une séance** — un seul bouton,
+  qui pose la dette puis ce qui est à revoir.
 
-Une journée vide le dit, avec ce qui reviendra demain. Dessous, l'ancien tableau
-de bord, sous le titre « Où j'en suis ».
+Dette et révisions ne font pas deux lignes : l'élève n'a pas à arbitrer entre
+« reprendre » et « réviser », l'ordre est connu. La séance est plafonnée à vingt
+questions — les paliers font monter le compte juste après un contrôle, et
+l'afficher en entier faisait de l'accueil une liste de reproches ; le reste
+glisse à demain, et la ligne le dit. Le compte brut se lit sur « Mes domaines ».
+
+Une journée vide le dit, avec ce qui reviendra demain. Dessous, l'avancement,
+sous le titre « Où j'en suis ».
 
 **Le quiz** reçoit un tamis de plus, `aRevoir`, comme `nonAcquises` : il ne se
-coche pas à l'écran, c'est l'accueil qui ouvre ces séances. Une faute pendant une
-révision fait ce qu'elle fait partout — la question entre dans la dette, et la
-place revient avec une autre question due. Les matières ne se mélangent pas : une
-séance de révisions reste dans la sienne.
+coche pas à l'écran, c'est l'accueil qui ouvre ces séances. Demandé avec
+`erreurs`, il s'y **additionne** au lieu de s'y croiser, et le tirage sert la
+dette avant le reste — le rang seul ne suffirait pas, le tirage tourne de thème
+en thème et une séance plafonnée laisserait la dette des derniers thèmes
+derrière elle. Une faute pendant une révision fait ce qu'elle fait partout — la
+question entre dans la dette, et la place revient avec une autre question due.
+Les matières ne se mélangent pas : une séance reste dans la sienne.
 
 ## Les routes
 
 | Route | Rôle |
 |---|---|
 | `GET /api/revisions?fuseau=` | par matière : à revoir aujourd'hui, demain, suivies, en dette, prochaine échéance |
-| `POST /api/quiz/session?fuseau=` | avec `aRevoir: true`, une séance sur ce qui est dû |
+| `POST /api/quiz/session?fuseau=` | avec `aRevoir: true`, une séance sur ce qui est dû ; avec `erreurs: true` en plus, la dette d'abord |
 
 La reprise d'une place ratée pendant une révision se calcule sans fuseau — la
 réponse n'en porte pas —, donc sur la journée du site. Le bord du tas peut s'en

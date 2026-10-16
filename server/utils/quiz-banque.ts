@@ -272,9 +272,15 @@ export function filtrer(
         || sections.has(cleSection(e))
         || (e.notionCle && notions.has(e.notionCle)))
 
-  if (filtre.erreurs) return enDette ? choisies.filter(e => enDette.has(e.id)) : []
-  // Les révisions du jour : ce qui est su et dont l'échéance est tombée.
-  if (filtre.aRevoir) return aRevoir ? choisies.filter(e => aRevoir.has(e.id)) : []
+  // La dette, et les révisions du jour — ce qui est su et dont l'échéance est
+  // tombée. Demandés ensemble, ils s'additionnent : c'est la séance du jour de
+  // l'accueil, qui pose la dette puis ce qui revient, en une seule fois plutôt
+  // qu'en deux boutons.
+  if (filtre.erreurs || filtre.aRevoir) {
+    return choisies.filter(e =>
+      (filtre.erreurs && !!enDette?.has(e.id))
+      || (filtre.aRevoir && !!aRevoir?.has(e.id)))
+  }
   // « Ce qui me manque » : jamais trouvée, ou trouvée puis ratée depuis. C'est
   // le tamis de la séance du jour d'un contrôle, qui doit poser ce qui reste à
   // apprendre et non ce qui est déjà su. Sans la mémoire des réussites, on ne

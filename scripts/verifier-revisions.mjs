@@ -118,9 +118,18 @@ m = await revisions()
 verifier('la question ratée quitte les révisions', m.aRevoir === 5, `à revoir ${m.aRevoir}`)
 verifier('elle entre dans la dette', m.enDette === 1, `en dette ${m.enDette}`)
 
+// La séance du jour de l'accueil : dette et révisions en une seule demande, la
+// dette posée en premier.
+r = await api('/api/quiz/session?fuseau=Europe/Paris', { method: 'POST', body: { matiere: MATIERE, erreurs: true, aRevoir: true, taille: 20 } })
+verifier('la séance du jour s\'ouvre', r.statut === 201, 'statut ' + r.statut)
+const jour = r.corps.session
+verifier('elle additionne la dette et ce qui est dû', jour.taille === 6, `taille ${jour.taille}`)
+verifier('la dette passe en premier', r.corps.question?.id === posee.id, `première ${r.corps.question?.id}`)
+
 const historique = (await api('/api/quiz/historique')).corps
-const libelle = historique.encours?.themes?.[0] ?? historique.sessions.find(s => s.id === revision.id)?.themes?.[0]
-verifier('l\'historique nomme la séance', libelle === 'Révisions du jour', libelle)
+const nommee = s => (historique.encours?.id === s ? historique.encours : historique.sessions.find(l => l.id === s))?.themes?.[0]
+verifier('l\'historique nomme la séance de révisions', nommee(revision.id) === 'Révisions du jour', nommee(revision.id))
+verifier('et la séance du jour', nommee(jour.id) === 'Séance du jour', nommee(jour.id))
 
 r = await api('/api/quiz/session?fuseau=Europe/Paris', { method: 'POST', body: { matiere: '/cours/a1/autre-matiere', aRevoir: true, taille: 5 } })
 verifier('rien à revoir hors de la matière', r.statut === 400)

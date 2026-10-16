@@ -58,19 +58,33 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   if (!candidats.length) {
     throw createError({
       statusCode: 400,
-      statusMessage: filtre.erreurs
-        ? 'aucune question ratée ne correspond à cette sélection'
-        : filtre.nonAcquises
-          ? 'tout est déjà su dans cette sélection'
-          : filtre.aRevoir
-            ? 'rien à revoir aujourd\'hui dans cette sélection'
-            : 'aucune question ne correspond à cette sélection'
+      statusMessage: filtre.erreurs && filtre.aRevoir
+        ? 'rien à reprendre ni à revoir aujourd\'hui dans cette sélection'
+        : filtre.erreurs
+          ? 'aucune question ratée ne correspond à cette sélection'
+          : filtre.nonAcquises
+            ? 'tout est déjà su dans cette sélection'
+            : filtre.aRevoir
+              ? 'rien à revoir aujourd\'hui dans cette sélection'
+              : 'aucune question ne correspond à cette sélection'
     })
   }
 
   // Demander plus de questions que le filtre n'en contient n'est pas une erreur :
   // on en donne autant qu'il y en a, et la taille de la séance le dit.
-  const tirees = tirer(candidats, Math.min(demandee, candidats.length), rangDuTirage(db, uid, enDette))
+  const rang = rangDuTirage(db, uid, enDette)
+  const taille = Math.min(demandee, candidats.length)
+  // La séance du jour pose la dette **avant** les révisions, en entier si la
+  // place le permet. Le rang seul ne suffit pas : le tirage tourne de thème en
+  // thème, et une séance plafonnée laisserait derrière elle la dette des thèmes
+  // servis en dernier.
+  const tirees = filtre.erreurs && filtre.aRevoir
+    ? (() => {
+        const dette = tirer(candidats.filter(e => enDette.has(e.id)), taille, rang)
+        const reste = tirer(candidats.filter(e => !enDette.has(e.id)), taille - dette.length, rang)
+        return [...dette, ...reste]
+      })()
+    : tirer(candidats, taille, rang)
 
   const etat: EtatFile = {
     version: 1,
