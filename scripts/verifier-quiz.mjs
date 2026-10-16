@@ -263,15 +263,22 @@ if (!affixes) {
 
 // Et sur un large tirage, la proportion doit rester dans la bande attendue.
 //
-// Attention au chiffre de référence : 160 des 432 questions à choix vivent sous
-// un énoncé rappelé, soit 37 % de la **banque** — mais un tirage n'en est pas un
-// échantillon uniforme. Il s'étale par notion, et les fiches d'entraînement,
-// riches en petites notions, y pèsent bien plus que leur part ; les QCM, dont
-// les blocs n'ont aucun préambule, aussi. Mesuré sur trois tirages de soixante :
-// 17, 20 et 23 %. La bande est donc large et centrée là-dessus. Zéro dirait que
-// le relevé est cassé, cent qu'il ramasse ce qui ne lui appartient pas — dont
-// les entêtes marquées « introduction ».
-r = await api('/api/quiz/session', { method: 'POST', body: { taille: 60 } })
+// Le tirage reste dans une matière, comme toute séance du site : la part
+// dépend de ce que la matière contient, et un tirage de tout le site la
+// laissait filer avec chaque cours ajouté — les 22 questions de mathématiques
+// pour l'ingénieur portent toutes un énoncé commun, et l'y mêler la poussait à
+// 42-48 %, hors de la bande une fois sur deux.
+//
+// Attention au chiffre de référence : un peu plus de la moitié des questions de
+// la matière vivent sous un énoncé rappelé, mais un tirage n'est pas un
+// échantillon uniforme de la banque. Il s'étale par notion, et les fiches
+// d'entraînement, riches en petites notions, y pèsent bien plus que leur part ;
+// les QCM, dont les blocs n'ont aucun préambule, aussi. Mesuré sur seize
+// tirages de soixante sur une base vierge : de 23 à 35 %, 30 % le plus souvent.
+// La bande est centrée là-dessus. Zéro dirait que le relevé est cassé, cent
+// qu'il ramasse ce qui ne lui appartient pas — dont les entêtes marquées
+// « introduction ».
+r = await api('/api/quiz/session', { method: 'POST', body: { matiere: MATIERE, taille: 60 } })
 const large = r.corps.session
 let avecEnonce = 0
 for (let p = 0; p < large.taille; p++) {
@@ -280,7 +287,7 @@ for (let p = 0; p < large.taille; p++) {
 }
 const part = Math.round(100 * avecEnonce / large.taille)
 verifier('la part de questions à énoncé commun reste plausible',
-  part >= 10 && part <= 45, `${part} % sur ${large.taille} tirées`)
+  part >= 15 && part <= 45, `${part} % sur ${large.taille} tirées`)
 
 // L'autre sens : un bloc qui déclare `entete="introduction"` ne doit rien
 // rappeler. Les cinq paliers de la fiche d'entraînement de trigonométrie sont
