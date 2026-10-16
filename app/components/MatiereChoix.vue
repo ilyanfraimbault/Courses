@@ -41,7 +41,16 @@ const choisie = defineModel<string | null>({ required: true })
         >{{ matiere.annee }}</span>
         <span class="block truncate text-sm font-medium text-highlighted">{{ matiere.titre }}</span>
       </span>
-      <span class="shrink-0 text-xs text-muted tabular-nums">
+      <!-- Une matière close compte zéro « sur toute la matière » : ce n'est
+           pas qu'elle soit vide, c'est qu'il faut y cocher un chapitre. -->
+      <span
+        v-if="matiere.clos"
+        class="shrink-0 text-xs text-dimmed"
+      >close</span>
+      <span
+        v-else
+        class="shrink-0 text-xs text-muted tabular-nums"
+      >
         {{ matiere.questions }} question{{ matiere.questions > 1 ? 's' : '' }}
       </span>
     </button>

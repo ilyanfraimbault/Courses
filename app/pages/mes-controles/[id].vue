@@ -75,7 +75,9 @@ async function seance(cle: string, corps: { themes?: string[], sections?: string
   try {
     const { session } = await $fetch<{ session: SessionQuiz, question: QuestionQuiz | null }>('/api/quiz/session', {
       method: 'POST',
-      body: { matiere: controle.value.matiere, themes: [], sections: [], ...corps, taille: borner(corps.taille) }
+      // Le programme d'un contrôle se compte sans regarder les clôtures : un
+      // chapitre fini reste au programme s'il y était.
+      body: { matiere: controle.value.matiere, themes: [], sections: [], ...corps, ignorerClotures: true, taille: borner(corps.taille) }
     })
     await navigateTo(`/quiz/${session.id}`)
   } catch (e) {

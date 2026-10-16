@@ -21,10 +21,14 @@ export default defineEventHandler(async (event): Promise<Revisions> => {
 
   const etats = etatsRevision(db, uid, banque)
   const enDette = questionsEnDette(db, uid)
+  const clos = cheminsClos(db, uid)
 
   const parMatiere = new Map<string, RevisionsMatiere & { prochaineT: number }>()
   for (const e of banque.interrogeables) {
     if (!e.matiere) continue
+    // Ce qui est clos ne revient plus de lui-même : il reste en mémoire, et
+    // rouvrir le remet dans le calendrier là où il en était.
+    if (entreeClose(e, clos)) continue
     const meta = banque.matieres.get(e.matiere)
     const m = parMatiere.get(e.matiere) ?? {
       cle: e.matiere,

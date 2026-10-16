@@ -92,11 +92,16 @@ export default defineEventHandler(async (event): Promise<ProgressionDomaines> =>
     for (const id of lireListe(c.ratees)) ratees.add(id)
   }
 
+  // Ce qui est clos sort de la page : c'est ce qu'on a demandé en le closant.
+  // Les clôtures elles-mêmes se lisent en bas de page, de quoi les rouvrir.
+  const clos = cheminsClos(db, uid)
+
   // Une matière, ses chapitres, et dans chacun ses domaines.
   interface CumulChapitre { total: Cumul, domaines: Map<string, Cumul> }
   const parMatiere = new Map<string, { total: Cumul, chapitres: Map<string, CumulChapitre> }>()
 
   for (const entree of banque.entrees) {
+    if (entreeClose(entree, clos)) continue
     const cleMatiere = entree.matiere ?? 'divers'
     const theme = entree.theme ?? 'divers'
 

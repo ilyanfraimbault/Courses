@@ -67,6 +67,8 @@ Dette et révisions ne font pas deux lignes : l'élève n'a pas à arbitrer entr
 questions — les paliers font monter le compte juste après un contrôle, et
 l'afficher en entier faisait de l'accueil une liste de reproches ; le reste
 glisse à demain, et la ligne le dit. Le compte brut se lit sur « Mes domaines ».
+« Choisir » restreint la séance à quelques chapitres ou parties du cours, et ce
+qui est clos n'y revient pas — voir `docs/clotures.md`.
 
 Une journée vide le dit, avec ce qui reviendra demain. Dessous, l'avancement,
 sous le titre « Où j'en suis ».

@@ -31,8 +31,13 @@ const props = defineProps<{
    * « programme » quand on ne choisit pas une séance mais ce sur quoi porte un
    * contrôle : la dette n'y a pas de sens — un programme ne change pas selon ce
    * qu'on a raté — et le compte ne parle plus de séance.
+   *
+   * « jour » pour restreindre la séance du jour de l'accueil : elle prend déjà
+   * la dette et les révisions, si bien que la case « seulement ce que j'ai
+   * raté » n'a plus d'objet, et qu'une case vaut ce qu'elle a à reprendre ou à
+   * revoir aujourd'hui, pas son stock.
    */
-  mode?: 'seance' | 'programme'
+  mode?: 'seance' | 'programme' | 'jour'
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [filtre: FiltreQuiz] }>()
@@ -92,7 +97,10 @@ function basculerErreurs() {
 }
 
 function tout() {
-  emit('update:modelValue', { ...props.modelValue, themes: [], sections: [], notions: [], erreurs: false })
+  // La séance du jour garde sa dette : la case « seulement ce que j'ai raté »
+  // n'y existe pas, il n'y a donc rien à décocher.
+  const erreurs = props.mode === 'jour' ? props.modelValue.erreurs : false
+  emit('update:modelValue', { ...props.modelValue, themes: [], sections: [], notions: [], erreurs })
 }
 
 function oublierPoints() {
@@ -114,12 +122,27 @@ function sectionsDe(cle: string) {
 
 const rienDeCoche = computed(() =>
   !props.modelValue.themes.length && !props.modelValue.sections.length && !props.modelValue.notions?.length)
-const vierge = computed(() => rienDeCoche.value && !props.modelValue.erreurs)
+const vierge = computed(() => rienDeCoche.value && (props.mode === 'jour' || !props.modelValue.erreurs))
 
-/** Ce que vaut une case : son stock, ou sa seule dette en mode « ce que j'ai raté ». */
-function compte(entree: { questions: number, ratees: number }) {
+/**
+ * Ce que vaut une case : son stock, sa seule dette en mode « ce que j'ai
+ * raté », ou ce qu'elle attend aujourd'hui pour la séance du jour.
+ */
+function compte(entree: { questions: number, ratees: number, aRevoir: number }) {
+  if (props.mode === 'jour') return entree.ratees + entree.aRevoir
   return props.modelValue.erreurs ? entree.ratees : entree.questions
 }
+
+/** Le compte d'une case, en toutes lettres, pour la séance du jour. */
+function duJour(entree: { ratees: number, aRevoir: number }) {
+  const morceaux: string[] = []
+  if (entree.ratees) morceaux.push(`${entree.ratees} à reprendre`)
+  if (entree.aRevoir) morceaux.push(`${entree.aRevoir} à revoir`)
+  return morceaux.join(' · ') || 'rien aujourd\'hui'
+}
+
+/** Quelque chose est clos dans la matière : « rien de coché » ne veut plus dire tout. */
+const desClos = computed(() => props.catalogue.themes.some(t => t.clos || t.sections.some(sec => sec.clos)))
 
 /**
  * Combien de questions le filtre retient. Le compte suit exactement la règle du
@@ -128,9 +151,7 @@ function compte(entree: { questions: number, ratees: number }) {
  * que pas de compte.
  */
 const disponibles = computed(() => {
-  if (rienDeCoche.value) {
-    return props.modelValue.erreurs ? props.catalogue.ratees : props.catalogue.questions
-  }
+  if (rienDeCoche.value) return compte(props.catalogue)
   let total = 0
   for (const theme of props.catalogue.themes) {
     if (props.modelValue.themes.includes(theme.cle)) {
@@ -159,7 +180,7 @@ defineExpose({ disponibles })
          posé sur la sélection. D'où sa place au-dessus de la liste, et le mot
          « seulement » dans son libellé. -->
     <button
-      v-if="mode !== 'programme'"
+      v-if="mode === 'seance' || !mode"
       type="button"
       role="checkbox"
       :aria-checked="!!modelValue.erreurs"
@@ -200,17 +221,21 @@ defineExpose({ disponibles })
 
     <div
       class="flex flex-wrap items-center justify-between gap-2"
-      :class="mode !== 'programme' && 'mt-4'"
+      :class="(mode === 'seance' || !mode) && 'mt-4'"
     >
       <p class="m-0 text-sm text-muted">
         <template v-if="vierge && mode === 'programme'">
-          Rien de coché : le contrôle porte sur toute la matière,
-          <strong class="text-highlighted tabular-nums">{{ catalogue.questions }}</strong> questions.
+          Rien de coché : le contrôle porte sur toute la matière, clos compris.
+        </template>
+        <template v-else-if="vierge && mode === 'jour'">
+          Rien de coché : toute la matière{{ desClos ? ', hors ce que tu as clos' : '' }},
+          <strong class="text-highlighted tabular-nums">{{ disponibles }}</strong>
+          question{{ disponibles > 1 ? 's' : '' }} à reprendre ou à revoir.
         </template>
         <template v-else-if="vierge">
           Rien de coché : la séance pioche dans
           <strong class="text-highlighted tabular-nums">{{ catalogue.questions }}</strong> questions,
-          toute la matière.
+          toute la matière{{ desClos ? ' hors ce que tu as clos' : '' }}.
         </template>
         <template v-else>
           <strong class="text-highlighted tabular-nums">{{ disponibles }}</strong>
@@ -286,8 +311,26 @@ defineExpose({ disponibles })
               :name="theme.icone"
               class="size-4 shrink-0 text-primary"
             />
-            <span class="min-w-0 flex-1 truncate text-sm font-medium text-highlighted">{{ theme.titre }}</span>
-            <span class="shrink-0 text-xs text-muted tabular-nums">
+            <span
+              class="min-w-0 flex-1 truncate text-sm font-medium text-highlighted"
+              :class="theme.clos && 'opacity-60'"
+            >{{ theme.titre }}</span>
+            <UBadge
+              v-if="theme.clos"
+              color="neutral"
+              variant="subtle"
+              size="sm"
+              icon="i-lucide-archive"
+              label="clos"
+            />
+            <span
+              v-if="mode === 'jour'"
+              class="shrink-0 text-xs text-muted tabular-nums"
+            >{{ duJour(theme) }}</span>
+            <span
+              v-else
+              class="shrink-0 text-xs text-muted tabular-nums"
+            >
               {{ theme.questions }} question{{ theme.questions > 1 ? 's' : '' }}
               <span
                 v-if="theme.ratees"
@@ -342,8 +385,21 @@ defineExpose({ disponibles })
                 class="size-4 shrink-0"
                 :class="modelValue.sections.includes(section.cle) ? 'text-primary' : 'text-dimmed'"
               />
-              <span class="min-w-0 flex-1 text-sm text-highlighted">{{ section.titre }}</span>
-              <span class="shrink-0 text-xs text-muted tabular-nums">
+              <span
+                class="min-w-0 flex-1 text-sm text-highlighted"
+                :class="section.clos && 'opacity-60'"
+              >{{ section.titre }}<span
+                v-if="section.clos && !theme.clos"
+                class="text-dimmed"
+              > · clos</span></span>
+              <span
+                v-if="mode === 'jour'"
+                class="shrink-0 text-xs text-muted tabular-nums"
+              >{{ duJour(section) }}</span>
+              <span
+                v-else
+                class="shrink-0 text-xs text-muted tabular-nums"
+              >
                 {{ section.questions }}
                 <span
                   v-if="section.ratees"

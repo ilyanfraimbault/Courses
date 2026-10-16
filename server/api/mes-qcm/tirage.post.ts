@@ -43,7 +43,8 @@ export default defineEventHandler(async (event): Promise<QuestionCandidate[]> =>
 
   const db = useBase()
   const enDette = questionsEnDette(db, uid)
-  const candidats = filtrer(banque.interrogeables, filtre, enDette).filter(e => !exclues.has(e.id))
+  const candidats = filtrer(banque.interrogeables, filtre, enDette, undefined, undefined, cheminsClos(db, uid))
+    .filter(e => !exclues.has(e.id))
 
   return tirer(candidats, Math.min(taille, candidats.length), rangDuTirage(db, uid, enDette))
     .map(e => candidate(banque, e, enDette))

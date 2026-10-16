@@ -2,6 +2,8 @@
 import type { ContentNavigationItem } from '@nuxt/content'
 import { findPageHeadline } from '@nuxt/content/utils'
 import { withoutTrailingSlash } from 'ufo'
+import type { NatureCloture } from '~~/shared/types/clotures'
+import { niveauxDuChemin } from '~~/shared/utils/niveaux'
 
 definePageMeta({
   layout: 'cours'
@@ -51,6 +53,19 @@ const headline = computed(() => findPageHeadline(navigation?.value, page.value?.
 // sommaires en sont exclus — ils n'ont pas de `type`.
 const ciblableEnTodo = computed(() => !!page.value?.type)
 
+/**
+ * Ce que cette page permet de clore : sa matière ou son chapitre quand elle en
+ * est l'index, elle-même quand c'est une fiche qui porte des questions. Une
+ * année, un formulaire sans question n'ont rien à retirer d'une séance.
+ */
+const natureCloture = computed<NatureCloture | null>(() => {
+  const niveaux = niveauxDuChemin(routePath.value)
+  if (routePath.value === niveaux.matiere) return 'matiere'
+  if (routePath.value === niveaux.chapitre) return 'chapitre'
+  if (page.value?.type && (page.value.questions ?? 0) > 0) return 'fiche'
+  return null
+})
+
 useSeoMeta({
   title: page.value.title,
   description: page.value.description
@@ -78,6 +93,27 @@ useSeoMeta({
       </template>
     </UPageHeader>
 
+    <!-- La clôture est une donnée du compte : elle ne s'affiche qu'au client,
+         une fois lue. Le HTML servi reste le même pour tout le monde. -->
+    <ClientOnly v-if="natureCloture">
+      <ClotureBouton
+        class="mt-6"
+        :chemin="routePath"
+        :nature="natureCloture"
+        forme="bandeau"
+      />
+      <div
+        v-if="natureCloture !== 'fiche'"
+        class="mt-4 flex justify-end"
+      >
+        <ClotureBouton
+          :chemin="routePath"
+          :nature="natureCloture"
+          forme="bouton"
+        />
+      </div>
+    </ClientOnly>
+
     <div
       v-if="totalQuestions || page.interactif"
       class="mt-6 flex flex-col gap-3"
@@ -95,6 +131,13 @@ useSeoMeta({
               :titre="page.title"
               :type="page.type"
             />
+            <ClientOnly v-if="natureCloture === 'fiche'">
+              <ClotureBouton
+                :chemin="routePath"
+                nature="fiche"
+                forme="bouton"
+              />
+            </ClientOnly>
             <UButton
               v-if="reussies"
               color="neutral"

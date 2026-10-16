@@ -83,6 +83,10 @@ export interface SectionCatalogue {
   questions: number
   /** Parmi elles, celles qui sont en dette : ratées et pas encore retrouvées. */
   ratees: number
+  /** Celles qui sont sues et dont la révision tombe aujourd'hui. */
+  aRevoir: number
+  /** La page de la section est close, ou son chapitre, ou sa matière. */
+  clos: boolean
   /**
    * Les points de cours qui vivent dans cette section. Ils ne s'affichent pas
    * dans la liste — c'est précisément leur ambiguïté qui a fait passer la
@@ -101,6 +105,7 @@ export interface NotionCatalogue {
   titre: string
   questions: number
   ratees: number
+  aRevoir: number
 }
 
 export interface ThemeCatalogue {
@@ -110,8 +115,14 @@ export interface ThemeCatalogue {
   icone: string | null
   /** Chemin de la page de sommaire du chapitre, quand elle existe. */
   chemin: string | null
+  /**
+   * Le compte du chapitre **entier**, clos ou non : c'est ce que donne la case
+   * une fois cochée, et la somme des sections doit le refaire.
+   */
   questions: number
   ratees: number
+  aRevoir: number
+  clos: boolean
   sections: SectionCatalogue[]
 }
 
@@ -130,8 +141,14 @@ export interface MatiereCatalogue {
   annee: string | null
   icone: string | null
   chemin: string | null
+  /**
+   * Ce que donne la matière quand rien n'est coché : **hors ce qui est clos**.
+   * La somme des chapitres peut donc dépasser ce compte — l'écran le dit.
+   */
   questions: number
   ratees: number
+  aRevoir: number
+  clos: boolean
   themes: ThemeCatalogue[]
 }
 
@@ -139,6 +156,8 @@ export interface CatalogueQuiz {
   total: number
   /** Questions en dette, toutes matières confondues. */
   ratees: number
+  /** Questions à revoir aujourd'hui, toutes matières confondues. */
+  aRevoir: number
   matieres: MatiereCatalogue[]
   /** Bornes acceptées pour la taille d'un tirage, pour que le client n'invente rien. */
   tailleMin: number
@@ -174,6 +193,13 @@ export interface FiltreQuiz {
    * l'écran du quiz — c'est la page d'accueil qui ouvre ces séances.
    */
   aRevoir?: boolean
+  /**
+   * Prendre aussi ce qui est clos quand rien n'est coché. Une clôture retire
+   * du « tout », jamais du « coché » ; les séances d'un contrôle, elles, portent
+   * sur son programme, et « toute la matière » y veut dire toute la matière —
+   * la feuille de route l'a comptée ainsi. Voir `docs/clotures.md`.
+   */
+  ignorerClotures?: boolean
   /**
    * Des points de cours précis. Ils ne se cochent pas à la main — la liste des
    * sections a remplacé la leur — mais un lien venu de « Mes domaines » en

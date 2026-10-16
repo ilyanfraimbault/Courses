@@ -9,6 +9,7 @@ interface CorpsSession {
   erreurs?: unknown
   nonAcquises?: unknown
   aRevoir?: unknown
+  ignorerClotures?: unknown
   taille?: unknown
 }
 
@@ -39,7 +40,8 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
     notions: listeDeChaines(corps?.notions),
     erreurs: corps?.erreurs === true,
     nonAcquises: corps?.nonAcquises === true,
-    aRevoir: corps?.aRevoir === true
+    aRevoir: corps?.aRevoir === true,
+    ignorerClotures: corps?.ignorerClotures === true
   }
 
   const demandee = Number(corps?.taille)
@@ -54,7 +56,7 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   // L'échéance se compte jusqu'à la fin de la journée **de l'élève** : le
   // client passe son fuseau en adresse, comme pour les contrôles.
   const aRevoir = filtre.aRevoir ? questionsARevoir(db, uid, banque, maintenantPour(event).fin) : undefined
-  const candidats = filtrer(banque.interrogeables, filtre, enDette, trouvees, aRevoir)
+  const candidats = filtrer(banque.interrogeables, filtre, enDette, trouvees, aRevoir, cheminsClos(db, uid))
   if (!candidats.length) {
     throw createError({
       statusCode: 400,

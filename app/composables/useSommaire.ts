@@ -44,11 +44,25 @@ function enfants(dossier: ContentNavigationItem): ContentNavigationItem[] {
  * elle montre les années et leurs matières, sans descendre plus bas : c'est de
  * là qu'on choisit dans quel cours entrer.
  */
+/**
+ * Ce qui est clos reste dans le sommaire, grisé : le cacher empêcherait de le
+ * retrouver, donc de le rouvrir. La liste des clôtures n'arrive qu'au client,
+ * si bien que le rendu serveur et le premier rendu client coïncident.
+ */
+function griser(liens: ContentNavigationItem[], estClos: (chemin: string) => boolean): ContentNavigationItem[] {
+  return liens.map(lien => ({
+    ...lien,
+    ...(estClos(lien.path) ? { class: 'opacity-50' } : {}),
+    ...(lien.children?.length ? { children: griser(lien.children, estClos) } : {})
+  }))
+}
+
 export function useSommaire() {
   const navigation = inject<Ref<ContentNavigationItem[]>>('navigation', ref([]))
   const route = useRoute()
+  const { liste, closPar } = useClotures()
 
-  return computed<Sommaire>(() => {
+  const brut = computed<Sommaire>(() => {
     const arbre = navigation.value ?? []
     const niveaux = niveauxDuChemin(route.path)
 
@@ -72,4 +86,8 @@ export function useSommaire() {
       }))
     }
   })
+
+  return computed<Sommaire>(() => (liste.value.length
+    ? { ...brut.value, liens: griser(brut.value.liens, chemin => !!closPar(chemin)) }
+    : brut.value))
 }

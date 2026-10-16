@@ -70,7 +70,11 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   déduite de l'histoire sans table à elle. L'accueil s'appelle « Aujourd'hui » et
   commence par ce qu'il y a à faire : la consigne de chaque contrôle, et une
   seule séance par matière — la dette puis les révisions, vingt questions au
-  plus, un seul bouton. Voir `docs/revisions.md`.
+  plus, un seul bouton, et « Choisir » pour la restreindre à quelques
+  chapitres. Voir `docs/revisions.md`.
+- **Clôtures** : une matière, un chapitre ou une fiche se clôt ; ce qui est clos
+  sort de la progression, des révisions et des séances sur toute la matière, et
+  reste grisé dans le sommaire. Voir `docs/clotures.md`.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes
   silencieuses.
