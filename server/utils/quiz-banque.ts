@@ -276,14 +276,15 @@ export function filtrer(
         || sections.has(cleSection(e))
         || (e.notionCle && notions.has(e.notionCle)))
 
-  // La dette, et les révisions du jour — ce qui est su et dont l'échéance est
-  // tombée. Demandés ensemble, ils s'additionnent : c'est la séance du jour de
-  // l'accueil, qui pose la dette puis ce qui revient, en une seule fois plutôt
-  // qu'en deux boutons.
-  if (filtre.erreurs || filtre.aRevoir) {
+  // La dette, les révisions du jour — ce qui est su et dont l'échéance est
+  // tombée —, et le neuf. Demandés ensemble, ils s'additionnent : c'est la
+  // séance du jour de l'accueil, qui pose la dette, puis ce qui revient, puis
+  // de quoi avancer, en une seule fois plutôt qu'en trois boutons.
+  if (filtre.erreurs || filtre.aRevoir || filtre.nouvelles) {
     return choisies.filter(e =>
       (filtre.erreurs && !!enDette?.has(e.id))
-      || (filtre.aRevoir && !!aRevoir?.has(e.id)))
+      || (filtre.aRevoir && !!aRevoir?.has(e.id))
+      || (filtre.nouvelles && estNouvelle(e, enDette, trouvees)))
   }
   // « Ce qui me manque » : jamais trouvée, ou trouvée puis ratée depuis. C'est
   // le tamis de la séance du jour d'un contrôle, qui doit poser ce qui reste à
@@ -291,6 +292,16 @@ export function filtrer(
   // sait rien écarter : on garde tout plutôt que de ne rien servir.
   if (filtre.nonAcquises && trouvees) return choisies.filter(e => !trouvees.has(e.id) || !!enDette?.has(e.id))
   return choisies
+}
+
+/**
+ * Une question qu'on n'a jamais trouvée, et qui n'est pas en dette : du neuf.
+ * Sans la mémoire des réussites, on ne sait pas ce qui est neuf, et on n'en
+ * promet pas — l'inverse de `nonAcquises`, parce qu'ici le neuf **s'ajoute** :
+ * tout prendre ferait passer la matière entière pour inédite.
+ */
+function estNouvelle(e: EntreeBanque, enDette?: Set<string>, trouvees?: Set<string>): boolean {
+  return !!trouvees && !trouvees.has(e.id) && !enDette?.has(e.id)
 }
 
 /** La case du catalogue où tombent les questions sans section. */
@@ -325,9 +336,10 @@ export function composerCatalogue(
   banque: Banque,
   enDette?: Set<string>,
   aRevoir?: Set<string>,
-  clos: string[] = []
+  clos: string[] = [],
+  trouvees?: Set<string>
 ): CatalogueQuiz {
-  interface Cumul { questions: number, ratees: number, aRevoir: number }
+  interface Cumul { questions: number, ratees: number, aRevoir: number, nouvelles: number }
   interface Compte extends Cumul {
     titre: string
     ordre: number
@@ -336,11 +348,12 @@ export function composerCatalogue(
   }
   interface Chapitre { total: Cumul, sections: Map<string, Compte> }
   const parMatiere = new Map<string, { total: Cumul, themes: Map<string, Chapitre> }>()
-  const zero = (): Cumul => ({ questions: 0, ratees: 0, aRevoir: 0 })
-  const ajouter = (c: Cumul, ratee: number, due: number) => {
+  const zero = (): Cumul => ({ questions: 0, ratees: 0, aRevoir: 0, nouvelles: 0 })
+  const ajouter = (c: Cumul, ratee: number, due: number, neuve: number) => {
     c.questions += 1
     c.ratees += ratee
     c.aRevoir += due
+    c.nouvelles += neuve
   }
   // Le compte du site entier, qui suit la même règle que celui d'une matière.
   const site = zero()
@@ -352,6 +365,7 @@ export function composerCatalogue(
     const theme = e.theme ?? 'divers'
     const ratee = enDette?.has(e.id) ? 1 : 0
     const due = aRevoir?.has(e.id) ? 1 : 0
+    const neuve = estNouvelle(e, enDette, trouvees) ? 1 : 0
 
     const matiere = parMatiere.get(e.matiere ?? 'divers') ?? { total: zero(), themes: new Map<string, Chapitre>() }
     parMatiere.set(e.matiere ?? 'divers', matiere)
@@ -360,10 +374,10 @@ export function composerCatalogue(
     // La matière compte ce que donne « rien de coché », donc sans le clos ; le
     // chapitre et ses sections comptent ce que donne leur case, donc tout.
     if (!entreeClose(e, clos)) {
-      ajouter(matiere.total, ratee, due)
-      ajouter(site, ratee, due)
+      ajouter(matiere.total, ratee, due, neuve)
+      ajouter(site, ratee, due, neuve)
     }
-    ajouter(chapitre.total, ratee, due)
+    ajouter(chapitre.total, ratee, due, neuve)
 
     const sections = chapitre.sections
     const cle = cleSection(e)
@@ -373,11 +387,11 @@ export function composerCatalogue(
       ...zero(),
       notions: new Map<string, NotionCatalogue>()
     }
-    ajouter(compte, ratee, due)
+    ajouter(compte, ratee, due, neuve)
     if (e.notionCle) {
       const notion = compte.notions.get(e.notionCle)
         ?? { cle: e.notionCle, titre: e.notionTitre ?? e.notion!, ...zero() }
-      ajouter(notion, ratee, due)
+      ajouter(notion, ratee, due, neuve)
       compte.notions.set(e.notionCle, notion)
     }
     sections.set(cle, compte)
@@ -393,6 +407,7 @@ export function composerCatalogue(
         questions: s.questions,
         ratees: s.ratees,
         aRevoir: s.aRevoir,
+        nouvelles: s.nouvelles,
         // « /page#ancre », ou « /chapitre#reste » : le reste du chapitre n'a
         // pas de page à lui, il suit son chapitre.
         clos: sousClos(c.split('#')[0], clos),
@@ -411,6 +426,7 @@ export function composerCatalogue(
       questions: total.questions,
       ratees: total.ratees,
       aRevoir: total.aRevoir,
+      nouvelles: total.nouvelles,
       clos: sousClos(cle, clos),
       sections
     }
@@ -430,6 +446,7 @@ export function composerCatalogue(
       questions: m.total.questions,
       ratees: m.total.ratees,
       aRevoir: m.total.aRevoir,
+      nouvelles: m.total.nouvelles,
       clos: sousClos(cle, clos),
       themes
     }
@@ -452,6 +469,7 @@ export function composerCatalogue(
     // promettrait une séance plus longue que celle qu'on peut servir.
     ratees: site.ratees,
     aRevoir: site.aRevoir,
+    nouvelles: site.nouvelles,
     matieres,
     tailleMin: TAILLE_MIN,
     tailleMax: TAILLE_MAX

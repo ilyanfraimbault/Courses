@@ -2,7 +2,7 @@ import type { Revisions, RevisionsMatiere } from '~~/shared/types/revisions'
 import { jourDe, fuseauValide } from '~~/shared/utils/jours'
 
 /**
- * Ce qui revient aujourd'hui, matière par matière.
+ * Ce qui revient aujourd'hui, matière par matière, et ce qui reste à découvrir.
  *
  * Seules les questions que le quiz sait poser comptent : une révision se fait
  * en séance, et annoncer « 12 à revoir » dont trois questions ouvertes ferait
@@ -21,6 +21,7 @@ export default defineEventHandler(async (event): Promise<Revisions> => {
 
   const etats = etatsRevision(db, uid, banque)
   const enDette = questionsEnDette(db, uid)
+  const trouvees = questionsTrouvees(db, uid)
   const clos = cheminsClos(db, uid)
 
   const parMatiere = new Map<string, RevisionsMatiere & { prochaineT: number }>()
@@ -39,11 +40,13 @@ export default defineEventHandler(async (event): Promise<Revisions> => {
       demain: 0,
       suivies: 0,
       enDette: 0,
+      nouvelles: 0,
       prochaine: null,
       prochaineT: Number.POSITIVE_INFINITY
     }
     parMatiere.set(e.matiere, m)
     if (enDette.has(e.id)) m.enDette += 1
+    else if (!trouvees.has(e.id)) m.nouvelles += 1
     const etat = etats.get(e.id)
     if (!etat) continue
     m.suivies += 1

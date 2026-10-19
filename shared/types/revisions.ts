@@ -16,6 +16,11 @@ export interface RevisionsMatiere {
   suivies: number
   /** Questions ratées et pas encore retrouvées. */
   enDette: number
+  /**
+   * Questions jamais trouvées ni ratées : ce qui remplit la séance du jour
+   * quand la dette et les révisions n'y suffisent pas.
+   */
+  nouvelles: number
   /** Le prochain jour où quelque chose revient, quand rien ne revient aujourd'hui. */
   prochaine: string | null
 }

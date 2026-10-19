@@ -59,26 +59,35 @@ voulu — c'est là qu'une question arrive sans son contexte, comme au contrôle
 qu'il y a à faire, et rien d'autre :
 
 - ce que chaque contrôle demande aujourd'hui ;
-- pour chaque matière où quelque chose attend, **une séance** — un seul bouton,
-  qui pose la dette puis ce qui est à revoir.
+- pour chaque matière qui n'est pas close, **une séance** — un seul bouton, qui
+  pose la dette, puis ce qui est à revoir, puis du neuf jusqu'à vingt.
 
-Dette et révisions ne font pas deux lignes : l'élève n'a pas à arbitrer entre
-« reprendre » et « réviser », l'ordre est connu. La séance est plafonnée à vingt
-questions — les paliers font monter le compte juste après un contrôle, et
-l'afficher en entier faisait de l'accueil une liste de reproches ; le reste
-glisse à demain, et la ligne le dit. Le compte brut se lit sur « Mes domaines ».
+Dette, révisions et neuf ne font pas trois lignes : l'élève n'a pas à arbitrer
+entre « reprendre », « réviser » et « avancer », l'ordre est connu. La séance est
+plafonnée à vingt questions — les paliers font monter le compte juste après un
+contrôle, et l'afficher en entier faisait de l'accueil une liste de reproches ;
+la dette et les révisions qui débordent glissent à demain, et la ligne le dit.
+
+Le neuf — les questions jamais trouvées ni ratées — **comble** la séance, il ne
+la précède jamais. Sans lui, une matière pas encore commencée n'avait pas de
+séance du tout : rien à reprendre, rien à revoir, donc rien à proposer, et la
+seule façon d'y entrer était d'aller chercher le quiz soi-même. Il n'a pas
+d'échéance, si bien que celui qui ne tient pas dans les vingt places
+n'« attend » pas demain : la ligne ne le compte pas dans le reste. Seule une
+matière entièrement sue, sans rien de dû aujourd'hui, n'a pas de séance. Le compte brut se lit sur « Mes domaines ».
 « Choisir » restreint la séance à quelques chapitres ou parties du cours, et ce
 qui est clos n'y revient pas — voir `docs/clotures.md`.
 
 Une journée vide le dit, avec ce qui reviendra demain. Dessous, l'avancement,
 sous le titre « Où j'en suis ».
 
-**Le quiz** reçoit un tamis de plus, `aRevoir`, comme `nonAcquises` : il ne se
-coche pas à l'écran, c'est l'accueil qui ouvre ces séances. Demandé avec
-`erreurs`, il s'y **additionne** au lieu de s'y croiser, et le tirage sert la
-dette avant le reste — le rang seul ne suffirait pas, le tirage tourne de thème
-en thème et une séance plafonnée laisserait la dette des derniers thèmes
-derrière elle. Une faute pendant une révision fait ce qu'elle fait partout — la
+**Le quiz** reçoit deux tamis de plus, `aRevoir` et `nouvelles`, comme
+`nonAcquises` : ils ne se cochent pas à l'écran, c'est l'accueil qui ouvre ces
+séances. Demandés avec `erreurs`, ils s'y **additionnent** au lieu de s'y
+croiser, et le tirage sert les tas dans l'ordre — la dette, puis les révisions,
+puis le neuf. Le rang seul ne suffirait pas : le tirage tourne de thème en
+thème, et une séance plafonnée laisserait la dette des derniers thèmes derrière
+elle, ou donnerait à du neuf la place d'une révision due. Une faute pendant une révision fait ce qu'elle fait partout — la
 question entre dans la dette, et la place revient avec une autre question due.
 Les matières ne se mélangent pas : une séance reste dans la sienne.
 
@@ -86,8 +95,8 @@ Les matières ne se mélangent pas : une séance reste dans la sienne.
 
 | Route | Rôle |
 |---|---|
-| `GET /api/revisions?fuseau=` | par matière : à revoir aujourd'hui, demain, suivies, en dette, prochaine échéance |
-| `POST /api/quiz/session?fuseau=` | avec `aRevoir: true`, une séance sur ce qui est dû ; avec `erreurs: true` en plus, la dette d'abord |
+| `GET /api/revisions?fuseau=` | par matière : à revoir aujourd'hui, demain, suivies, en dette, nouvelles, prochaine échéance |
+| `POST /api/quiz/session?fuseau=` | avec `aRevoir: true`, une séance sur ce qui est dû ; avec `erreurs: true` en plus, la dette d'abord ; avec `nouvelles: true`, le neuf en dernier |
 
 La reprise d'une place ratée pendant une révision se calcule sans fuseau — la
 réponse n'en porte pas —, donc sur la journée du site. Le bord du tas peut s'en

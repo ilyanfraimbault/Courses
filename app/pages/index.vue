@@ -35,13 +35,16 @@ const { data: revisions } = await useLazyFetch<Revisions>('/api/revisions', {
 })
 
 /**
- * La liste du jour : ce qu'un contrôle demande, et une séance par matière où
- * quelque chose attend. Rien d'autre — c'est la page qu'on ouvre pour savoir
- * quoi faire, pas pour tout voir.
+ * La liste du jour : ce qu'un contrôle demande, et une séance par matière qui
+ * n'est pas close. Rien d'autre — c'est la page qu'on ouvre pour savoir quoi
+ * faire, pas pour tout voir.
  *
- * La dette et les révisions ne font qu'une séance, pas deux boutons : l'élève
- * n'a pas à arbitrer entre les deux, l'ordre est connu — la dette d'abord, puis
- * ce qui revient. Le compte brut reste lisible sur « Mes domaines ».
+ * La dette, les révisions et le neuf ne font qu'une séance, pas trois boutons :
+ * l'élève n'a pas à arbitrer, l'ordre est connu — la dette d'abord, puis ce qui
+ * revient, puis de quoi avancer pour finir les vingt places. Sans le neuf, une
+ * matière pas encore commencée n'aurait jamais de séance, faute de rien à
+ * reprendre ni à revoir. Seule une matière entièrement sue et sans échéance
+ * aujourd'hui n'en a pas. Le compte brut reste lisible sur « Mes domaines ».
  */
 const taches = computed(() => {
   const liste: { cle: string, icone: string, titre: string, detail: string, action: string, controle?: number, matiere?: string, seance?: Record<string, unknown> }[] = []
@@ -59,14 +62,18 @@ const taches = computed(() => {
     })
   }
   for (const m of revisions.value?.matieres ?? []) {
-    if (!m.enDette && !m.aRevoir) continue
     const dette = Math.min(m.enDette, TAILLE_SEANCE)
     const revoir = Math.min(m.aRevoir, TAILLE_SEANCE - dette)
+    const neuves = Math.min(m.nouvelles, TAILLE_SEANCE - dette - revoir)
+    // Le neuf qui ne tient pas dans la séance n'« attend » pas : il n'a pas
+    // d'échéance. Seules la dette et les révisions glissent à demain.
     const reste = m.enDette + m.aRevoir - dette - revoir
-    const total = dette + revoir
+    const total = dette + revoir + neuves
+    if (!total) continue
     const morceaux: string[] = []
     if (dette) morceaux.push(`${dette} ratée${dette > 1 ? 's' : ''} à retrouver`)
     if (revoir) morceaux.push(`${revoir} à revoir`)
+    if (neuves) morceaux.push(`${neuves} nouvelle${neuves > 1 ? 's' : ''}`)
     liste.push({
       cle: `seance-${m.cle}`,
       icone: 'i-lucide-zap',
@@ -74,7 +81,7 @@ const taches = computed(() => {
       detail: `${m.titre} · ${morceaux.join(', puis ')}${reste ? ` · ${reste} de plus attendront demain` : ''}`,
       action: 'Lancer',
       matiere: m.cle,
-      seance: { matiere: m.cle, erreurs: dette > 0, aRevoir: revoir > 0, taille: total }
+      seance: { matiere: m.cle, erreurs: dette > 0, aRevoir: revoir > 0, nouvelles: neuves > 0, taille: total }
     })
   }
   return liste
@@ -125,11 +132,11 @@ const choixOuvert = computed({
   set: (ouvert: boolean) => { if (!ouvert) choix.value = null }
 })
 const matiereChoisie = computed(() => catalogue.value?.matieres.find(m => m.cle === choix.value?.matiere) ?? null)
-const filtreJour = useTemplateRef<{ disponibles: number }>('filtreJour')
+const filtreJour = useTemplateRef<{ disponibles: number, urgentes: number }>('filtreJour')
 const tailleChoisie = computed(() => Math.min(TAILLE_SEANCE, filtreJour.value?.disponibles ?? 0))
 
 async function choisir(matiere: string) {
-  choix.value = { matiere, themes: [], sections: [], notions: [], erreurs: true, aRevoir: true }
+  choix.value = { matiere, themes: [], sections: [], notions: [], erreurs: true, aRevoir: true, nouvelles: true }
   await lireCatalogue()
 }
 
@@ -312,7 +319,7 @@ useSeoMeta({ title: 'Aujourd\'hui' })
             class="size-6 text-dimmed"
           />
           <p class="mt-2 mb-0 font-medium text-highlighted">
-            Rien d'urgent aujourd'hui
+            Rien à travailler aujourd'hui
           </p>
           <p class="mx-auto mt-1 mb-0 max-w-md text-sm text-muted">
             <template v-if="demain">
@@ -336,7 +343,7 @@ useSeoMeta({ title: 'Aujourd\'hui' })
       <UModal
         v-model:open="choixOuvert"
         title="Sur quoi travailler aujourd'hui ?"
-        description="Coche les chapitres ou les parties du cours. La séance y prend la dette, puis ce qui revient."
+        description="Coche les chapitres ou les parties du cours. La séance y prend la dette, puis ce qui revient, puis du neuf."
         :ui="{ content: 'sm:max-w-2xl' }"
       >
         <template #body>
@@ -367,7 +374,7 @@ useSeoMeta({ title: 'Aujourd\'hui' })
         <template #footer>
           <div class="flex w-full flex-wrap items-center justify-end gap-2">
             <span
-              v-if="(filtreJour?.disponibles ?? 0) > TAILLE_SEANCE"
+              v-if="(filtreJour?.urgentes ?? 0) > TAILLE_SEANCE"
               class="me-auto text-xs text-muted"
             >
               {{ TAILLE_SEANCE }} aujourd'hui, le reste attendra demain.

@@ -85,6 +85,8 @@ export interface SectionCatalogue {
   ratees: number
   /** Celles qui sont sues et dont la révision tombe aujourd'hui. */
   aRevoir: number
+  /** Celles qui n'ont jamais été trouvées ni ratées : du neuf. */
+  nouvelles: number
   /** La page de la section est close, ou son chapitre, ou sa matière. */
   clos: boolean
   /**
@@ -106,6 +108,7 @@ export interface NotionCatalogue {
   questions: number
   ratees: number
   aRevoir: number
+  nouvelles: number
 }
 
 export interface ThemeCatalogue {
@@ -122,6 +125,7 @@ export interface ThemeCatalogue {
   questions: number
   ratees: number
   aRevoir: number
+  nouvelles: number
   clos: boolean
   sections: SectionCatalogue[]
 }
@@ -148,6 +152,7 @@ export interface MatiereCatalogue {
   questions: number
   ratees: number
   aRevoir: number
+  nouvelles: number
   clos: boolean
   themes: ThemeCatalogue[]
 }
@@ -158,6 +163,8 @@ export interface CatalogueQuiz {
   ratees: number
   /** Questions à revoir aujourd'hui, toutes matières confondues. */
   aRevoir: number
+  /** Questions jamais trouvées ni ratées, toutes matières confondues. */
+  nouvelles: number
   matieres: MatiereCatalogue[]
   /** Bornes acceptées pour la taille d'un tirage, pour que le client n'invente rien. */
   tailleMin: number
@@ -193,6 +200,14 @@ export interface FiltreQuiz {
    * l'écran du quiz — c'est la page d'accueil qui ouvre ces séances.
    */
   aRevoir?: boolean
+  /**
+   * Prendre aussi ce qui n'a jamais été trouvé ni raté. C'est ce qui remplit la
+   * séance du jour quand la dette et les révisions n'y suffisent pas : sans
+   * lui, une matière qu'on n'a pas encore travaillée n'aurait jamais de séance,
+   * puisqu'elle n'a rien à reprendre ni à revoir. Il s'additionne à `erreurs` et
+   * `aRevoir`, et passe après eux au tirage.
+   */
+  nouvelles?: boolean
   /**
    * Prendre aussi ce qui est clos quand rien n'est coché. Une clôture retire
    * du « tout », jamais du « coché » ; les séances d'un contrôle, elles, portent
