@@ -31,7 +31,7 @@ const direction = computed(() => grandEcran.value ? 'right' : 'bottom')
 // On reporte donc la classe sur le contenu lui-même.
 const ui = computed(() => ({
   content: grandEcran.value
-    ? 'cours-body w-full max-w-xl'
+    ? 'cours-body w-full max-w-2xl'
     : 'cours-body max-h-[85vh]'
 }))
 </script>
