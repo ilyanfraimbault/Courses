@@ -1,13 +1,19 @@
 ---
-title: Logique et raisonnements
-description: Calcul propositionnel et calcul des prédicats — le travail en autonomie du chapitre, corrigé question par question.
+title: Éléments de logique mathématique
+description: Calcul propositionnel et calcul des prédicats — le cours, la feuille d'exercices et le travail en autonomie, corrigés question par question.
 annee: A1
 matiere: Mathématiques pour l'ingénieur
 ordre: 1
 icone: i-lucide-binary
 ---
 
-Le premier chapitre du cours : lire et écrire une implication, établir une table de vérité, reconnaître un raisonnement invalide, puis manier les quantificateurs — les nier, comprendre pourquoi leur ordre compte, et s'en servir pour dire ce qu'est une fonction croissante ou une suite convergente.
+Le premier chapitre du cours : la grammaire du raisonnement. D'abord le calcul propositionnel — négation, « et », « ou », implication, équivalence, tables de vérité et tautologies —, puis le calcul des prédicats — quantificateurs, leur négation, leur ordre —, mis au service de la continuité, des suites et des familles de vecteurs.
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/cours" titre="Le cours" description="Onze sections, du calcul propositionnel aux règles sur les quantificateurs, chacune avec un exemple traité et un contrôle express" type="cours" meta="33 questions"}
+::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/feuille" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille, dans l'ordre du sujet : tables de vérité, tautologies, quantificateurs et négations, continuité, suites, familles libres" type="exercices" meta="39 questions"}
+::
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/exercices" titre="Le travail en autonomie" description="Les six activités du sujet et son défi de synthèse, dans l'ordre : du calcul propositionnel au calcul des prédicats" type="exercices" meta="23 questions"}
 ::
