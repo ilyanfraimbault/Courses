@@ -15,10 +15,10 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/cours" titre="Le cours" description="Calcul propositionnel et calcul des prédicats : connecteurs, tables de vérité, tautologies, quantificateurs, leur négation et leur ordre" type="cours" meta="33 questions"}
 ::
 
-::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/feuille" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille, de l'implication aux familles libres" type="exercices" meta="39 questions"}
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/feuille" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille, de l'implication aux familles libres" type="exercices" meta="42 questions"}
 ::
 
-::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/exercices" titre="Le travail en autonomie" description="Calcul propositionnel et calcul des prédicats : implication et contraposée, tables de vérité, négation des quantificateurs, et la définition de la limite d'une suite" type="exercices" meta="23 questions"}
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/exercices" titre="Le travail en autonomie" description="Calcul propositionnel et calcul des prédicats : implication et contraposée, tables de vérité, négation des quantificateurs, et la définition de la limite d'une suite" type="exercices" meta="24 questions"}
 ::
 
 ## Raisonnements mathématiques
