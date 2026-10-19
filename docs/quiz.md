@@ -16,12 +16,12 @@ au bout de N questions : elle se termine quand les N **places** sont acquises.
 Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 `qcm_tentative`, une séance de quiz dans `quiz_session`.
 
-## La banque : 334 questions, aucune écrite pour le quiz
+## La banque : 428 questions, aucune écrite pour le quiz
 
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
 les exercices du TD, les fiches d'entraînement, les révisions, le cours et le QCM
-de contenu. Sur les 376 questions du site, **334** sont exploitables — celles qui portent
-une lettre attendue et au moins deux propositions. Les **42** autres sont des
+de contenu. Sur les 490 questions du site, **428** sont exploitables — celles qui portent
+une lettre attendue et au moins deux propositions. Les **62** autres sont des
 questions ouvertes, qui s'auto-évaluent : une file qui doit savoir si la réponse
 était juste ne peut rien en faire.
 
@@ -91,7 +91,7 @@ par question, **de quoi la choisir et la classer, jamais de quoi la poser**.
 L'ensemble se charge une fois en mémoire ; les énoncés, eux, ne sont jamais mis
 en cache.
 
-Le relevé porte les **376** questions du site et non les seules 334 du quiz. Le
+Le relevé porte les **490** questions du site et non les seules 428 du quiz. Le
 champ `interrogeable` fait le tri, et la banque n'est que la part vraie de ce
 champ. C'est la progression par domaine qui a demandé cet élargissement — elle
 compte aussi les questions ouvertes, sans quoi le total d'un chapitre ne
@@ -116,8 +116,9 @@ console.log(n, t);
 Attendu aujourd'hui, les chapitres désignés par leur chemin :
 
 ```
-334 {
-  '/cours/a1/mathematiques-ingenieur/logique-et-raisonnements': 22,
+428 {
+  '/cours/a1/mathematiques-ingenieur/logique-et-raisonnements': 87,
+  '/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques': 29,
   '/cours/a1/remise-a-niveau-maths/trigonometrie': 63,
   '/cours/a1/remise-a-niveau-maths/fonctions-variable-reelle': 109,
   '/cours/a1/remise-a-niveau-maths/fonctions-usuelles': 38,
@@ -198,7 +199,7 @@ par construction, et une question sans rappel se rattache au **titre de niveau 2
 qui la précède dans sa propre page** — ce qui est précisément la section dont
 elle parle, puisqu'un contrôle express est écrit sous le cours qu'il vérifie.
 
-Le relevé donne aujourd'hui **41 cases pour 334 questions**, et chaque chapitre
+Le relevé donne aujourd'hui **53 cases pour 428 questions**, et chaque chapitre
 est couvert sans reste :
 
 | Chapitre | Cases | Questions |
@@ -207,7 +208,8 @@ est couvert sans reste :
 | Fonctions d'une variable réelle | 6 | 109 |
 | Fonctions usuelles | 8 | 38 |
 | Nombres complexes | 8 | 102 |
-| Logique et raisonnements (maths pour l'ingénieur) | 7 | 22 |
+| Éléments de logique (maths pour l'ingénieur) | 11 | 87 |
+| Raisonnements mathématiques (maths pour l'ingénieur) | 8 | 29 |
 
 Huit questions n'ont pas de section : deux rappels de cours pointent vers une
 page sans ancre. Elles tombent dans une case « Le reste du chapitre », qui
@@ -486,8 +488,8 @@ QUIZ_BASE=http://localhost:3210 NUXT_CODE_INSCRIPTION=essai pnpm verif:quiz
 
 Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 
-- 334 questions dans la banque, rangées par matière puis sur cinq chapitres
-  désignés par leur chemin et 41 sections de cours, chaque chapitre couvert
+- 428 questions dans la banque, rangées par matière puis sur six chapitres
+  désignés par leur chemin et 53 sections de cours, chaque chapitre couvert
   **sans reste** et sans intitulé en double ;
 - la bonne réponse n'est pas dans la charge utile d'une question ;
 - l'ordre des propositions est brassé, et deux lectures d'une même place

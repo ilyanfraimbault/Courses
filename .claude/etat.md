@@ -1,6 +1,6 @@
 # Où en est le projet
 
-Dernière mise à jour : 27 septembre 2026.
+Dernière mise à jour : 19 octobre 2026.
 
 ## En ligne
 
@@ -75,6 +75,11 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 - **Clôtures** : une matière, un chapitre ou une fiche se clôt ; ce qui est clos
   sort de la progression, des révisions et des séances sur toute la matière, et
   reste grisé dans le sommaire. Voir `docs/clotures.md`.
+- **Mathématiques pour l'ingénieur** : deux chapitres importés des PDF du
+  professeur — *Éléments de logique mathématique* (cours, feuille d'exercices et
+  travail en autonomie) et *Raisonnements mathématiques* (cours et feuille) —,
+  137 questions dont 116 au quiz. Les feuilles n'ont pas de corrigé : les
+  solutions sont les nôtres. Le site compte désormais 490 questions, 428 au quiz.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes
   silencieuses.

@@ -27,8 +27,9 @@ const TRIGO = MATIERE + '/trigonometrie'
 
 // Le compte de référence de la banque. Il suit le contenu : 432 avec les sept
 // QCM de contenu, 312 depuis le retrait des QCM 1 à 6 et de leurs 120 questions,
-// 334 avec le premier chapitre de mathématiques pour l'ingénieur.
-const BANQUE = 334
+// 334 avec le premier chapitre de mathématiques pour l'ingénieur, 428 avec ses
+// cours et ses feuilles d'exercices de logique et de raisonnements.
+const BANQUE = 428
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)
