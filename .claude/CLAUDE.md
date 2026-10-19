@@ -89,7 +89,7 @@ Voir `docs/mes-qcm.md`.
 de ce booléen, la progression par domaine lit tout. Deux relevés côte à côte se
 contrediraient le jour où l'un changerait.
 
-**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 428 questions
+**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 426 questions
 sont celles des fiches, découpées dans l'arbre de la page au moment de les
 poser — énoncé, propositions, indice, solution et rappel de cours compris.
 Corriger un cours corrige le quiz. Le thème d'une question vient du rappel de
@@ -172,6 +172,26 @@ comparer.
 qu'on a changé se lit dans le diff ; ce qui mérite d'être écrit, c'est ce qui a
 motivé le changement et ce qu'on a mesuré.
 
+**Un cours suit la logique de son professeur, pas un gabarit.** Chaque prof
+range sa matière à sa façon : un dossier par chapitre avec cours, feuille et
+diapos, un TD unique, des annales… L'arborescence du site **calque celle des
+documents reçus** — un chapitre par dossier, une fiche par document, nommés
+comme le prof les nomme — au lieu de plaquer le découpage d'une autre matière.
+Deux matières peuvent donc avoir des chapitres de formes très différentes, et
+c'est voulu. Exception : les **diapos** projetées en amphi ne deviennent pas une
+fiche — elles doublent le cours, et des slides n'ont rien à faire en page web ;
+on s'en sert pour vérifier le cours, pas pour les réafficher. Fondre deux
+documents en une fiche, ou en inventer une que le prof n'a pas faite, se
+demande d'abord.
+
+**La réponse prend la forme que la question appelle.** Le choix à quatre
+propositions est un format parmi d'autres, pas le moule de toute question. Une
+table de vérité se **remplit** case par case (`table-verite`), un angle se lit
+sur un cercle (`cercle-trigo`), un tableau de variations se dresse : quand un
+cours demande un geste que les composants existants ne savent pas corriger, on
+écrit le composant. Le critère : ce que l'élève ferait sur sa copie, et ce qui
+se lit le mieux.
+
 **Commenter le pourquoi, jamais le quoi.** Les commentaires du dépôt expliquent
 des décisions et des pièges. Les imiter, ne pas paraphraser le code.
 
@@ -216,7 +236,7 @@ par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : 
   rappel de cours, la file qui rejoue une place ratée, et ce qu'il n'écrit pas.
 - `docs/domaines.md` — la progression rangée par point de cours : d'où viennent
   les domaines, ce que les deux segments d'une barre veulent dire, et pourquoi
-  le relevé porte les 490 questions et non les seules 428 du quiz.
+  le relevé porte les 490 questions et non les seules 426 du quiz.
 - `docs/controles.md` — les contrôles : le programme, la feuille de route et
   son découpage, l'examen blanc, le fuseau de l'élève.
 - `docs/revisions.md` — la révision espacée, déduite de l'histoire, et

@@ -10,7 +10,7 @@ Chaque chapitre se décline en fiches, et chaque lien ci-dessous porte une pasti
 
 Les réponses ont été vérifiées par le calcul — tables de vérité et négations éprouvées sur toutes les valuations, identités contrôlées avec sympy — et, pour le travail en autonomie, confrontées au corrigé du sujet.
 
-## Éléments de logique mathématique
+## Logique propositionnelle
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/cours" titre="Le cours" description="Calcul propositionnel et calcul des prédicats : connecteurs, tables de vérité, tautologies, quantificateurs, leur négation et leur ordre" type="cours" meta="33 questions"}
 ::

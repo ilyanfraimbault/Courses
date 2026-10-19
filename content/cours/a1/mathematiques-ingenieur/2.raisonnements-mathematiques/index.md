@@ -14,3 +14,4 @@ Le second chapitre met la logique au travail : chaque tautologie du chapitre pr�
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/exercices" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille, dans l'ordre du sujet : parité, divisibilité, Bernoulli, Taylor, binôme, irrationalité, équations fonctionnelles" type="exercices" meta="18 questions"}
 ::
+

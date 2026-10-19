@@ -85,6 +85,26 @@ watch(solutionOuverte, (ouverte) => {
   if (ouverte) solutionLue.value = true
 })
 
+// Une question qui se remplit — une table de vérité — se corrige case par case :
+// ni lettre à comparer, ni auto-évaluation à proposer. Le composant s'inscrit
+// en se montant, et rend ses verdicts ici, où vit la règle des fautes.
+const remplie = ref(false)
+provideQuestionRemplie({
+  trouvee: trouve,
+  inscrire: () => { remplie.value = true },
+  verifier: (juste) => {
+    if (trouve.value) return
+    if (juste) {
+      progression?.reussir(identite.value, 'table')
+      return
+    }
+    // Même règle qu'un choix : une seule faute par visite, et l'indice s'ouvre.
+    if (!errones.value.length) progression?.rater(identite.value)
+    errones.value = [...errones.value, 'table']
+    if (hasIndice.value) indiceOuvert.value = true
+  }
+})
+
 // « Tout afficher / tout masquer », en tête des pages qui le proposent. Les
 // compteurs laissent à chaque question son état entre deux commandes globales.
 if (reveal) {
@@ -135,10 +155,10 @@ if (reveal) {
 
     <template #message>
       <p
-        v-if="aChoix && !trouve && errones.length"
+        v-if="(aChoix || remplie) && !trouve && errones.length"
         class="mt-3 mb-0 text-sm text-muted"
       >
-        Ce n'est pas ça.
+        {{ remplie ? 'Des cases sont fausses : elles sont marquées en rouge.' : 'Ce n\'est pas ça.' }}
         <template v-if="hasIndice">
           L'indice est ouvert : relis-le, puis retente — autant de fois qu'il faudra.
         </template>
@@ -151,7 +171,7 @@ if (reveal) {
     <!-- Question ouverte : rien à cocher, donc on se note soi-même, mais
          seulement une fois la solution lue. -->
     <template
-      v-if="!aChoix && solutionLue"
+      v-if="!aChoix && !remplie && solutionLue"
       #apres
     >
       <div class="mt-3 flex flex-wrap items-center gap-2">

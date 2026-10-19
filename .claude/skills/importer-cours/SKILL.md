@@ -49,16 +49,35 @@ fiches d'exercices.
 
 ## 2. Écrire les fiches
 
-Un chapitre se décline comme ceux qui existent (voir
-`content/cours/a1/remise-a-niveau-maths/4.nombres-complexes/`) :
+**L'arborescence calque celle des documents du professeur.** Chaque prof range
+sa matière à sa façon, et le site le suit : un chapitre par dossier reçu, une
+fiche par document, dans l'ordre et sous les noms que le prof leur donne. Il n'y
+a pas de gabarit commun à toutes les matières. Par exemple :
 
-| Fichier | `type` | Contenu |
-|---|---|---|
-| `index.md` | — | le chapitre : titre, description, cartes vers ses fiches |
-| `1.cours.md` | `cours` | le cours, section par section, chaque notion suivie d'un `::exemple` traité |
-| `2.exercices.md` | `exercices` | le TD dans l'ordre du sujet, un `:::exercice` par exercice |
-| `3.revisions.md` | `exercices` | facultatif : des exercices en plus, quand le TD est court |
-| `4.entrainement.md` | `entrainement` | facultatif : quinze questions en cinq paliers, de zéro au niveau du TD |
+- la remise à niveau (`4.nombres-complexes/`) a un TD par chapitre : cours,
+  exercices, et des révisions et un entraînement ajoutés parce que le TD est court ;
+- les mathématiques pour l'ingénieur ont un dossier par chapitre qui contient un
+  cours, une feuille d'exercices et des diapos : chaque chapitre a une fiche
+  `cours` et une fiche `exercices` (`/feuille` pour la logique, dont `/exercices`
+  était déjà pris par le travail en autonomie).
+
+Les **diapos ne deviennent jamais une fiche** : elles doublent le cours, et des
+slides n'ont rien à faire en page web. On les lit pour recouper le cours.
+
+Le `type` d'une fiche dit comment elle se lit :
+
+| `type` | Pour |
+|---|---|
+| `cours` | le cours, section par section, chaque notion suivie d'un `::exemple` traité |
+| `exercices` | un TD ou une feuille, dans l'ordre du sujet, un `:::exercice` par exercice |
+| `entrainement` | des questions en paliers, de zéro au niveau du TD |
+| `qcm` | un QCM de contenu |
+| `formulaire` | des formules à consulter, sans question |
+
+Fondre deux documents en une fiche, ou ajouter une fiche que le prof n'a pas
+faite (révisions, entraînement), se **demande** à l'utilisateur avant d'écrire.
+Chaque `index.md` de chapitre porte `title`, `description`, `ordre`, `icone`, et
+des cartes vers ses fiches.
 
 ### Fidélité
 
@@ -80,8 +99,21 @@ quiz et une étape possible de la feuille de route d'un contrôle. Donc :
 
 ### Les questions
 
-Une question qui se corrige toute seule vaut mieux qu'une question ouverte : elle
-entre au quiz, dans les contrôles et dans les QCM composés. D'où :
+Une question qui se corrige toute seule vaut mieux qu'une question ouverte. Mais
+**la réponse prend la forme que la question appelle** : ce que l'élève ferait sur
+sa copie, et ce qui se lit le mieux. Le choix à quatre propositions n'est qu'un
+format parmi d'autres :
+
+- **une table de vérité se remplit** case par case (`table-verite`, dans une
+  question sans `bonne`), au lieu d'un choix entre quatre colonnes « V, V, F… »
+  illisibles ;
+- un angle se lit sur le cercle (`cercle-trigo`), un tableau de variations se
+  dresse ;
+- **quand un cours demande un geste qu'aucun composant ne sait corriger, on écrit
+  le composant** (`app/components/content/`), puis on le documente dans
+  `syntaxe.md`.
+
+Pour les choix à propositions :
 
 - **Un résultat calculable devient un choix à quatre propositions** (`bonne="…"`,
   `#a` à `#d`). Les trois fausses sont des **erreurs typiques** — signe oublié,
