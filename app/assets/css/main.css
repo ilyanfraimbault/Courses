@@ -184,6 +184,29 @@
   max-width: 100%;
 }
 
+/* Le tiroir latéral prend la largeur de ce qu'il montre, plutôt qu'une largeur
+   fixe : à 36rem, deux équivalences côte à côte étaient coupées au bord, et la
+   barre de défilement qui les rendait lisibles ne se voyait pas. Il s'ouvre donc
+   à sa largeur de base et s'élargit jusqu'à sa formule ou son tableau le plus
+   large, dans la limite de l'écran.
+
+   Le piège : `fit-content` se règle sur la largeur d'une ligne de chaque
+   paragraphe écrit sans retour, et le moindre paragraphe pousserait le tiroir à
+   la limite. `contain: inline-size` retire le texte de ce calcul — il s'enroule
+   dans la largeur que lui laissent les formules — et seuls les blocs qui portent
+   une formule ou un tableau imposent la leur. Une formule en bloc arrive souvent
+   seule, sans paragraphe autour : elle s'exclut elle-même, pas seulement par ce
+   qui la contient. */
+.cours-tiroir-ajuste {
+  width: fit-content;
+  min-width: min(36rem, 100vw);
+  max-width: calc(100vw - 3rem);
+}
+
+.cours-tiroir-ajuste .cours-overlay-corps > :not(table, .katex-display):not(:has(.katex-display, table)) {
+  contain: inline-size;
+}
+
 /* Les formules en bloc sont plus serrées qu'en pleine page : dans un panneau
    étroit, l'espacement par défaut de KaTeX creuse des trous inutiles. */
 .cours-overlay-corps .katex-display {

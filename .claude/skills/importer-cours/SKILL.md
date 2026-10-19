@@ -104,6 +104,11 @@ Une question qui se corrige toute seule vaut mieux qu'une question ouverte. Mais
 sa copie, et ce qui se lit le mieux. Le choix à quatre propositions n'est qu'un
 format parmi d'autres :
 
+- **un vrai ou faux se tranche entre deux propositions**, « Vraie » et « Fausse »
+  (ou « Oui » et « Non ») — sans justification accolée : quatre propositions
+  qui mêlent la valeur et sa raison soufflent la réponse. La justification va
+  dans la solution. Le choix à quatre ne vaut que si la réponse est un objet à
+  écrire (une négation, une formule, un ensemble) ;
 - **une table de vérité se remplit** case par case (`table-verite`, dans une
   question sans `bonne`), au lieu d'un choix entre quatre colonnes « V, V, F… »
   illisibles ;
@@ -119,7 +124,8 @@ Pour les choix à propositions :
   `#a` à `#d`). Les trois fausses sont des **erreurs typiques** — signe oublié,
   facteur `u'` manquant, une seule des deux familles de solutions —, jamais des
   valeurs au hasard. La solution les nomme : « **b** oublie le facteur… ».
-- **La bonne lettre varie** : répartir à peu près également entre a, b, c et d.
+- **La bonne lettre varie** : répartir à peu près également entre a, b, c et d
+  (entre a et b pour un vrai ou faux).
 - **Une démonstration, une étude, un tableau de variations** restent ouverts
   (pas de `bonne`) : ils s'auto-évaluent sur la fiche et ne vont pas au quiz.
 - **Toute question a un `#indice`** (la piste, sans le résultat) et une

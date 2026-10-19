@@ -185,7 +185,9 @@ documents en une fiche, ou en inventer une que le prof n'a pas faite, se
 demande d'abord.
 
 **La réponse prend la forme que la question appelle.** Le choix à quatre
-propositions est un format parmi d'autres, pas le moule de toute question. Une
+propositions est un format parmi d'autres, pas le moule de toute question : un
+vrai ou faux se tranche entre « Vraie » et « Fausse », sans justification
+accolée qui soufflerait la réponse. Une
 table de vérité se **remplit** case par case (`table-verite`), un angle se lit
 sur un cercle (`cercle-trigo`), un tableau de variations se dresse : quand un
 cours demande un geste que les composants existants ne savent pas corriger, on
