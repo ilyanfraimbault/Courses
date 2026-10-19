@@ -15,13 +15,15 @@ export default defineEventHandler(async (event): Promise<CatalogueQuiz> => {
   const uid = await idUtilisateur(event)
   const db = useBase()
   const banque = await chargerBanque(event)
-  // Les révisions du jour se comptent case par case pour que la séance du jour
-  // puisse se restreindre à quelques chapitres en sachant ce qu'elle y trouvera.
-  // `?fuseau=` : la journée est celle de l'élève, comme partout.
+  // Les révisions du jour et le neuf se comptent case par case pour que la
+  // séance du jour puisse se restreindre à quelques chapitres en sachant ce
+  // qu'elle y trouvera. `?fuseau=` : la journée est celle de l'élève, comme
+  // partout.
   return composerCatalogue(
     banque,
     questionsEnDette(db, uid),
     questionsARevoir(db, uid, banque, maintenantPour(event).fin),
-    cheminsClos(db, uid)
+    cheminsClos(db, uid),
+    questionsTrouvees(db, uid)
   )
 })

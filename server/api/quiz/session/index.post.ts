@@ -1,4 +1,5 @@
 import type { FiltreQuiz, QuestionQuiz, SessionQuiz } from '~~/shared/types/quiz'
+import type { EntreeBanque } from '../../../utils/quiz-banque.ts'
 import type { EtatFile, LigneSession } from '../../../utils/quiz-session.ts'
 
 interface CorpsSession {
@@ -9,6 +10,7 @@ interface CorpsSession {
   erreurs?: unknown
   nonAcquises?: unknown
   aRevoir?: unknown
+  nouvelles?: unknown
   ignorerClotures?: unknown
   taille?: unknown
 }
@@ -41,6 +43,7 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
     erreurs: corps?.erreurs === true,
     nonAcquises: corps?.nonAcquises === true,
     aRevoir: corps?.aRevoir === true,
+    nouvelles: corps?.nouvelles === true,
     ignorerClotures: corps?.ignorerClotures === true
   }
 
@@ -52,7 +55,7 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   const db = useBase()
   const banque = await chargerBanque(event)
   const enDette = questionsEnDette(db, uid)
-  const trouvees = filtre.nonAcquises ? questionsTrouvees(db, uid) : undefined
+  const trouvees = filtre.nonAcquises || filtre.nouvelles ? questionsTrouvees(db, uid) : undefined
   // L'échéance se compte jusqu'à la fin de la journée **de l'élève** : le
   // client passe son fuseau en adresse, comme pour les contrôles.
   const aRevoir = filtre.aRevoir ? questionsARevoir(db, uid, banque, maintenantPour(event).fin) : undefined
@@ -60,15 +63,17 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   if (!candidats.length) {
     throw createError({
       statusCode: 400,
-      statusMessage: filtre.erreurs && filtre.aRevoir
-        ? 'rien à reprendre ni à revoir aujourd\'hui dans cette sélection'
-        : filtre.erreurs
-          ? 'aucune question ratée ne correspond à cette sélection'
-          : filtre.nonAcquises
-            ? 'tout est déjà su dans cette sélection'
-            : filtre.aRevoir
-              ? 'rien à revoir aujourd\'hui dans cette sélection'
-              : 'aucune question ne correspond à cette sélection'
+      statusMessage: filtre.nouvelles
+        ? 'tout est su, et rien n\'est à reprendre ni à revoir aujourd\'hui dans cette sélection'
+        : filtre.erreurs && filtre.aRevoir
+          ? 'rien à reprendre ni à revoir aujourd\'hui dans cette sélection'
+          : filtre.erreurs
+            ? 'aucune question ratée ne correspond à cette sélection'
+            : filtre.nonAcquises
+              ? 'tout est déjà su dans cette sélection'
+              : filtre.aRevoir
+                ? 'rien à revoir aujourd\'hui dans cette sélection'
+                : 'aucune question ne correspond à cette sélection'
     })
   }
 
@@ -76,17 +81,29 @@ export default defineEventHandler(async (event): Promise<{ session: SessionQuiz,
   // on en donne autant qu'il y en a, et la taille de la séance le dit.
   const rang = rangDuTirage(db, uid, enDette)
   const taille = Math.min(demandee, candidats.length)
-  // La séance du jour pose la dette **avant** les révisions, en entier si la
-  // place le permet. Le rang seul ne suffit pas : le tirage tourne de thème en
-  // thème, et une séance plafonnée laisserait derrière elle la dette des thèmes
-  // servis en dernier.
-  const tirees = filtre.erreurs && filtre.aRevoir
-    ? (() => {
-        const dette = tirer(candidats.filter(e => enDette.has(e.id)), taille, rang)
-        const reste = tirer(candidats.filter(e => !enDette.has(e.id)), taille - dette.length, rang)
-        return [...dette, ...reste]
-      })()
-    : tirer(candidats, taille, rang)
+  // La séance du jour pose la dette **avant** les révisions, et les révisions
+  // avant le neuf, chaque tas en entier si la place le permet. Le rang seul ne
+  // suffit pas : le tirage tourne de thème en thème, et une séance plafonnée
+  // laisserait derrière elle la dette des thèmes servis en dernier — ou
+  // remplirait de neuf la place d'une révision due.
+  const tas = [
+    filtre.erreurs ? (e: EntreeBanque) => enDette.has(e.id) : null,
+    filtre.aRevoir ? (e: EntreeBanque) => !!aRevoir?.has(e.id) : null,
+    filtre.nouvelles ? () => true : null
+  ].filter(t => t !== null)
+  const tirees: EntreeBanque[] = []
+  if (tas.length > 1) {
+    const prises = new Set<string>()
+    for (const dans of tas) {
+      const restants = candidats.filter(e => !prises.has(e.id) && dans(e))
+      for (const e of tirer(restants, taille - tirees.length, rang)) {
+        prises.add(e.id)
+        tirees.push(e)
+      }
+    }
+  } else {
+    tirees.push(...tirer(candidats, taille, rang))
+  }
 
   const etat: EtatFile = {
     version: 1,

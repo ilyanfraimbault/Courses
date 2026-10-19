@@ -68,9 +68,9 @@ l'hydratation.
 ## La séance du jour, restreinte
 
 Sur l'accueil, « Choisir » ouvre le plan de la matière, case par case, avec ce
-que chacune attend **aujourd'hui** : « 2 à reprendre · 5 à revoir ». Le
-catalogue compte pour cela les révisions dues par section (`aRevoir`), dans le
-fuseau de l'élève. Le choix vaut pour une séance et ne se retient pas : ce qui
+que la séance peut y prendre **aujourd'hui** : « 2 à reprendre · 5 à revoir ·
+12 nouvelles ». Le catalogue compte pour cela, par section, les révisions dues
+(`aRevoir`, dans le fuseau de l'élève) et le neuf (`nouvelles`). Le choix vaut pour une séance et ne se retient pas : ce qui
 doit durer, c'est la clôture.
 
 ## Les routes

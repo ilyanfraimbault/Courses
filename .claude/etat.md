@@ -69,8 +69,8 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 - **Révision espacée** : une question sue revient à 1, 3, 7, 16, 35 et 90 jours,
   déduite de l'histoire sans table à elle. L'accueil s'appelle « Aujourd'hui » et
   commence par ce qu'il y a à faire : la consigne de chaque contrôle, et une
-  seule séance par matière — la dette puis les révisions, vingt questions au
-  plus, un seul bouton, et « Choisir » pour la restreindre à quelques
+  seule séance par matière non close — la dette, puis les révisions, puis du
+  neuf, vingt questions au plus, un seul bouton, et « Choisir » pour la restreindre à quelques
   chapitres. Voir `docs/revisions.md`.
 - **Clôtures** : une matière, un chapitre ou une fiche se clôt ; ce qui est clos
   sort de la progression, des révisions et des séances sur toute la matière, et

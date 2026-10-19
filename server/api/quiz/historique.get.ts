@@ -67,7 +67,7 @@ export default defineEventHandler(async (event): Promise<HistoriqueQuiz> => {
       ...(filtre.notions ?? []).map(n => banque.entrees.find(e => e.notionCle === n)?.notionTitre ?? n.split('#').pop() ?? n)
     ]
     const tout = filtre.matiere ? 'Toute la matière' : 'Tout le programme'
-    if (filtre.erreurs && filtre.aRevoir) return ['Séance du jour', ...noms]
+    if ((filtre.erreurs && filtre.aRevoir) || filtre.nouvelles) return ['Séance du jour', ...noms]
     if (filtre.erreurs) return noms.length ? [...noms, 'ce qui restait en dette'] : ['Ce que j\'ai raté']
     if (filtre.aRevoir) return ['Révisions du jour', ...noms]
     if (filtre.nonAcquises) return noms.length ? [...noms, 'ce qui n\'était pas encore su'] : ['Ce qui n\'était pas encore su']

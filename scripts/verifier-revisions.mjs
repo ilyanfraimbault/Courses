@@ -77,6 +77,17 @@ if (r.statut >= 400) {
 const revisions = async () => (await api('/api/revisions?fuseau=Europe/Paris')).corps.matieres.find(m => m.cle === MATIERE)
 let m = await revisions()
 verifier('un compte neuf n\'a rien à revoir', m.aRevoir === 0 && m.suivies === 0 && m.enDette === 0)
+const catalogue = async () => (await api('/api/quiz/catalogue?fuseau=Europe/Paris')).corps.matieres
+const stock = (await catalogue()).find(c => c.cle === MATIERE).questions
+verifier('tout y est neuf', m.nouvelles === stock, `nouvelles ${m.nouvelles} sur ${stock}`)
+// Une matière jamais travaillée a sa séance du jour : faute de dette et de
+// révisions, elle n'en avait aucune, et l'accueil ne la proposait pas.
+const AUTRE = '/cours/a1/mathematiques-ingenieur'
+const autre = (await api('/api/revisions?fuseau=Europe/Paris')).corps.matieres.find(x => x.cle === AUTRE)
+verifier('une matière jamais ouverte a du neuf', autre?.nouvelles > 0, `nouvelles ${autre?.nouvelles}`)
+r = await api('/api/quiz/session?fuseau=Europe/Paris', { method: 'POST', body: { matiere: AUTRE, erreurs: false, aRevoir: false, nouvelles: true, taille: 20 } })
+verifier('et sa séance du jour s\'ouvre', r.statut === 201 && r.corps.session.taille === Math.min(20, autre?.nouvelles ?? 0), `statut ${r.statut}, taille ${r.corps?.session?.taille}`)
+if (r.corps?.session) await api(`/api/quiz/session/${r.corps.session.id}`, { method: 'DELETE' })
 
 // Six questions trouvées sur une fiche : on les prend dans une séance, pour
 // avoir de vraies identités interrogeables.
@@ -131,8 +142,28 @@ const nommee = s => (historique.encours?.id === s ? historique.encours : histori
 verifier('l\'historique nomme la séance de révisions', nommee(revision.id) === 'Révisions du jour', nommee(revision.id))
 verifier('et la séance du jour', nommee(jour.id) === 'Séance du jour', nommee(jour.id))
 
+// La séance du jour complète : la dette, puis ce qui est dû, puis le neuf
+// jusqu'à vingt — dans cet ordre, et jamais une question sue et non due.
+m = await revisions()
+verifier('le neuf ne compte ni les trouvées ni la dette', m.nouvelles === stock - 6, `nouvelles ${m.nouvelles} sur ${stock - 6}`)
+verifier('le catalogue compte le même neuf', (await catalogue()).find(c => c.cle === MATIERE).nouvelles === m.nouvelles)
+r = await api('/api/quiz/session?fuseau=Europe/Paris', { method: 'POST', body: { matiere: MATIERE, erreurs: true, aRevoir: true, nouvelles: true, taille: 20 } })
+verifier('la séance avec le neuf s\'ouvre', r.statut === 201, 'statut ' + r.statut)
+const complete = r.corps.session
+verifier('elle remplit ses vingt places', complete.taille === 20, `taille ${complete.taille}`)
+const file = []
+for (let p = 0; p < complete.taille; p++) file.push((await api(`/api/quiz/session/${complete.id}/question?position=${p}`)).corps.question.id)
+const connues = new Set(ids.map(q => q.id))
+verifier('la dette d\'abord', file[0] === posee.id, `première ${file[0]}`)
+verifier('puis les cinq dues', file.slice(1, 6).every(id => connues.has(id)))
+verifier('puis du neuf seulement', file.slice(6).every(id => !connues.has(id)) && new Set(file).size === file.length)
+
 r = await api('/api/quiz/session?fuseau=Europe/Paris', { method: 'POST', body: { matiere: '/cours/a1/autre-matiere', aRevoir: true, taille: 5 } })
 verifier('rien à revoir hors de la matière', r.statut === 400)
+
+const historique2 = (await api('/api/quiz/historique')).corps
+const nommee2 = (historique2.encours?.id === complete.id ? historique2.encours : historique2.sessions.find(l => l.id === complete.id))?.themes?.[0]
+verifier('l\'historique la nomme aussi', nommee2 === 'Séance du jour', nommee2)
 
 console.log(echecs.length ? `\n${echecs.length} échec(s) : ${echecs.join(' ; ')}` : '\nTout est vert.')
 process.exit(echecs.length ? 1 : 0)

@@ -33,9 +33,10 @@ const props = defineProps<{
    * qu'on a raté — et le compte ne parle plus de séance.
    *
    * « jour » pour restreindre la séance du jour de l'accueil : elle prend déjà
-   * la dette et les révisions, si bien que la case « seulement ce que j'ai
-   * raté » n'a plus d'objet, et qu'une case vaut ce qu'elle a à reprendre ou à
-   * revoir aujourd'hui, pas son stock.
+   * la dette, les révisions et le neuf, si bien que la case « seulement ce que
+   * j'ai raté » n'a plus d'objet, et qu'une case vaut ce qu'elle a à reprendre,
+   * à revoir ou à découvrir, pas son stock — ce qui est su et pas encore dû
+   * n'y entre pas.
    */
   mode?: 'seance' | 'programme' | 'jour'
 }>()
@@ -124,21 +125,29 @@ const rienDeCoche = computed(() =>
   !props.modelValue.themes.length && !props.modelValue.sections.length && !props.modelValue.notions?.length)
 const vierge = computed(() => rienDeCoche.value && (props.mode === 'jour' || !props.modelValue.erreurs))
 
+interface Case { questions: number, ratees: number, aRevoir: number, nouvelles: number }
+
 /**
  * Ce que vaut une case : son stock, sa seule dette en mode « ce que j'ai
- * raté », ou ce qu'elle attend aujourd'hui pour la séance du jour.
+ * raté », ou ce que la séance du jour peut y prendre.
  */
-function compte(entree: { questions: number, ratees: number, aRevoir: number }) {
-  if (props.mode === 'jour') return entree.ratees + entree.aRevoir
+function compte(entree: Case) {
+  if (props.mode === 'jour') return entree.ratees + entree.aRevoir + entree.nouvelles
   return props.modelValue.erreurs ? entree.ratees : entree.questions
 }
 
+/** Ce qui ne peut pas attendre : la dette et les révisions dues, sans le neuf. */
+function dues(entree: Case) {
+  return entree.ratees + entree.aRevoir
+}
+
 /** Le compte d'une case, en toutes lettres, pour la séance du jour. */
-function duJour(entree: { ratees: number, aRevoir: number }) {
+function duJour(entree: Case) {
   const morceaux: string[] = []
   if (entree.ratees) morceaux.push(`${entree.ratees} à reprendre`)
   if (entree.aRevoir) morceaux.push(`${entree.aRevoir} à revoir`)
-  return morceaux.join(' · ') || 'rien aujourd\'hui'
+  if (entree.nouvelles) morceaux.push(`${entree.nouvelles} nouvelle${entree.nouvelles > 1 ? 's' : ''}`)
+  return morceaux.join(' · ') || 'tout est su'
 }
 
 /** Quelque chose est clos dans la matière : « rien de coché » ne veut plus dire tout. */
@@ -150,28 +159,32 @@ const desClos = computed(() => props.catalogue.themes.some(t => t.clos || t.sect
  * parce qu'un compte qui dirait autre chose que ce qui sera tiré serait pire
  * que pas de compte.
  */
-const disponibles = computed(() => {
-  if (rienDeCoche.value) return compte(props.catalogue)
+function sommer(valeur: (entree: Case) => number) {
+  if (rienDeCoche.value) return valeur(props.catalogue)
   let total = 0
   for (const theme of props.catalogue.themes) {
     if (props.modelValue.themes.includes(theme.cle)) {
-      total += compte(theme)
+      total += valeur(theme)
       continue
     }
     for (const section of theme.sections) {
       if (props.modelValue.sections.includes(section.cle)) {
-        total += compte(section)
+        total += valeur(section)
         continue
       }
       for (const notion of section.notions) {
-        if (props.modelValue.notions?.includes(notion.cle)) total += compte(notion)
+        if (props.modelValue.notions?.includes(notion.cle)) total += valeur(notion)
       }
     }
   }
   return total
-})
+}
 
-defineExpose({ disponibles })
+const disponibles = computed(() => sommer(compte))
+/** Pour la séance du jour : ce qui, au-delà du plafond, glissera à demain. */
+const urgentes = computed(() => sommer(dues))
+
+defineExpose({ disponibles, urgentes })
 </script>
 
 <template>
@@ -228,9 +241,8 @@ defineExpose({ disponibles })
           Rien de coché : le contrôle porte sur toute la matière, clos compris.
         </template>
         <template v-else-if="vierge && mode === 'jour'">
-          Rien de coché : toute la matière{{ desClos ? ', hors ce que tu as clos' : '' }},
-          <strong class="text-highlighted tabular-nums">{{ disponibles }}</strong>
-          question{{ disponibles > 1 ? 's' : '' }} à reprendre ou à revoir.
+          Rien de coché : toute la matière{{ desClos ? ', hors ce que tu as clos' : '' }} —
+          {{ duJour(catalogue) }}.
         </template>
         <template v-else-if="vierge">
           Rien de coché : la séance pioche dans
