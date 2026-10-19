@@ -78,9 +78,9 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 - **Mathématiques pour l'ingénieur** : deux chapitres qui calquent les dossiers
   du professeur — *Logique propositionnelle* (cours, feuille d'exercices, et le
   travail en autonomie) et *Raisonnements mathématiques* (cours et feuille) ;
-  les diapos ne sont pas reprises. 137 questions dont 114 au quiz ; les tables
+  les diapos ne sont pas reprises. 141 questions dont 118 au quiz ; les tables
   de vérité se remplissent case par case (`table-verite`). Les feuilles n'ont pas
-  de corrigé : les solutions sont les nôtres. Le site compte 490 questions, 426
+  de corrigé : les solutions sont les nôtres. Le site compte 494 questions, 430
   au quiz.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes

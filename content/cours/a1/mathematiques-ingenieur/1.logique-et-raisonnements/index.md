@@ -12,8 +12,8 @@ Le premier chapitre du cours : la grammaire du raisonnement. D'abord le calcul p
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/cours" titre="Le cours" description="Onze sections, du calcul propositionnel aux règles sur les quantificateurs, chacune avec un exemple traité et un contrôle express" type="cours" meta="33 questions"}
 ::
 
-::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/feuille" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille, dans l'ordre du sujet : tables de vérité, tautologies, quantificateurs et négations, continuité, suites, familles libres" type="exercices" meta="39 questions"}
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/feuille" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille, dans l'ordre du sujet : tables de vérité, tautologies, quantificateurs et négations, continuité, suites, familles libres" type="exercices" meta="42 questions"}
 ::
 
-::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/exercices" titre="Le travail en autonomie" description="Les six activités du sujet et son défi de synthèse, dans l'ordre : du calcul propositionnel au calcul des prédicats" type="exercices" meta="23 questions"}
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/exercices" titre="Le travail en autonomie" description="Les six activités du sujet et son défi de synthèse, dans l'ordre : du calcul propositionnel au calcul des prédicats" type="exercices" meta="24 questions"}
 ::
