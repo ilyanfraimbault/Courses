@@ -1,5 +1,5 @@
 ---
-title: Éléments de logique mathématique
+title: Logique propositionnelle
 description: Calcul propositionnel et calcul des prédicats — le cours, la feuille d'exercices et le travail en autonomie, corrigés question par question.
 annee: A1
 matiere: Mathématiques pour l'ingénieur

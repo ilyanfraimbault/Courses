@@ -217,6 +217,51 @@ lignes:
 ::
 ```
 
+## Une table de vérité à remplir
+
+Tiré de `1.logique-et-raisonnements/2.feuille.md`. La question n'a pas de
+`bonne` : c'est la table qui se corrige, case par case, et qui rend son verdict
+à la question (réussite en base, faute à la première vérification fausse).
+Elle ne va pas au quiz.
+
+```md
+::::exercice{titre="Exercice 2" theme="…"}
+Énoncé commun…
+
+:::exo-question{label="1." cours="lc-et-ou"}
+Compléter la table de vérité de $(p \lor q) \lor (\neg r)$.
+
+::table-verite
+---
+variables: ['p', 'q', 'r']
+colonnes:
+  - formule: 'p \lor q'
+    valeurs: VVVVVVFF
+  - formule: '\neg r'
+    valeurs: FVFVFVFV
+    donnee: true          # facultatif : colonne fournie, déjà remplie
+  - formule: '(p \lor q) \lor (\neg r)'
+    valeurs: VVVVVVFV
+---
+::
+
+#indice
+…
+#solution
+…
+:::
+::::
+```
+
+- Les lignes sont engendrées dans l'ordre des cours (tout à V d'abord, la
+  dernière variable alternant le plus vite) : `valeurs` se lit de haut en bas.
+- Formules en LaTeX **entre apostrophes** dans le YAML : la barre oblique
+  inverse y passe telle quelle.
+- **Calculer les colonnes par programme**, jamais à la main : une colonne fausse
+  rend la table impossible à réussir.
+- Un bloc qui contient une table passe à `::::exercice` et ses questions à
+  `:::exo-question` / `:::`.
+
 ## Les maths
 
 KaTeX : `$…$` en ligne, `$$` seuls sur leur ligne pour un bloc. Préférer

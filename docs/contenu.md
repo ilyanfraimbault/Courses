@@ -61,7 +61,7 @@ avec `--rendu` compte les questions dans le HTML servi.
 
 Il sort en erreur sur une erreur. Ses avertissements signalent ce qui marche
 mais dessert — une question sans indice. Aujourd'hui : **aucune erreur**,
-490 questions dont 428 au quiz, 57 cartes dont le compte tombe juste, et 35
+490 questions dont 426 au quiz, 57 cartes dont le compte tombe juste, et 35
 avertissements, tous connus : les 33 questions des contrôles express du cours de
 trigonométrie n'ont pas d'indice, et deux rappels de la réplique du QCM visent le
 cours des fonctions usuelles sans ancre — leurs huit questions tombent dans « Le
@@ -110,7 +110,7 @@ Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/con
 
 Le même hook relève l'index des questions. Il en a **490**, autant que le
 comptage — chacune vit dans un bloc et porte un repère, donc chacune a une
-identité et peut être rangée dans un domaine. Parmi elles, **428** sont
+identité et peut être rangée dans un domaine. Parmi elles, **426** sont
 interrogeables, réparties sur six chapitres de deux matières : c'est la banque du quiz,
 décrite dans `docs/quiz.md`. Ce second témoin vaut d'être relu au même moment
 qu'un changement de contenu — une question qui cesse d'être relevée disparaît du
@@ -134,7 +134,7 @@ console.log({relevees, comptees, interrogeables, notions: notions.size, sansRenv
 "
 ```
 
-Attendu aujourd'hui : `{ relevees: 490, comptees: 490, interrogeables: 428,
+Attendu aujourd'hui : `{ relevees: 490, comptees: 490, interrogeables: 426,
 notions: 108, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
 signalerait une question hors bloc ou sans repère : elle se rendrait bien, mais
 n'aurait pas d'identité, donc pas de mémoire.
