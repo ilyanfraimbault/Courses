@@ -64,7 +64,7 @@ const grandEcran = useMediaQuery('(min-width: 48rem)')
 // Le contenu d'un tiroir est téléporté dans <body>, hors de `.cours-body` : sans
 // ce report de classe, les formules en bloc ne seraient plus défilables.
 const uiTiroir = computed(() => ({
-  content: grandEcran.value ? 'cours-body w-full max-w-xl' : 'cours-body max-h-[85vh]'
+  content: grandEcran.value ? 'cours-body cours-tiroir-ajuste' : 'cours-body max-h-[85vh]'
 }))
 </script>
 
