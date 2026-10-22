@@ -78,7 +78,7 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
 - **Mathématiques pour l'ingénieur** : deux chapitres qui calquent les dossiers
   du professeur — *Logique propositionnelle* (cours, feuille d'exercices, et le
   travail en autonomie) et *Raisonnements mathématiques* (cours et feuille) ;
-  les diapos ne sont pas reprises. 137 questions dont 114 au quiz ; les tables
+  les diapos ne sont pas reprises. 141 questions dont 118 au quiz ; les tables
   de vérité se remplissent case par case (`table-verite`). Les feuilles n'ont pas
   de corrigé : les solutions sont les nôtres.
 - **Réseaux et protocoles** : trois chapitres, un par jeu de diapos du
@@ -88,7 +88,7 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   que l'essentiel. Exercices d'application et QCM écrits pour le site, sur les
   exemples des diapos (le réseau Neutron, la table de R1). 185 questions dont
   159 au quiz ; une adresse, une diffusion ou un préfixe **s'écrivent**
-  (`champs-reponse`) au lieu de se choisir. Le site compte 675 questions, 585
+  (`champs-reponse`) au lieu de se choisir. Le site compte 679 questions, 589
   au quiz.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes

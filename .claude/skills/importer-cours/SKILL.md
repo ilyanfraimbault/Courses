@@ -108,7 +108,11 @@ format parmi d'autres :
   (ou « Oui » et « Non ») — sans justification accolée : quatre propositions
   qui mêlent la valeur et sa raison soufflent la réponse. La justification va
   dans la solution. Le choix à quatre ne vaut que si la réponse est un objet à
-  écrire (une négation, une formule, un ensemble) ;
+  écrire (une négation, une formule, un ensemble). Un sujet qui demande les deux
+  — « vraie ? sinon, donner sa négation », « décider, en justifiant par deux
+  valeurs » — fait **deux questions** : le vrai ou faux (`1.`), puis l'objet
+  (`1 bis.`, ou la lettre suivante), jamais une proposition qui accole la valeur
+  et sa justification ;
 - **une table de vérité se remplit** case par case (`table-verite`, dans une
   question sans `bonne`), au lieu d'un choix entre quatre colonnes « V, V, F… »
   illisibles ;
