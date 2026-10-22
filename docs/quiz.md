@@ -16,13 +16,13 @@ au bout de N questions : elle se termine quand les N **places** sont acquises.
 Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 `qcm_tentative`, une séance de quiz dans `quiz_session`.
 
-## La banque : 426 questions, aucune écrite pour le quiz
+## La banque : 585 questions, aucune écrite pour le quiz
 
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
 les exercices du TD, les fiches d'entraînement, les révisions, le cours et le QCM
-de contenu. Sur les 490 questions du site, **426** sont exploitables — celles qui portent
-une lettre attendue et au moins deux propositions. Les **64** autres sont des
-questions ouvertes ou des tables de vérité à remplir, qui se corrigent sur leur fiche : une file qui doit savoir si la réponse
+de contenu. Sur les 675 questions du site, **585** sont exploitables — celles qui portent
+une lettre attendue et au moins deux propositions. Les **90** autres sont des
+questions ouvertes, des tables de vérité ou des champs à remplir, qui se corrigent sur leur fiche : une file qui doit savoir si la réponse
 était juste ne peut rien en faire.
 
 L'énoncé, les propositions, l'indice, la solution rédigée et jusqu'au rappel de
@@ -91,7 +91,7 @@ par question, **de quoi la choisir et la classer, jamais de quoi la poser**.
 L'ensemble se charge une fois en mémoire ; les énoncés, eux, ne sont jamais mis
 en cache.
 
-Le relevé porte les **490** questions du site et non les seules 426 du quiz. Le
+Le relevé porte les **675** questions du site et non les seules 585 du quiz. Le
 champ `interrogeable` fait le tri, et la banque n'est que la part vraie de ce
 champ. C'est la progression par domaine qui a demandé cet élargissement — elle
 compte aussi les questions ouvertes, sans quoi le total d'un chapitre ne
@@ -116,13 +116,16 @@ console.log(n, t);
 Attendu aujourd'hui, les chapitres désignés par leur chemin :
 
 ```
-426 {
+585 {
   '/cours/a1/mathematiques-ingenieur/logique-et-raisonnements': 85,
   '/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques': 29,
   '/cours/a1/remise-a-niveau-maths/trigonometrie': 63,
   '/cours/a1/remise-a-niveau-maths/fonctions-variable-reelle': 109,
   '/cours/a1/remise-a-niveau-maths/fonctions-usuelles': 38,
-  '/cours/a1/remise-a-niveau-maths/nombres-complexes': 102
+  '/cours/a1/remise-a-niveau-maths/nombres-complexes': 102,
+  '/cours/a1/reseaux-protocoles/planification': 30,
+  '/cours/a1/reseaux-protocoles/adressage-ip': 71,
+  '/cours/a1/reseaux-protocoles/introduction': 58
 }
 ```
 
@@ -199,7 +202,7 @@ par construction, et une question sans rappel se rattache au **titre de niveau 2
 qui la précède dans sa propre page** — ce qui est précisément la section dont
 elle parle, puisqu'un contrôle express est écrit sous le cours qu'il vérifie.
 
-Le relevé donne aujourd'hui **53 cases pour 426 questions**, et chaque chapitre
+Le relevé donne aujourd'hui **76 cases pour 585 questions**, et chaque chapitre
 est couvert sans reste :
 
 | Chapitre | Cases | Questions |
@@ -210,6 +213,9 @@ est couvert sans reste :
 | Nombres complexes | 8 | 102 |
 | Logique propositionnelle (maths pour l'ingénieur) | 11 | 85 |
 | Raisonnements mathématiques (maths pour l'ingénieur) | 8 | 29 |
+| Introduction aux réseaux (réseaux et protocoles) | 8 | 58 |
+| Adressage et routage IP (réseaux et protocoles) | 10 | 71 |
+| La planification réseau (réseaux et protocoles) | 5 | 30 |
 
 Huit questions n'ont pas de section : deux rappels de cours pointent vers une
 page sans ancre. Elles tombent dans une case « Le reste du chapitre », qui
@@ -488,8 +494,8 @@ QUIZ_BASE=http://localhost:3210 NUXT_CODE_INSCRIPTION=essai pnpm verif:quiz
 
 Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 
-- 426 questions dans la banque, rangées par matière puis sur six chapitres
-  désignés par leur chemin et 53 sections de cours, chaque chapitre couvert
+- 585 questions dans la banque, rangées par matière puis sur neuf chapitres
+  désignés par leur chemin et 76 sections de cours, chaque chapitre couvert
   **sans reste** et sans intitulé en double ;
 - la bonne réponse n'est pas dans la charge utile d'une question ;
 - l'ordre des propositions est brassé, et deux lectures d'une même place

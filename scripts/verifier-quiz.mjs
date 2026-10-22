@@ -29,8 +29,9 @@ const TRIGO = MATIERE + '/trigonometrie'
 // QCM de contenu, 312 depuis le retrait des QCM 1 à 6 et de leurs 120 questions,
 // 334 avec le premier chapitre de mathématiques pour l'ingénieur, 428 avec ses
 // cours et ses feuilles d'exercices de logique et de raisonnements, 426 depuis
-// que deux tables de vérité se remplissent au lieu de se choisir.
-const BANQUE = 426
+// que deux tables de vérité se remplissent au lieu de se choisir, 585 avec les
+// trois chapitres de réseaux et protocoles.
+const BANQUE = 585
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)
