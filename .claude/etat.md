@@ -86,9 +86,10 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   planification réseau*. Seule exception à la règle des diapos : elles sont ici
   tout le cours, et l'utilisateur a demandé des fiches courtes qui n'en gardent
   que l'essentiel. Exercices d'application et QCM écrits pour le site, sur les
-  exemples des diapos (le réseau Neutron, la table de R1). 185 questions dont
-  159 au quiz ; une adresse, une diffusion ou un préfixe **s'écrivent**
-  (`champs-reponse`) au lieu de se choisir. Le site compte 679 questions, 589
+  exemples des diapos (le réseau Neutron, la table de R1), et un
+  entraînement en paliers à l'appartenance, pour l'évaluation en QCM. 215 questions dont
+  189 au quiz ; une adresse, une diffusion ou un préfixe **s'écrivent**
+  (`champs-reponse`) au lieu de se choisir. Le site compte 709 questions, 619
   au quiz.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes

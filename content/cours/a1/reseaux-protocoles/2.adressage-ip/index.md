@@ -15,5 +15,8 @@ Le cœur du cours : une adresse IPv4, son masque, et tout ce qu'on en tire — l
 ::carte-lien{to="/cours/a1/reseaux-protocoles/adressage-ip/exercices" titre="Les exercices" description="Dix exercices : conversions, analyse complète d'une adresse, appartenance, configuration fausse, inclusion, table de R1, table d'un terminal, DHCP, DNS et NAT" type="exercices" meta="39 questions"}
 ::
 
+::carte-lien{to="/cours/a1/reseaux-protocoles/adressage-ip/entrainement" titre="L'entraînement à l'appartenance" description="Trente questions en paliers pour préparer l'évaluation : telle adresse appartient-elle à tel réseau, de l'octet entier aux formes d'un QCM" type="entrainement" meta="30 questions"}
+::
+
 ::carte-lien{to="/cours/a1/reseaux-protocoles/adressage-ip/qcm" titre="Le QCM" description="Dix-huit questions sur toute la partie, à corriger d'un bloc" type="qcm" meta="18 questions · 30 min"}
 ::

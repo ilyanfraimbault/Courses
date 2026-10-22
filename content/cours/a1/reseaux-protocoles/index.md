@@ -29,6 +29,9 @@ Sous chaque question, les mêmes trois boutons, et aucun ne quitte la page : **I
 ::carte-lien{to="/cours/a1/reseaux-protocoles/adressage-ip/exercices" titre="Les exercices" description="Tout ce qui se fait avec un masque : conversions, réseau et diffusion, appartenance, configuration fausse, inclusion, table de routage, NAT" type="exercices" meta="39 questions"}
 ::
 
+::carte-lien{to="/cours/a1/reseaux-protocoles/adressage-ip/entrainement" titre="L'entraînement à l'appartenance" description="Une adresse appartient-elle à un réseau ? Trente questions en paliers, jusqu'aux formes d'un QCM d'évaluation" type="entrainement" meta="30 questions"}
+::
+
 ::carte-lien{to="/cours/a1/reseaux-protocoles/adressage-ip/qcm" titre="Le QCM" description="Dix-huit questions sur toute la partie, à corriger d'un bloc" type="qcm" meta="18 questions · 30 min"}
 ::
 
