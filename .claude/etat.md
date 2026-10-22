@@ -80,7 +80,16 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   travail en autonomie) et *Raisonnements mathématiques* (cours et feuille) ;
   les diapos ne sont pas reprises. 141 questions dont 118 au quiz ; les tables
   de vérité se remplissent case par case (`table-verite`). Les feuilles n'ont pas
-  de corrigé : les solutions sont les nôtres. Le site compte 494 questions, 430
+  de corrigé : les solutions sont les nôtres.
+- **Réseaux et protocoles** : trois chapitres, un par jeu de diapos du
+  professeur — *Introduction aux réseaux*, *Adressage et routage IP*, *La
+  planification réseau*. Seule exception à la règle des diapos : elles sont ici
+  tout le cours, et l'utilisateur a demandé des fiches courtes qui n'en gardent
+  que l'essentiel. Exercices d'application et QCM écrits pour le site, sur les
+  exemples des diapos (le réseau Neutron, la table de R1), et un
+  entraînement en paliers à l'appartenance, pour l'évaluation en QCM. 215 questions dont
+  189 au quiz ; une adresse, une diffusion ou un préfixe **s'écrivent**
+  (`champs-reponse`) au lieu de se choisir. Le site compte 709 questions, 619
   au quiz.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes

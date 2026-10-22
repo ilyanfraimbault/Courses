@@ -2,7 +2,7 @@ import type { ComputedRef, InjectionKey } from 'vue'
 
 /**
  * Le lien entre une question et un composant qui se remplit à la main — une
- * table de vérité aujourd'hui. Le composant sait corriger ses cases ; la
+ * table de vérité, des champs de réponse. Le composant sait corriger ses cases ; la
  * question sait ce qu'une réponse juste ou fausse écrit en base. Ni l'un ni
  * l'autre n'a à connaître la règle de l'autre.
  */
