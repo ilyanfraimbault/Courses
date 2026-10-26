@@ -24,6 +24,7 @@ effectivement tourner.
 
 ```
 NUXT_CODE_INSCRIPTION=…          # le code à donner pour créer un compte
+NUXT_ADMINISTRATEURS=…           # pseudo(s) de l'administration, séparés par des virgules
 NUXT_SESSION_PASSWORD=…          # openssl rand -base64 32
 COURS_ADRESSE=srv1355415.hstgr.cloud
 ACME_EMAIL=…

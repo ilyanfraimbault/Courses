@@ -24,11 +24,14 @@ export function useClotures() {
     }
   }
 
-  onMounted(() => {
+  function chargerUneFois() {
     if (demandee.value) return
     demandee.value = true
     relire()
-  })
+  }
+
+  onMounted(chargerUneFois)
+  quandConnecte(chargerUneFois)
 
   /** La clôture qui couvre ce chemin — la sienne, ou celle d'un parent. */
   function closPar(chemin: string | null | undefined): Cloture | null {

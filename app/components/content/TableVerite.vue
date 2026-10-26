@@ -30,6 +30,7 @@ const props = defineProps<{
 type Valeur = 'V' | 'F'
 
 const question = useQuestionRemplie()
+const connexion = useConnexion()
 question?.inscrire()
 
 const variables = computed(() => props.variables ?? [])
@@ -105,6 +106,7 @@ const aRemplir = computed(() => colonnes.value.flatMap((c, j) => c.donnee ? [] :
 
 function verifier() {
   if (trouvee.value) return
+  if (!connexion.exiger(verifier)) return
   const manquantes = aRemplir.value.filter(k => !saisie.value[k])
   vides.value = manquantes.length
   if (manquantes.length) return

@@ -42,6 +42,7 @@ export function useTodo() {
   onMounted(() => {
     charger()
   })
+  quandConnecte(() => charger())
 
   const contient = (cible: CibleTodo) => items.value.some(i => memeCible(i, cible))
   const trouver = (cible: CibleTodo) => items.value.find(i => memeCible(i, cible)) ?? null

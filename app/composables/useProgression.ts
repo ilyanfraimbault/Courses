@@ -86,6 +86,12 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
     }
   }, DELAI_ENVOI)
 
+  // Une faute commise avant que la lecture n'aboutisse attend son tour au lieu
+  // de partir — c'est le cas de la réponse rejouée juste après une connexion.
+  watch(chargee, (lue) => {
+    if (lue && fautes.size) envoyerFautes()
+  })
+
   const api: ProgressionApi = {
     declarer: (id) => { if (id) declarees.add(id) },
     oublier: (id) => { if (id) declarees.delete(id) },
@@ -280,7 +286,7 @@ export function useResumeProgression() {
   const resume = useState<Record<string, ResumeFiche>>('progression-resume', () => ({}))
   const chargeDemandee = useState('progression-resume-demande', () => false)
 
-  onMounted(async () => {
+  async function charger() {
     if (chargeDemandee.value) return
     chargeDemandee.value = true
     try {
@@ -290,7 +296,10 @@ export function useResumeProgression() {
       // exactement l'information juste.
       chargeDemandee.value = false
     }
-  })
+  }
+
+  onMounted(charger)
+  quandConnecte(charger)
 
   return resume
 }
