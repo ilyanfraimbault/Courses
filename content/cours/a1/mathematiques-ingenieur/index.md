@@ -21,12 +21,18 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/exercices" titre="Le travail en autonomie" description="Calcul propositionnel et calcul des prédicats : implication et contraposée, tables de vérité, négation des quantificateurs, et la définition de la limite d'une suite" type="exercices" meta="24 questions"}
 ::
 
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/entrainement" titre="L'entraînement" description="Six paliers, des tables de vérité aux suites et familles de vecteurs, avec un exemple rédigé sous chaque question" type="entrainement" meta="31 questions"}
+::
+
 ## Raisonnements mathématiques
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/cours" titre="Le cours" description="Modus ponens, disjonction de cas, absurde, contraposition, équivalence, analyse et synthèse, récurrences" type="cours" meta="24 questions"}
 ::
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/exercices" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille : parité, récurrences, CAPES, irrationalité, équations fonctionnelles" type="exercices" meta="18 questions"}
+::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement" titre="L'entraînement" description="Huit paliers, du raisonnement direct aux récurrences fortes, avec les questions à se poser et un exemple rédigé sous chaque question" type="entrainement" meta="31 questions"}
 ::
 
 ## Emporter mes résultats
