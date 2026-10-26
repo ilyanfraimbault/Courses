@@ -2,11 +2,11 @@ import type { ComputedRef, InjectionKey } from 'vue'
 
 /**
  * Le lien entre une question et un composant qui se remplit à la main — une
- * table de vérité, une commande à taper. Le composant sait corriger sa saisie ;
- * la question sait ce qu'une réponse juste ou fausse écrit en base. Ni l'un ni
- * l'autre n'a à connaître la règle de l'autre.
+ * table de vérité, des champs de réponse, une commande à taper. Le composant
+ * sait corriger sa saisie ; la question sait ce qu'une réponse juste ou fausse
+ * écrit en base. Ni l'un ni l'autre n'a à connaître la règle de l'autre.
  */
-export type NatureRemplie = 'table' | 'commande'
+export type NatureRemplie = 'table' | 'champs' | 'commande'
 
 export interface QuestionRemplieApi {
   /** La question est déjà trouvée : le composant s'affiche rempli et figé. */

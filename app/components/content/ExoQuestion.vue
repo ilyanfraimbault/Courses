@@ -110,6 +110,7 @@ provideQuestionRemplie({
 const messageFaux = computed(() => {
   if (remplie.value === 'commande') return 'Ce n\'est pas encore ça : le terminal dit ce qui cloche.'
   if (remplie.value === 'table') return 'Des cases sont fausses : elles sont marquées en rouge.'
+  if (remplie.value === 'champs') return 'Des champs sont faux : ils sont marqués en rouge.'
   return 'Ce n\'est pas ça.'
 })
 

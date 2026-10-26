@@ -89,7 +89,7 @@ Voir `docs/mes-qcm.md`.
 de ce booléen, la progression par domaine lit tout. Deux relevés côte à côte se
 contrediraient le jour où l'un changerait.
 
-**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 463 questions
+**Le quiz emprunte les questions, il n'en écrit aucune.** Ses 652 questions
 sont celles des fiches, découpées dans l'arbre de la page au moment de les
 poser — énoncé, propositions, indice, solution et rappel de cours compris.
 Corriger un cours corrige le quiz. Le thème d'une question vient du rappel de
@@ -189,7 +189,8 @@ propositions est un format parmi d'autres, pas le moule de toute question : un
 vrai ou faux se tranche entre « Vraie » et « Fausse », sans justification
 accolée qui soufflerait la réponse ; si le sujet demande aussi la négation ou
 le contre-exemple, c'est une seconde question. Une
-table de vérité se **remplit** case par case (`table-verite`), une commande se
+table de vérité se **remplit** case par case (`table-verite`), une adresse de
+réseau **s'écrit** au lieu de se choisir (`champs-reponse`), une commande se
 **tape** dans un terminal (`commande`), un angle se lit sur un cercle
 (`cercle-trigo`), un tableau de variations se dresse : quand un
 cours demande un geste que les composants existants ne savent pas corriger, on
@@ -229,8 +230,8 @@ d'inscription et une base à part (`.data/verif/`), ce qu'elles demandent.
 Le contrôle qui compte pour le contenu tient en une commande, serveur lancé :
 `pnpm verif:contenu --rendu` — rendu contre comptage du build, et toutes les
 pannes silencieuses du contenu. Voir `docs/contenu.md`. Un nouveau cours arrive
-par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : **849 questions rendues sur 849**, et les
-35 fiches portent leur `type`.
+par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : **1064 questions rendues sur 1064**, et les
+45 fiches portent leur `type`.
 
 ## Où lire la suite
 
@@ -240,7 +241,7 @@ par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : 
   rappel de cours, la file qui rejoue une place ratée, et ce qu'il n'écrit pas.
 - `docs/domaines.md` — la progression rangée par point de cours : d'où viennent
   les domaines, ce que les deux segments d'une barre veulent dire, et pourquoi
-  le relevé porte les 849 questions et non les seules 463 du quiz.
+  le relevé porte les 1064 questions et non les seules 652 du quiz.
 - `docs/controles.md` — les contrôles : le programme, la feuille de route et
   son découpage, l'examen blanc, le fuseau de l'élève.
 - `docs/revisions.md` — la révision espacée, déduite de l'histoire, et

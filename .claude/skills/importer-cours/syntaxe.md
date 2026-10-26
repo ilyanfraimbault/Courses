@@ -262,6 +262,50 @@ colonnes:
 - Un bloc qui contient une table passe à `::::exercice` et ses questions à
   `:::exo-question` / `:::`.
 
+## Des réponses à écrire
+
+Tiré de `reseaux-protocoles/2.adressage-ip/2.exercices.md`. Même contrat que la
+table de vérité : une question sans `bonne`, des champs corrigés un à un, le
+verdict rendu à la question. Pour ce qui se **calcule** et s'écrit sur une copie
+— une adresse, un préfixe, un nombre — et qu'un choix entre quatre
+propositions laisserait deviner. Hors du quiz, comme la table.
+
+```md
+::::exercice{titre="Exercice 2" theme="…"}
+Énoncé commun…
+
+:::exo-question{label="a)" cours="ip-c-capacite"}
+`192.168.10.141/27`
+
+::champs-reponse
+---
+champs:
+  - libelle: Adresse du réseau
+    attendu: ['192.168.10.128', '192.168.10.128/27']
+    aide: x.x.x.x
+  - libelle: Nombre d'adresses d'interface
+    attendu: '30'
+---
+::
+
+#indice
+…
+#solution
+…
+:::
+::::
+```
+
+- `attendu` : une valeur, ou la liste des écritures acceptées (une adresse de
+  réseau avec ou sans son `/p`, un préfixe avec ou sans sa barre).
+- La comparaison ignore la casse et les espaces, et lit une adresse IPv4 octet
+  par octet : `192.168.010.064` vaut `192.168.10.64`. Rien d'autre n'est
+  deviné — une unité acceptée s'écrit dans la liste (`['50', '50Mb/s']`).
+- Un nombre entre apostrophes (`'30'`) : sans elles, le YAML en fait un entier,
+  ce qui marche, mais `'08'` deviendrait 8.
+- **Calculer les valeurs par programme** (`python3 -I` et le module
+  `ipaddress`), comme les colonnes d'une table de vérité.
+
 ## Une commande à taper
 
 Tiré de `virtualisation-conteneurisation/01.commandes/1.atelier.md`. Comme la
