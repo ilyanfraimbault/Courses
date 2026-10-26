@@ -262,6 +262,75 @@ colonnes:
 - Un bloc qui contient une table passe à `::::exercice` et ses questions à
   `:::exo-question` / `:::`.
 
+## Une commande à taper
+
+Tiré de `virtualisation-conteneurisation/01.commandes/1.atelier.md`. Comme la
+table de vérité, la question n'a pas de `bonne` : c'est le terminal qui se
+corrige, et qui rend son verdict à la question (réussite en base, faute au
+premier essai faux, indice ouvert). Elle ne va pas au quiz.
+
+````md
+::::exercice{titre="Au terminal — lancer un conteneur" theme="docker run et ses options -d, -i, -t"}
+Tu es sur la machine hôte, dans un terminal.
+
+:::exo-question{label="1." cours="cb-run"}
+Lance un conteneur basé sur l'image **Debian**, en arrière-plan…
+
+::commande
+---
+attendues:
+  - docker run -dit debian
+sortie: |
+  Unable to find image 'debian:latest' locally
+  af0f9acf6507c1d9e3a0b5c47f0a8d3e…
+---
+::
+
+#indice
+…
+#solution
+```bash
+docker run -dit debian
+```
+…
+:::
+::::
+````
+
+- `attendues` : les réponses admises. **Une seule suffit pour tout ce que
+  Docker tient pour équivalent** — `shared/utils/commandes.ts` ramène la saisie
+  à une forme canonique : options dans n'importe quel ordre, groupées ou non
+  (`-dit`, `-it -d`), formes longues (`--detach`), `--name=web`, synonymes de
+  sous-commandes (`docker container ls` = `docker ps`, `docker image rm` =
+  `docker rmi`, `docker-compose` = `docker compose`), `alpine` =
+  `alpine:latest` = `docker.io/library/alpine`, clés de `--mount` (`src`,
+  `source` ; `dst`, `destination`, `target` ; `ro`, `readonly`), `bash` =
+  `/bin/bash` après l'image, `$HOME` = `~`, plusieurs cibles de `docker stop`
+  dans n'importe quel ordre. **Énumérer** ce qu'il ne peut pas trancher :
+  `~/pages` contre `$PWD/pages`, un ID complet contre un ID abrégé, une
+  commande hors Docker (`apk`, `curl`, `mysql`), comparée mot à mot.
+- `mode` : `shell` (défaut) ; `dockerfile` — des instructions, mot-clé en
+  majuscules ou non, JSON espacé ou non, `RUN a && b` sur une ou plusieurs
+  lignes, paires de `LABEL`/`ENV` sans ordre ; `yaml` — un morceau de
+  `compose.yaml`, comparé en **arbre** : ordre des clés libre, guillemets
+  libres, `environment` en liste ou en correspondance, `ports` et `volumes`
+  sans ordre.
+- `invite` : l'invite affichée, `$` par défaut ; `"/ #"` dans un conteneur
+  Alpine, `"root@d724f090a8cf:/usr/local/apache2#"` dans un conteneur Debian.
+- `sortie` : ce que le terminal affiche une fois la commande juste.
+- `fichier` : le nom affiché au-dessus de l'éditeur (`Dockerfile`,
+  `compose.yaml` par défaut selon le mode).
+- Une réponse en **plusieurs commandes** s'écrit sur plusieurs lignes, en
+  `- |-` ; l'élève peut les enchaîner par `&&` ou `;`. Toute réponse qui
+  contient `"`, `'`, `#`, `: `, `{` ou `[` s'écrit aussi en `- |-`, sans quoi
+  le YAML la lit autrement.
+- Faux, le terminal dit **ce qui cloche sans souffler** : « Il manque une
+  option », « En trop : « -a » » (le nom que l'élève a tapé), « L'image visée
+  n'est pas la bonne », « Une option est placée après l'image ».
+- `pnpm verif:commandes` éprouve le correcteur sur une centaine de cas ;
+  `verif:contenu` vérifie que chaque réponse admise se lit et se reconnaît
+  elle-même.
+
 ## Les maths
 
 KaTeX : `$…$` en ligne, `$$` seuls sur leur ligne pour un bloc. Préférer

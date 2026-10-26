@@ -82,6 +82,15 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   de vérité se remplissent case par case (`table-verite`). Les feuilles n'ont pas
   de corrigé : les solutions sont les nôtres. Le site compte 494 questions, 430
   au quiz.
+- **Virtualisation et conteneurisation** : la formation *Docker par la
+  pratique* de Microlinux, un chapitre par atelier — quinze, des commandes de
+  base à Docker Compose ; les ateliers d'installation sont laissés de côté.
+  355 questions, dont **322 commandes à taper** dans un terminal (`commande`)
+  et 33 vrai ou faux au quiz. Le correcteur (`shared/utils/commandes.ts`)
+  ramène chaque commande à une forme canonique — ordre des options, formes
+  longues, synonymes, `alpine` = `alpine:latest`, `--mount`, et en modes
+  `dockerfile` et `yaml` des instructions et des arbres. `pnpm verif:commandes`
+  l'éprouve sur 105 cas. Le site compte 849 questions, 463 au quiz.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes
   silencieuses.
@@ -122,6 +131,14 @@ Une fois le domaine en main : un enregistrement `A` vers `72.62.29.225`, puis
 changement de code.
 
 ## Dette et points ouverts
+
+**Les commandes à taper ne vont pas au quiz.** Les 322 questions `commande`
+de Docker se corrigent sur leur fiche, en base et dans la dette, mais le quiz,
+les révisions et les contrôles ne posent que des questions à lettre : pour la
+matière Docker, ils n'ont que 33 vrai ou faux. Il faudrait que le relevé les
+marque interrogeables, que le serveur corrige une saisie avec
+`corrigerCommande` (il est sans import, prêt à servir) et que `QuizQuestion`
+dessine un terminal au lieu des propositions.
 
 **Les traces des QCM 1 à 6 restent en base.** Leurs lignes de `fiche`,
 `reussite`, `qcm_tentative` et `faute` n'ont pas été effacées : elles ne visent

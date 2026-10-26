@@ -116,6 +116,11 @@ format parmi d'autres :
 - **une table de vérité se remplit** case par case (`table-verite`, dans une
   question sans `bonne`), au lieu d'un choix entre quatre colonnes « V, V, F… »
   illisibles ;
+- **une commande se tape** dans un terminal (`commande`, dans une question
+  sans `bonne`) : le jour du contrôle, on l'écrit, on ne la coche pas. Le
+  correcteur accepte ce que l'outil accepte — l'ordre des options, les formes
+  longues, les synonymes — et le mode `dockerfile` ou `yaml` en fait un
+  éditeur ;
 - un angle se lit sur le cercle (`cercle-trigo`), un tableau de variations se
   dresse ;
 - **quand un cours demande un geste qu'aucun composant ne sait corriger, on écrit
