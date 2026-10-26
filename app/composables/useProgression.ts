@@ -56,6 +56,12 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
   // renvoyé en entier à chaque écriture.
   const fautes = reactive(new Set<string>())
 
+  // Ce que la page a retiré d'elle-même, par une auto-évaluation dédite. Le
+  // serveur n'efface rien d'autre : une question absente de `faites` peut aussi
+  // bien avoir été trouvée ailleurs depuis le montage, et l'instantané d'un
+  // onglet périmé ne doit pas la défaire.
+  const annulees = reactive(new Set<string>())
+
   /**
    * Les fautes partent par **lot et par delta**, non par instantané : une page
    * ne connaît que les fautes commises sous ses yeux, jamais celles des visites
@@ -83,13 +89,21 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
   const api: ProgressionApi = {
     declarer: (id) => { if (id) declarees.add(id) },
     oublier: (id) => { if (id) declarees.delete(id) },
-    reussir: (id, reponse) => { if (id) faites.set(id, reponse) },
+    reussir: (id, reponse) => {
+      if (!id) return
+      faites.set(id, reponse)
+      annulees.delete(id)
+    },
     rater: (id) => {
       if (!id) return
       fautes.add(id)
       envoyerFautes()
     },
-    annuler: (id) => { if (id) faites.delete(id) },
+    annuler: (id) => {
+      if (!id || !faites.has(id)) return
+      faites.delete(id)
+      annulees.add(id)
+    },
     memoire: id => (id ? faites.get(id) ?? null : null)
   }
 
@@ -99,19 +113,34 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
   const reussies = computed(() => [...declarees].filter(id => faites.has(id)).length)
   const pourcentage = computed(() => total.value ? Math.round(100 * reussies.value / total.value) : 0)
 
-  /** L'instantané à envoyer : ce que la page déclare, et parmi cela ce qui est trouvé. */
+  /**
+   * L'instantané à envoyer : ce que la page déclare, parmi cela ce qui est
+   * trouvé, et ce qu'elle a retiré. Les questions déclarées servent à élaguer
+   * celles qui ont disparu du contenu ; tout le reste de ce que la base sait,
+   * la page ne le touche pas.
+   */
   function instantane() {
     const retenues: Record<string, string> = {}
     for (const id of declarees) {
       const reponse = faites.get(id)
       if (reponse) retenues[id] = reponse
     }
-    return { chemin: cheminCanonique(toValue(chemin)), total: total.value, faites: retenues }
+    return {
+      chemin: cheminCanonique(toValue(chemin)),
+      total: total.value,
+      faites: retenues,
+      questions: [...declarees],
+      annulees: [...annulees].filter(id => declarees.has(id))
+    }
   }
 
   const envoyer = useDebounceFn(async () => {
+    const corps = instantane()
     try {
-      await $fetch('/api/fiche', { method: 'PUT', body: instantane() })
+      await $fetch('/api/fiche', { method: 'PUT', body: corps })
+      // Un retrait parti n'a plus à repartir : renvoyé plus tard, il déferait
+      // une réussite acquise entre-temps sur un autre écran.
+      for (const id of corps.annulees) annulees.delete(id)
     } catch {
       // La progression est un confort, pas une donnée à sauver à tout prix : on
       // n'inflige pas un message d'erreur au milieu d'un exercice.
@@ -170,6 +199,7 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
 
   async function oublierProgression() {
     faites.clear()
+    annulees.clear()
     try {
       await $fetch('/api/fiche', { method: 'DELETE', query: { chemin: cheminCanonique(toValue(chemin)) } })
     } catch {

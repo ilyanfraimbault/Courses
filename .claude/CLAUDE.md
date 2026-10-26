@@ -40,9 +40,12 @@ Sans cette garde, une session expirée écraserait la progression par un
 instantané vide. C'est la première ligne du `watch` d'écriture, elle y reste.
 
 **La progression s'écrit par instantané, pas par delta.** Le corps de
-`PUT /api/fiche` décrit l'état complet des questions trouvées. C'est idempotent,
-sans ordre à préserver, et ça reconduit l'élagage des questions disparues du
-contenu — sans quoi le décompte gonflerait sans fin.
+`PUT /api/fiche` décrit l'état des questions trouvées tel que la page le
+connaît. C'est idempotent, sans ordre à préserver. Mais un instantané **n'efface
+que ce que la page sait** : ce qu'elle a retiré (`annulees`) et ce qu'elle ne
+déclare plus (`questions`, l'élagage des questions disparues du contenu). Une
+réussite qu'il ne mentionne pas a pu être gagnée ailleurs depuis le montage —
+un onglet périmé a ainsi effacé vingt-six réponses d'un clic.
 
 **Une seule requête par fiche.** `GET /api/fiche` rend progression *et*
 historique de QCM. La page de trigonométrie porte douze blocs de QCM : un appel
