@@ -28,7 +28,7 @@ const props = defineProps<{
 const prefixe = useId()
 
 const question = useQuestionRemplie()
-question?.inscrire()
+question?.inscrire('champs')
 
 const OCTETS = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(\/\d{1,2})?$/
 
