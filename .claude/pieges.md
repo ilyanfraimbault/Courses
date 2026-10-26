@@ -150,6 +150,27 @@ Il nomme l'entrée dans la barre latérale **et** l'entête d'accordéon du doss
 Utile pour les fiches (`Cours`, `Exercices`, `Révisions`, `Entraînement`, mêmes
 intitulés dans tous les chapitres) ; à manier avec précaution sur un `index.md`.
 
+## Progression
+
+### L'instantané d'un onglet périmé effaçait ce qu'il ne connaissait pas
+
+`PUT /api/fiche` remplaçait l'état en base par celui de la page : toute
+réussite absente du corps était supprimée. Or une page ne connaît que ce
+qu'elle a lu à son montage. Un onglet resté ouvert — sur un autre appareil, ou
+avant une séance de quiz qui coche la fiche — renvoyait son vieil état au
+premier clic, et même sans clic, en passant en arrière-plan
+(`visibilitychange`). Vingt-six réponses d'une feuille ont disparu ainsi, sans
+une erreur : la base disait vrai, elle avait simplement été réécrite.
+
+Le serveur n'efface plus que ce que la page dit avoir retiré (`annulees`) et ce
+qu'elle ne déclare plus (`questions`). Un corps sans ces listes, celui d'un
+onglet chargé avant la correction, n'efface rien.
+
+**Ce qui l'a démasqué** : la carte du chapitre annonçait 26 / 42 et la fiche
+0 / 42. Le résumé, chargé une fois par visite, montrait l'état d'avant
+l'écrasement ; `GET /api/fiche` rendait `faites: {}`. Et un seul `DELETE FROM
+reussite` existe dans le serveur : celui de l'instantané.
+
 ## Glisser-déposer (`useSortable` de VueUse)
 
 Deux défauts qui se cachaient l'un l'autre, et qui ont donné un glisser
