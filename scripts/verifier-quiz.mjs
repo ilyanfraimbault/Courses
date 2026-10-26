@@ -33,8 +33,10 @@ const TRIGO = MATIERE + '/trigonometrie'
 // la négation d'une assertion fausse se demande à part de sa valeur de vérité,
 // 619 avec les trois chapitres de réseaux et protocoles, 652 avec les quinze
 // ateliers de Docker — dont les commandes, qui se tapent, restent hors du
-// quiz : seuls leurs 33 vrai ou faux y entrent.
-const BANQUE = 652
+// quiz : seuls leurs 33 vrai ou faux y entrent —, 689 avec les deux fiches
+// d'entraînement de logique et de raisonnements (37 questions à lettre, les
+// tables de vérité et les démonstrations restant ouvertes).
+const BANQUE = 689
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)

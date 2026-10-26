@@ -1,6 +1,6 @@
 ---
 title: Logique propositionnelle
-description: Calcul propositionnel et calcul des prédicats — le cours, la feuille d'exercices et le travail en autonomie, corrigés question par question.
+description: "Calcul propositionnel et calcul des prédicats — le cours, la feuille d'exercices, le travail en autonomie et un entraînement en six paliers, corrigés question par question."
 annee: A1
 matiere: Mathématiques pour l'ingénieur
 ordre: 1
@@ -16,4 +16,7 @@ Le premier chapitre du cours : la grammaire du raisonnement. D'abord le calcul p
 ::
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/exercices" titre="Le travail en autonomie" description="Les six activités du sujet et son défi de synthèse, dans l'ordre : du calcul propositionnel au calcul des prédicats" type="exercices" meta="24 questions"}
+::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/entrainement" titre="L'entraînement" description="Trente et une questions en six paliers, des tables de vérité aux définitions de l'analyse — pour s'entraîner avant la feuille, avec un exemple rédigé sous chaque question" type="entrainement" meta="31 questions"}
 ::
