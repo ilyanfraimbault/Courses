@@ -60,12 +60,31 @@ const g = await req(`/api/fiche?chemin=${CHEMIN}`)
 check('GET rend le même objet', JSON.stringify(g.corps.faites) === JSON.stringify(faites), JSON.stringify(g.corps.faites))
 check('GET rend le total', g.corps.total === 40)
 
-// Élagage : rejouer sans une question la supprime
+// Un onglet périmé — ouvert avant ces réponses — ne connaît rien : son
+// instantané ne doit rien effacer, qu'il vienne d'un client d'avant la règle
+// (sans listes) ou d'un client à jour qui déclare toutes les questions.
+const declarees = [...Object.keys(faites), id('exercice-2', '1.')]
+await req('/api/fiche', { method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, total: 40, faites: {} }) })
+check('instantané ancien et vide : rien d\'effacé',
+  Object.keys((await req(`/api/fiche?chemin=${CHEMIN}`)).corps.faites).length === 3)
+await req('/api/fiche', { method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, total: 40, faites: {}, questions: declarees, annulees: [] }) })
+check('onglet périmé qui déclare tout : rien d\'effacé',
+  Object.keys((await req(`/api/fiche?chemin=${CHEMIN}`)).corps.faites).length === 3)
+
+// Retrait : ce que la page dit avoir retiré disparaît
 const moins = { ...faites }
 delete moins[id('exercice-1', '2.')]
-await req('/api/fiche', { method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, total: 40, faites: moins }) })
+await req('/api/fiche', { method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, total: 40, faites: moins, questions: declarees, annulees: [id('exercice-1', '2.')] }) })
 const g2 = await req(`/api/fiche?chemin=${CHEMIN}`)
-check('élagage : la question retirée disparaît', Object.keys(g2.corps.faites).length === 2, JSON.stringify(g2.corps.faites))
+check('retrait : la question annulée disparaît', Object.keys(g2.corps.faites).length === 2, JSON.stringify(g2.corps.faites))
+
+// Élagage : une question que la page ne déclare plus a quitté le contenu
+await req('/api/fiche', { method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, total: 40, faites: { [id('exercice-1', '1.')]: 'c' }, questions: [id('exercice-1', '1.'), id('exercice-3', '1.')], annulees: [] }) })
+const g2b = await req(`/api/fiche?chemin=${CHEMIN}`)
+check('élagage : la question disparue du contenu s\'en va, la déclarée reste',
+  JSON.stringify(Object.keys(g2b.corps.faites).sort()) === JSON.stringify([id('exercice-1', '1.'), id('exercice-3', '1.')].sort()),
+  JSON.stringify(g2b.corps.faites))
+await req('/api/fiche', { method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, total: 40, faites: moins }) })
 
 // Identité étrangère rejetée
 const mauvais = await req('/api/fiche', { method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, total: 40, faites: { '/autre/fiche#b#1.': 'a' } }) })
