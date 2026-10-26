@@ -1,0 +1,79 @@
+name: journaux
+
+# Lire les requêtes que Caddy a vu passer, sans accès SSH au VPS : l'API
+# Hostinger rend les journaux du projet, et Caddy y écrit une ligne par requête
+# (`log` dans le Caddyfile). C'est le seul témoin de *qui* a écrit en base —
+# quel appareil, depuis quelle page — quand une progression disparaît sans
+# qu'aucune erreur ne se lève.
+#
+# L'API ne rend que les 300 dernières lignes, tous services confondus, et une
+# page chargée en produit des dizaines. Le résumé dit donc toujours quelle
+# fenêtre il couvre : « rien trouvé » ne vaut que pour cette fenêtre-là.
+on:
+  workflow_dispatch:
+    inputs:
+      filtre:
+        description: Fragment d'URI à retenir (vide = toutes les requêtes d'API)
+        default: /api/fiche
+      methodes:
+        description: Méthodes à retenir, séparées par des virgules (vide = toutes)
+        default: PUT,DELETE
+
+permissions:
+  contents: read
+
+jobs:
+  lire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Lire les journaux de Caddy
+        env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+          VM_ID: ${{ vars.HOSTINGER_VM_ID }}
+          FILTRE: ${{ inputs.filtre }}
+          METHODES: ${{ inputs.methodes }}
+        run: |
+          set -euo pipefail
+          reponse="$(curl -sS --max-time 30 -w '\n%{http_code}' \
+            -H "Authorization: Bearer ${HOSTINGER_API_KEY:?}" \
+            -H 'Accept: application/json' \
+            "https://developers.hostinger.com/api/vps/v1/virtual-machines/${VM_ID:?}/docker/courses/logs")"
+          statut="$(printf '%s' "$reponse" | tail -n1)"
+          corps="$(printf '%s' "$reponse" | sed '$d')"
+          if [ "$statut" != "200" ]; then
+            echo "::error::l'API Hostinger a répondu ${statut}"
+            printf '%s\n' "$corps"
+            exit 1
+          fi
+
+          echo "Fenêtre couverte, service par service :"
+          jq -r '.[] | "  \(.service) : \(.entries | length) lignes, du \(.entries | map(.timestamp) | min // "-") au \(.entries | map(.timestamp) | max // "-")"' <<< "$corps"
+          echo
+
+          # Les lignes de Caddy sont du JSON ; une ligne qui n'en est pas (un
+          # message de démarrage) est ignorée plutôt que de casser la lecture.
+          # Cookie et Authorization sont caviardés par Caddy lui-même.
+          jq -r --arg filtre "${FILTRE:-/api/}" --arg methodes "${METHODES}" '
+            ($methodes | split(",") | map(ascii_upcase | select(length > 0))) as $m
+            | .[] | select(.service == "caddy") | .entries[]
+            | (.line | try fromjson catch null) as $l
+            | select($l != null and $l.request != null)
+            | select($l.request.uri | contains($filtre))
+            | select(($m | length) == 0 or ($m | index($l.request.method)) != null)
+            | [ .timestamp,
+                $l.request.method,
+                ($l.status | tostring),
+                $l.request.uri,
+                ($l.request.client_ip // $l.request.remote_ip),
+                ($l.request.headers.Referer[0] // "-"),
+                ($l.request.headers["User-Agent"][0] // "-") ]
+            | join("  ")
+          ' <<< "$corps" > retenues.txt
+
+          if [ -s retenues.txt ]; then
+            echo "Requêtes retenues (heure, méthode, statut, URI, IP, page d'origine, navigateur) :"
+            cat retenues.txt
+          else
+            echo "Aucune requête retenue dans cette fenêtre."
+          fi
