@@ -14,8 +14,10 @@ const envoi = ref(false)
 const suite = computed(() => {
   const s = route.query.suite
   // On n'accepte qu'un chemin interne : une redirection ouverte permettrait
-  // d'expédier ailleurs quelqu'un qui vient de se connecter.
-  return typeof s === 'string' && s.startsWith('/') && !s.startsWith('//') ? s : '/'
+  // d'expédier ailleurs quelqu'un qui vient de se connecter. Une route d'API
+  // n'est pas une page : ouverte sans session, elle mène ici, et s'y faire
+  // renvoyer après la connexion n'afficherait qu'un JSON brut.
+  return typeof s === 'string' && s.startsWith('/') && !s.startsWith('//') && !s.startsWith('/api/') ? s : '/'
 })
 
 watchEffect(() => {
