@@ -30,8 +30,10 @@ const TRIGO = MATIERE + '/trigonometrie'
 // 334 avec le premier chapitre de mathématiques pour l'ingénieur, 428 avec ses
 // cours et ses feuilles d'exercices de logique et de raisonnements, 426 depuis
 // que deux tables de vérité se remplissent au lieu de se choisir, 430 depuis que
-// la négation d'une assertion fausse se demande à part de sa valeur de vérité.
-const BANQUE = 430
+// la négation d'une assertion fausse se demande à part de sa valeur de vérité,
+// 463 avec les quinze ateliers de Docker — dont les commandes, qui se tapent,
+// restent hors du quiz : seuls leurs 33 vrai ou faux y entrent.
+const BANQUE = 463
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)
