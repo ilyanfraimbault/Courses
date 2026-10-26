@@ -10,9 +10,6 @@ name: journaux
 # page chargée en produit des dizaines. Le résumé dit donc toujours quelle
 # fenêtre il couvre : « rien trouvé » ne vaut que pour cette fenêtre-là.
 on:
-  # Temporaire : lancer la lecture avant la fusion, depuis cette branche.
-  push:
-    branches: [journaux-caddy]
   workflow_dispatch:
     inputs:
       filtre:
