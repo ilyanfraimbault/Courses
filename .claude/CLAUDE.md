@@ -155,7 +155,15 @@ est appliqué en base, pas au client. Une règle vit à un seul endroit.
 
 **Les données sont cadrées par utilisateur.** Toute requête passe par
 `idUtilisateur(event)`, qui lit la session scellée — jamais le corps de la
-requête. Voir `docs/comptes.md`.
+requête. Seules les routes `/api/admin/*` lisent au delà du compte connecté, et
+leur première ligne est `exigerAdministrateur(event)`. Voir `docs/comptes.md`.
+
+**Lire est libre, répondre demande un compte.** Les fiches s'affichent sans
+session ; le clic qui répond — une proposition, « Vérifier », « Corriger »,
+« J'avais bon » — passe par `useConnexion().exiger(geste)`, qui ouvre la
+fenêtre de connexion et rejoue le geste une fois connecté. Une lecture faite au
+montage se refait alors par `quandConnecte`, sans quoi `chargee` resterait faux
+et la page n'écrirait rien.
 
 ## Comment travailler ici
 

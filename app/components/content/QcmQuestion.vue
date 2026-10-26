@@ -25,6 +25,7 @@ const extraits = useCoursExtraits()
 const progression = useProgression()
 const bloc = useBloc()
 const route = useRoute()
+const connexion = useConnexion()
 
 // La question compte dans la progression de la fiche, comme celle d'un exercice.
 // La relation est à sens unique : le QCM écrit ce qu'il a réussi, mais ne relit
@@ -68,6 +69,7 @@ watch(corrige, (actif) => {
 
 function choisir(lettre: string) {
   if (corrige.value) return
+  if (!connexion.exiger(() => choisir(lettre))) return
   // Recliquer sa propre réponse la retire, ce qui permet de laisser une question blanche.
   choisi.value = choisi.value === lettre ? null : lettre
   qcm?.repondre(uid, choisi.value)

@@ -2,7 +2,7 @@
  * Vérification de l'authentification multi-comptes et de l'isolation des
  * données entre utilisateurs. Demande un serveur en marche et une base vierge.
  *
- *   pnpm dev
+ *   pnpm dev            # avec NUXT_CODE_INSCRIPTION=code-de-classe NUXT_ADMINISTRATEURS=alice
  *   node scripts/verifier-comptes.mjs
  */
 const B = 'http://localhost:3000'
@@ -122,6 +122,23 @@ check('compte inconnu → 401 (même message)', inconnu.statut === 401
 `${inconnu.corps?.statusMessage} / ${mauvais.corps?.statusMessage}`)
 
 check('les données restent inaccessibles sans session', (await anon('/api/fiche?chemin=' + U)).statut === 401)
+
+// --- administration ----------------------------------------------------------
+// Le serveur de vérification nomme « alice » administratrice
+// (NUXT_ADMINISTRATEURS, dans la configuration `cours-verif`).
+check('administration sans session → 401', (await anon('/api/admin/utilisateurs')).statut === 401)
+check('administration hors de la liste → 403', (await bob('/api/admin/utilisateurs')).statut === 403)
+
+const vue = await alice('/api/admin/utilisateurs')
+const pseudos = (vue.corps?.utilisateurs ?? []).map(u => u.pseudo).sort()
+check('administration → 200, tous les comptes', vue.statut === 200 && pseudos.join() === 'Alice,bob', pseudos.join())
+const fiche = vue.corps?.utilisateurs?.find(u => u.pseudo === 'Alice')
+check('le compte d\'alice porte ses réussites et son drapeau', fiche?.admin === true && fiche?.acquises === 2,
+  JSON.stringify({ admin: fiche?.admin, acquises: fiche?.acquises }))
+check('aucun détail de réponse ne sort', !JSON.stringify(vue.corps ?? {}).includes('"reponse"'))
+
+check('la session d\'alice se lit administratrice', (await alice('/api/_auth/session')).corps?.user?.admin === true)
+check('celle de bob, non', (await bob('/api/_auth/session')).corps?.user?.admin === false)
 
 console.log(JSON.stringify({ reussis: ok.length, echecs: ko.length, ok, ko }, null, 1))
 process.exit(ko.length ? 1 : 0)

@@ -28,6 +28,7 @@ const props = defineProps<{
 const prefixe = useId()
 
 const question = useQuestionRemplie()
+const connexion = useConnexion()
 question?.inscrire('champs')
 
 const OCTETS = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(\/\d{1,2})?$/
@@ -77,6 +78,9 @@ function poser(i: number, v: string) {
 
 function verifier() {
   if (trouvee.value) return
+  // Remplir se fait sans compte ; vérifier, c'est répondre, et ça en demande un.
+  // La saisie reste en place pendant la connexion, et la vérification reprend.
+  if (!connexion.exiger(verifier)) return
   const manquants = champs.value.filter((_, i) => !(saisie.value[i] ?? '').trim())
   vides.value = manquants.length
   if (manquants.length) return

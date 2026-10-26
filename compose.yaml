@@ -13,6 +13,8 @@ services:
       NUXT_SESSION_PASSWORD: "${NUXT_SESSION_PASSWORD:?32 caractères minimum}"
       # Vide, les inscriptions sont fermées : c'est volontairement le défaut.
       NUXT_CODE_INSCRIPTION: "${NUXT_CODE_INSCRIPTION:-}"
+      # Vide, personne n'administre.
+      NUXT_ADMINISTRATEURS: "${NUXT_ADMINISTRATEURS:-}"
       NUXT_SESSION_COOKIE_SECURE: "true"
       # Caddy réécrit X-Forwarded-For : on peut s'y fier pour identifier la
       # source d'une tentative de connexion.

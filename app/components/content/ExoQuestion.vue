@@ -36,6 +36,7 @@ const reveal = useCoursReveal()
 const progression = useProgression()
 const bloc = useBloc()
 const route = useRoute()
+const connexion = useConnexion()
 
 const identite = computed(() => identiteQuestion(route.path, bloc?.slug.value ?? null, props.label))
 
@@ -62,6 +63,9 @@ onBeforeUnmount(() => {
 
 function choisir(lettre: string) {
   if (trouve.value) return
+  // Sans compte, la réponse n'irait nulle part : on la retient le temps de se
+  // connecter, et elle est rejouée telle quelle à la fermeture de la fenêtre.
+  if (!connexion.exiger(() => choisir(lettre))) return
   choisi.value = lettre
   if (lettre === props.bonne) {
     progression?.reussir(identite.value, lettre)
@@ -77,6 +81,7 @@ function choisir(lettre: string) {
 }
 
 function seNoter(juste: boolean) {
+  if (!connexion.exiger(() => seNoter(juste))) return
   if (juste) progression?.reussir(identite.value, 'auto')
   else progression?.annuler(identite.value)
 }

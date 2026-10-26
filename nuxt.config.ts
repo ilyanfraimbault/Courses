@@ -338,6 +338,9 @@ export default defineNuxtConfig({
     // le site vit sur un domaine public, et une inscription libre invite les
     // robots. Le code se partage à qui de droit.
     codeInscription: '',
+    // Pseudos des administrateurs, séparés par des virgules. Vide, personne
+    // n'administre : la page des utilisateurs reste fermée à tous.
+    administrateurs: '',
     // Répertoire inscriptible et non fichier monté seul : le mode WAL écrit
     // « -wal » et « -shm » à côté de la base.
     baseFichier: '.data/cours.sqlite',

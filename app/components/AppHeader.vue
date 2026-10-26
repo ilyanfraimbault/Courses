@@ -5,6 +5,8 @@ const sommaire = useSommaire()
 
 const { header } = useAppConfig()
 const { loggedIn, user, clear } = useUserSession()
+const connexion = useConnexion()
+const route = useRoute()
 
 /**
  * Seuls les deux lieux où l'on travaille restent dans la barre : le cours qu'on
@@ -28,13 +30,27 @@ const menu = computed<DropdownMenuItem[][]>(() => [
     { label: 'Mes domaines', to: '/mes-domaines', icon: 'i-lucide-target' },
     { label: 'Mes résultats', to: '/mes-resultats', icon: 'i-lucide-chart-line' }
   ],
+  // Le drapeau ne fait qu'afficher l'entrée : le serveur refuse les données à
+  // qui n'est pas administrateur, quoi que dise la session du navigateur.
+  ...(user.value?.admin
+    ? [[
+        { type: 'label' as const, label: 'Administration' },
+        { label: 'Utilisateurs', to: '/admin', icon: 'i-lucide-users' }
+      ]]
+    : []),
   [{ label: 'Se déconnecter', icon: 'i-lucide-log-out', onSelect: deconnecter }]
 ])
 
+/**
+ * On recharge l'application plutôt que de naviguer : les lectures faites au
+ * montage — progression, to-do, clôtures — vivent dans des états partagés, et
+ * le compte suivant à se connecter sur cet onglet hériterait sinon de ce que le
+ * précédent y a laissé. Une fiche se lit sans compte : on y reste.
+ */
 async function deconnecter() {
   await $fetch('/api/auth/logout', { method: 'POST' })
   await clear()
-  await navigateTo('/connexion')
+  reloadNuxtApp({ path: estPublique(route.path) ? route.fullPath : '/connexion' })
 }
 </script>
 
@@ -75,8 +91,20 @@ async function deconnecter() {
 
       <UColorModeButton v-if="header?.colorMode" />
 
+      <UButton
+        v-if="!loggedIn"
+        color="neutral"
+        variant="ghost"
+        size="sm"
+        icon="i-lucide-log-in"
+        label="Se connecter"
+        :ui="{ label: 'hidden sm:inline' }"
+        aria-label="Se connecter"
+        @click="connexion.ouvrir()"
+      />
+
       <UDropdownMenu
-        v-if="loggedIn"
+        v-else
         :items="menu"
         :content="{ align: 'end' }"
         :ui="{ content: 'w-56' }"
