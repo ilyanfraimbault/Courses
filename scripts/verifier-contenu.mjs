@@ -23,6 +23,8 @@
 import { DatabaseSync } from 'node:sqlite'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+// Le correcteur lui-même, et non une copie : Node lit son TypeScript tel quel.
+import { corrigerCommande, erreurAttendue } from '../shared/utils/commandes.ts'
 
 const BASE = process.env.QUIZ_BASE ?? 'http://localhost:3000'
 const args = process.argv.slice(2)
@@ -180,6 +182,34 @@ for (const page of visees) {
     if (props.cours && !extraits.has(props.cours)) {
       erreur(c, `${identite} : cours="${props.cours}" ne désigne aucun extrait-cours de la page — le bouton Cours n'ouvre rien`)
     }
+  })
+
+  // Une commande à taper se corrige contre ses réponses admises : une réponse
+  // qui ne se lit pas, ou une question qui porte aussi une lettre, rendrait la
+  // question impossible à réussir sans rien afficher d'anormal.
+  parcourir(page.corps, (n, parents) => {
+    if (n[0] !== 'commande') return
+    const props = n[1] ?? {}
+    const question = [...parents].reverse().find(p => BALISES_QUESTION.has(p[0]))
+    const nom = question ? `${slugifier([...parents].reverse().find(p => BALISES_BLOC.has(p[0]))?.[1]?.titre ?? '?')}#${question[1]?.label}` : 'commande hors question'
+    let attendues
+    try {
+      attendues = JSON.parse(props[':attendues'] ?? '[]')
+    } catch {
+      erreur(c, `${nom} : les réponses admises ne se lisent pas`)
+      return
+    }
+    const mode = props.mode ?? 'shell'
+    if (!['shell', 'dockerfile', 'yaml'].includes(mode)) erreur(c, `${nom} : mode « ${mode} » inconnu`)
+    if (!Array.isArray(attendues) || !attendues.length) erreur(c, `${nom} : aucune réponse admise — impossible à réussir`)
+    for (const a of attendues) {
+      const e = erreurAttendue(String(a), mode)
+      if (e) erreur(c, `${nom} : la réponse admise « ${String(a).slice(0, 40)} » ne se lit pas (${e})`)
+      else if (!corrigerCommande(String(a), [String(a)], mode).juste) erreur(c, `${nom} : « ${String(a).slice(0, 40)} » ne se reconnaît pas elle-même`)
+    }
+    if (!question) avertir(c, 'une commande hors question : elle se corrige, mais n\'a pas de mémoire')
+    else if (question[0] !== 'exo-question') erreur(c, `${nom} : une commande ne se pose que dans une exo-question`)
+    else if (question[1]?.bonne !== undefined) erreur(c, `${nom} : une commande à taper et une bonne lettre — la question ne sait pas laquelle croire`)
   })
 
   // Les rappels de cours doivent viser une section qui existe : c'est leur

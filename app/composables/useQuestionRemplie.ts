@@ -2,15 +2,21 @@ import type { ComputedRef, InjectionKey } from 'vue'
 
 /**
  * Le lien entre une question et un composant qui se remplit à la main — une
- * table de vérité aujourd'hui. Le composant sait corriger ses cases ; la
- * question sait ce qu'une réponse juste ou fausse écrit en base. Ni l'un ni
+ * table de vérité, une commande à taper. Le composant sait corriger sa saisie ;
+ * la question sait ce qu'une réponse juste ou fausse écrit en base. Ni l'un ni
  * l'autre n'a à connaître la règle de l'autre.
  */
+export type NatureRemplie = 'table' | 'commande'
+
 export interface QuestionRemplieApi {
   /** La question est déjà trouvée : le composant s'affiche rempli et figé. */
   trouvee: ComputedRef<boolean>
-  /** Dit à la question qu'elle ne se corrige ni par lettre ni par auto-évaluation. */
-  inscrire: () => void
+  /**
+   * Dit à la question qu'elle ne se corrige ni par lettre ni par
+   * auto-évaluation. La nature devient la réponse écrite en base, et choisit le
+   * message d'un essai faux.
+   */
+  inscrire: (nature?: NatureRemplie) => void
   /** Rend le verdict d'une vérification. */
   verifier: (juste: boolean) => void
 }

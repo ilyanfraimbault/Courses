@@ -85,24 +85,32 @@ watch(solutionOuverte, (ouverte) => {
   if (ouverte) solutionLue.value = true
 })
 
-// Une question qui se remplit — une table de vérité — se corrige case par case :
-// ni lettre à comparer, ni auto-évaluation à proposer. Le composant s'inscrit
-// en se montant, et rend ses verdicts ici, où vit la règle des fautes.
-const remplie = ref(false)
+// Une question qui se remplit — une table de vérité, une commande à taper — se
+// corrige par son composant : ni lettre à comparer, ni auto-évaluation à
+// proposer. Le composant s'inscrit en se montant, et rend ses verdicts ici, où
+// vit la règle des fautes.
+const remplie = ref<NatureRemplie | null>(null)
 provideQuestionRemplie({
   trouvee: trouve,
-  inscrire: () => { remplie.value = true },
+  inscrire: (nature = 'table') => { remplie.value = nature },
   verifier: (juste) => {
     if (trouve.value) return
+    const nature = remplie.value ?? 'table'
     if (juste) {
-      progression?.reussir(identite.value, 'table')
+      progression?.reussir(identite.value, nature)
       return
     }
     // Même règle qu'un choix : une seule faute par visite, et l'indice s'ouvre.
     if (!errones.value.length) progression?.rater(identite.value)
-    errones.value = [...errones.value, 'table']
+    errones.value = [...errones.value, nature]
     if (hasIndice.value) indiceOuvert.value = true
   }
+})
+
+const messageFaux = computed(() => {
+  if (remplie.value === 'commande') return 'Ce n\'est pas encore ça : le terminal dit ce qui cloche.'
+  if (remplie.value === 'table') return 'Des cases sont fausses : elles sont marquées en rouge.'
+  return 'Ce n\'est pas ça.'
 })
 
 // « Tout afficher / tout masquer », en tête des pages qui le proposent. Les
@@ -158,7 +166,7 @@ if (reveal) {
         v-if="(aChoix || remplie) && !trouve && errones.length"
         class="mt-3 mb-0 text-sm text-muted"
       >
-        {{ remplie ? 'Des cases sont fausses : elles sont marquées en rouge.' : 'Ce n\'est pas ça.' }}
+        {{ messageFaux }}
         <template v-if="hasIndice">
           L'indice est ouvert : relis-le, puis retente — autant de fois qu'il faudra.
         </template>
