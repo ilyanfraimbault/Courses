@@ -146,6 +146,26 @@ Pour les choix à propositions :
 - **Toute question vit dans un bloc** (`:::exercice` ou `:::qcm`) et porte un
   `label` (`a)`, `1.`). Hors bloc, elle s'affiche et ne sert à rien.
 
+### Une solution se rédige comme le prof la rédige
+
+La solution est le modèle que l'élève recopiera sur sa copie : elle suit la
+méthode **et les formules** du professeur, pas un raccourci plus élégant. Quand
+il a corrigé l'exercice (au tableau, dans un corrigé), sa méthode est la
+solution principale, et les autres chemins viennent après, en plus court.
+
+Une récurrence, par exemple, se rédige toujours en quatre temps, avec ses mots :
+
+- **Énoncé.** « Notons, pour $n \in \mathbb{N}$, $P(n)$ : « … » ».
+- **Initialisation.** « Pour $n = 0$ : … Donc $P(0)$ est vraie. »
+- **Hérédité.** « Soit $n \in \mathbb{N}$ tel que $P(n)$ est vraie. Montrons
+  qu'alors $P(n+1)$ est vraie, c'est-à-dire … » — $P(n+1)$ écrite en clair —,
+  le calcul, chaque usage de l'hypothèse annoncé par « Par hypothèse de
+  récurrence », puis « Ainsi, $P(n)$ vraie $\Rightarrow$ $P(n+1)$ vraie. »
+- **Conclusion.** « D'après le principe de récurrence, pour tout $n \in \mathbb{N}$, … »
+
+Ordre $2$ et récurrence forte gardent ce plan : deux rangs à l'initialisation,
+ou une hypothèse sur tous les rangs de $n_0$ à $n$.
+
 ### L'énoncé commun d'un bloc
 
 Le texte écrit en tête d'un `:::exercice`, avant ses questions, est rappelé par
