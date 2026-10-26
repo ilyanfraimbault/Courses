@@ -59,7 +59,7 @@ jobs:
           # Cookie et Authorization sont caviardés par Caddy lui-même.
           jq -r --arg filtre "${FILTRE:-/api/}" --arg methodes "${METHODES}" '
             ($methodes | split(",") | map(ascii_upcase | select(length > 0))) as $m
-            | .[] | select(.service == "caddy") | .entries[]
+            | .[] | select(.service | test("caddy")) | .entries[]
             | (.line | try fromjson catch null) as $l
             | select($l != null and $l.request != null)
             | select($l.request.uri | contains($filtre))
@@ -78,5 +78,6 @@ jobs:
             echo "Requêtes retenues (heure, méthode, statut, URI, IP, page d'origine, navigateur) :"
             cat retenues.txt
           else
-            echo "Aucune requête retenue dans cette fenêtre."
+            echo "Aucune requête retenue dans cette fenêtre. Les dernières lignes brutes de Caddy :"
+            jq -r '.[] | select(.service | test("caddy")) | .entries[-5:][] | "\(.timestamp)  \(.line)"' <<< "$corps"
           fi
