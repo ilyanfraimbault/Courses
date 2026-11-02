@@ -28,7 +28,7 @@ export function provideDonneesFiche(chemin: MaybeRefOrGetter<string>) {
   const donnees = ref<DonneesFiche | null>(null) as Ref<DonneesFiche | null>
   const chargee = ref(false)
 
-  onMounted(async () => {
+  async function charger() {
     try {
       donnees.value = await $fetch<DonneesFiche>('/api/fiche', {
         query: { chemin: cheminCanonique(toValue(chemin)) }
@@ -39,7 +39,12 @@ export function provideDonneesFiche(chemin: MaybeRefOrGetter<string>) {
       // en mémoire pour la session en cours, elle n'enregistre simplement pas.
       chargee.value = false
     }
-  })
+  }
+
+  onMounted(charger)
+  // Se connecter par la fenêtre ne recharge pas la page : la lecture qui avait
+  // échoué en 401 se refait, et c'est elle qui rouvre l'écriture.
+  quandConnecte(charger)
 
   const api: DonneesFicheApi = { chargee: readonly(chargee), donnees: readonly(donnees) as Readonly<Ref<DonneesFiche | null>> }
   provide(donneesFicheKey, api)

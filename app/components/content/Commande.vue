@@ -29,6 +29,7 @@ const props = withDefaults(defineProps<{
 }>(), { mode: 'shell', invite: undefined, sortie: undefined, fichier: undefined })
 
 const question = useQuestionRemplie()
+const connexion = useConnexion()
 question?.inscrire('commande')
 
 const attendues = computed(() => (props.attendues ?? []).map(a => String(a).replace(/\n+$/, '')))
@@ -63,6 +64,7 @@ watch(trouvee, (t) => {
 
 function verifier() {
   if (trouvee.value) return
+  if (!connexion.exiger(verifier)) return
   const verdict = corrigerCommande(saisie.value, attendues.value, props.mode)
   // Une saisie vide n'est pas une faute : on n'a encore rien répondu.
   if (!verdict.juste && !saisie.value.trim()) {

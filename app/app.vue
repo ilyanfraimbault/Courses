@@ -49,6 +49,8 @@ provide('navigation', navigation)
 
     <AppFooter />
 
+    <ConnexionModale />
+
     <ClientOnly>
       <LazyUContentSearch
         :files="files"

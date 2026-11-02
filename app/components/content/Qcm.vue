@@ -99,7 +99,12 @@ function allerA(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
+const connexion = useConnexion()
+
 function corrigerEtRemonter() {
+  // Une copie blanche se corrige aussi : sans cette garde, « Corriger » serait
+  // le moyen de lire tout le corrigé sans compte.
+  if (!connexion.exiger(corrigerEtRemonter)) return
   corriger()
   nextTick(() => {
     document.getElementById(idResultat)?.scrollIntoView({ behavior: 'smooth', block: 'center' })

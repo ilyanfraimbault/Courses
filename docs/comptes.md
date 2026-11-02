@@ -60,6 +60,46 @@ site n'a pas les mêmes champs. Les deux cas sont traités au même endroit — 
 session est vidée et la réponse est un 401 qui invite à se reconnecter, plutôt
 qu'une violation de clé étrangère ou une 500.
 
+## Lire sans compte, répondre avec
+
+Les fiches se lisent sans session : leur HTML est le même pour tous, et c'est
+ce qui le rend cacheable. **Répondre** en demande une, parce qu'une réponse sans
+compte n'irait nulle part. La demande vient au moment du geste — cliquer une
+proposition, « Vérifier » une table ou une commande, « Corriger » un QCM, se
+noter après la solution — et non à l'arrivée sur la page.
+
+La connexion s'ouvre alors en fenêtre par-dessus la fiche (`useConnexion`),
+et le geste interrompu est rejoué une fois connecté : on ne perd ni l'endroit
+où l'on était, ni le clic. Les lectures faites au montage, qui avaient échoué
+en 401, se refont d'elles-mêmes (`quandConnecte`) ; tant que celle de la fiche
+n'a pas abouti, la garde de `provideProgression` retient l'écriture, comme
+toujours.
+
+La page `/connexion` reste pour ce qu'aucune fenêtre ne couvre : arriver par
+une adresse réservée sans session, quand il n'y a pas de page en dessous.
+
+## L'administration
+
+`NUXT_ADMINISTRATEURS` nomme les comptes qui administrent, par pseudo, séparés
+par des virgules. Le pseudo est replié comme à l'unicité, et relu **en base**
+depuis l'identifiant de session à chaque requête : retirer quelqu'un de la
+liste vaut dès la requête suivante, sans attendre l'expiration de sa session.
+Vide, personne n'administre.
+
+Les routes `/api/admin/*` sont les seules à lire au delà du compte connecté ;
+leur première ligne est `exigerAdministrateur(event)`, qui répond 401 sans
+session et 403 hors de la liste. Le drapeau `admin` que voit le navigateur est
+posé à chaque lecture de la session (`server/plugins/session-administration.ts`)
+et ne fait qu'afficher l'entrée de menu.
+
+L'administration voit des **comptes** — questions trouvées par matière, fautes
+en dette, séances de quiz, copies, contrôles, to-do, dernière activité — et
+jamais le détail des réponses de personne.
+
+Un piège à connaître : le rôle suit un pseudo. Un pseudo listé qui n'a pas
+encore de compte peut être pris par le premier venu muni du code
+d'inscription. Ne lister qu'un pseudo déjà créé.
+
 ## Vérifier
 
 ```bash

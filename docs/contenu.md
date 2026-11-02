@@ -61,7 +61,7 @@ avec `--rendu` compte les questions dans le HTML servi.
 
 Il sort en erreur sur une erreur. Ses avertissements signalent ce qui marche
 mais dessert — une question sans indice. Aujourd'hui : **aucune erreur**,
-1069 questions dont 652 au quiz, 99 cartes dont le compte tombe juste, et 35
+1131 questions dont 689 au quiz, 97 cartes dont le compte tombe juste, et 35
 avertissements, tous connus : les 33 questions des contrôles express du cours de
 trigonométrie n'ont pas d'indice, et deux rappels de la réplique du QCM visent le
 cours des fonctions usuelles sans ancre — leurs huit questions tombent dans « Le
@@ -97,7 +97,7 @@ const rows=db.prepare('SELECT path, questions FROM _content_cours ORDER BY path'
 "
 ```
 
-Attendu aujourd'hui : `1069 / 1069 aucun écart`.
+Attendu aujourd'hui : `1131 / 1131 aucun écart`.
 
 Le compte porte sur le texte `cours-question` dans le HTML, et le serveur de
 développement garde les commentaires de gabarit : un commentaire qui cite ce nom
@@ -108,9 +108,9 @@ compteur, pas le contenu.
 Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/content`,
 `@nuxtjs/mdc` ou `remark-mdc` — c'est le seul moyen de voir la panne.
 
-Le même hook relève l'index des questions. Il en a **1069**, autant que le
+Le même hook relève l'index des questions. Il en a **1131**, autant que le
 comptage — chacune vit dans un bloc et porte un repère, donc chacune a une
-identité et peut être rangée dans un domaine. Parmi elles, **652** sont
+identité et peut être rangée dans un domaine. Parmi elles, **689** sont
 interrogeables, réparties sur vingt-quatre chapitres de quatre matières : c'est la banque du quiz,
 décrite dans `docs/quiz.md`. Ce second témoin vaut d'être relu au même moment
 qu'un changement de contenu — une question qui cesse d'être relevée disparaît du
@@ -134,8 +134,8 @@ console.log({relevees, comptees, interrogeables, notions: notions.size, sansRenv
 "
 ```
 
-Attendu aujourd'hui : `{ relevees: 1069, comptees: 1069, interrogeables: 652,
-notions: 206, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
+Attendu aujourd'hui : `{ relevees: 1131, comptees: 1131, interrogeables: 689,
+notions: 242, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
 signalerait une question hors bloc ou sans repère : elle se rendrait bien, mais
 n'aurait pas d'identité, donc pas de mémoire.
 
@@ -183,7 +183,7 @@ console.log(types, '/', ecrits.length, types===ecrits.length?'':'ÉCART : un fro
 "
 ```
 
-Attendu aujourd'hui : `20 / 20`.
+Attendu aujourd'hui : `22 / 22`.
 
 ## Structure
 

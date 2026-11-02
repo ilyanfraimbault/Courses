@@ -1,6 +1,6 @@
 ---
 title: Raisonnements mathématiques
-description: Modus ponens, disjonction de cas, absurde, contraposition, équivalence, analyse et synthèse, récurrences — le cours, la feuille d'exercices corrigée question par question et un entraînement aux récurrences.
+description: "Modus ponens, disjonction de cas, absurde, contraposition, équivalence, analyse et synthèse, récurrences — le cours, la feuille d'exercices et un entraînement en huit paliers, corrigés question par question."
 annee: A1
 matiere: Mathématiques pour l'ingénieur
 ordre: 2
@@ -13,6 +13,9 @@ Le second chapitre met la logique au travail : chaque tautologie du chapitre pr�
 ::
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/exercices" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille, dans l'ordre du sujet : parité, divisibilité, Bernoulli, Taylor, binôme, irrationalité, équations fonctionnelles" type="exercices" meta="18 questions"}
+::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement" titre="L'entraînement" description="Trente et une questions en huit paliers, du raisonnement direct aux récurrences fortes et aux équations fonctionnelles — avec les questions à se poser et un exemple rédigé sous chaque question" type="entrainement" meta="31 questions"}
 ::
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement-recurrences" titre="L'entraînement aux récurrences" description="Cinq récurrences à rédiger, très guidées au début et sans aide à la fin : on coche simplement quand c'est fait" type="entrainement" meta="5 questions"}

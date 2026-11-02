@@ -12,6 +12,7 @@
       "runtimeExecutable": "env",
       "runtimeArgs": [
         "NUXT_CODE_INSCRIPTION=code-de-classe",
+        "NUXT_ADMINISTRATEURS=alice",
         "NUXT_BASE_FICHIER=.data/verif/cours.sqlite",
         "pnpm", "run", "dev"
       ],
