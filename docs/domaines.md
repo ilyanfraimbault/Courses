@@ -17,7 +17,7 @@ par question, avec le chapitre déduit de la `source` de l'extrait — exactemen
 la même déduction que celle du quiz, et pour la même raison : un QCM mélange les
 chapitres exprès, donc le dossier d'une question ne dit pas de quoi elle parle.
 
-Aujourd'hui : **1064 questions**, **207 domaines** répartis sur vingt-quatre
+Aujourd'hui : **1069 questions**, **207 domaines** répartis sur vingt-quatre
 chapitres de quatre matières. Deux cent six d'entre eux sont des points de cours
 nommés ; le
 dernier est le tas
@@ -97,7 +97,7 @@ vue qui range **toute** la progression ne pouvait pas s'en contenter : les 41
 questions ouvertes se cochent comme les autres, et les laisser dehors aurait
 fait afficher « 12 / 13 » sur un domaine qui en compte 15.
 
-Le relevé porte donc les 1064 questions, et un champ `interrogeable` dit
+Le relevé porte donc les 1069 questions, et un champ `interrogeable` dit
 lesquelles le quiz peut poser. Un seul relevé plutôt que deux côte à côte, qui
 se seraient contredits le jour où l'un aurait changé. Le catalogue du quiz, lui,
 ne compte toujours que les interrogeables : annoncer « 18 questions » sur une
@@ -124,7 +124,7 @@ progression qu'au montage — le HTML servi est le même pour tout le monde.
 
 Le contrôle qui compte est que **les comptes se réconcilient** : la somme des
 domaines d'un chapitre vaut le total du chapitre, celle des chapitres le total de
-leur matière, et celle des matières 1064. Serveur en marche et compte connecté :
+leur matière, et celle des matières 1069. Serveur en marche et compte connecté :
 
 ```bash
 curl -s --cookie "$COOKIE" localhost:3000/api/progression/domaines | node -e "
@@ -144,5 +144,5 @@ console.log(s, '==', d.total.questions, '|', n, 'domaines');
 "
 ```
 
-Attendu aujourd'hui : `1064 == 1064 | 207 domaines` (déduit du relevé : 206
+Attendu aujourd'hui : `1069 == 1069 | 207 domaines` (déduit du relevé : 206
 notions et le tas « Sans renvoi au cours » ; pas encore relu sur l'API).

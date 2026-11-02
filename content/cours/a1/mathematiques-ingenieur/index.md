@@ -29,6 +29,9 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/exercices" titre="La feuille d'exercices" description="Les quatorze exercices de la feuille : parité, récurrences, CAPES, irrationalité, équations fonctionnelles" type="exercices" meta="18 questions"}
 ::
 
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement-recurrences" titre="L'entraînement aux récurrences" description="Cinq récurrences à rédiger, très guidées au début et sans aide à la fin : on coche simplement quand c'est fait" type="entrainement" meta="5 questions"}
+::
+
 ## Emporter mes résultats
 
 ::export-resultats

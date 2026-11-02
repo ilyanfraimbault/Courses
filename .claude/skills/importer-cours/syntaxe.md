@@ -141,6 +141,9 @@ La forme algébrique cherchée est donc $\boxed{6+i}$.
   chemin, c'est l'identité de la question en base.
 - Sans `bonne`, la question est ouverte et s'auto-évalue (démonstrations,
   études, tableaux).
+- Avec `faire`, une question ouverte porte une case **Fait** dès l'énoncé, au
+  lieu du « J'avais bon » qui attend la solution : pour une rédaction
+  d'entraînement où seul compte de l'avoir faite.
 - Attributs facultatifs du bloc : `badge="★★☆☆☆"`, `icone`, `entete="introduction"`.
 
 ## Un palier d'entraînement

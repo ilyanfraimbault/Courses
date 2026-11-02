@@ -98,7 +98,7 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   ramène chaque commande à une forme canonique — ordre des options, formes
   longues, synonymes, `alpine` = `alpine:latest`, `--mount`, et en modes
   `dockerfile` et `yaml` des instructions et des arbres. `pnpm verif:commandes`
-  l'éprouve sur 105 cas. Le site compte 1064 questions, 652 au quiz.
+  l'éprouve sur 105 cas. Le site compte 1069 questions, 652 au quiz.
 - **Importer un cours** : le skill `importer-cours` (`.claude/skills/`) mène d'un
   PDF aux fiches, et `pnpm verif:contenu` garde le contenu contre ses pannes
   silencieuses.

@@ -61,7 +61,7 @@ avec `--rendu` compte les questions dans le HTML servi.
 
 Il sort en erreur sur une erreur. Ses avertissements signalent ce qui marche
 mais dessert — une question sans indice. Aujourd'hui : **aucune erreur**,
-1064 questions dont 652 au quiz, 95 cartes dont le compte tombe juste, et 35
+1069 questions dont 652 au quiz, 99 cartes dont le compte tombe juste, et 35
 avertissements, tous connus : les 33 questions des contrôles express du cours de
 trigonométrie n'ont pas d'indice, et deux rappels de la réplique du QCM visent le
 cours des fonctions usuelles sans ancre — leurs huit questions tombent dans « Le
@@ -97,7 +97,7 @@ const rows=db.prepare('SELECT path, questions FROM _content_cours ORDER BY path'
 "
 ```
 
-Attendu aujourd'hui : `1064 / 1064 aucun écart`.
+Attendu aujourd'hui : `1069 / 1069 aucun écart`.
 
 Le compte porte sur le texte `cours-question` dans le HTML, et le serveur de
 développement garde les commentaires de gabarit : un commentaire qui cite ce nom
@@ -108,7 +108,7 @@ compteur, pas le contenu.
 Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/content`,
 `@nuxtjs/mdc` ou `remark-mdc` — c'est le seul moyen de voir la panne.
 
-Le même hook relève l'index des questions. Il en a **1064**, autant que le
+Le même hook relève l'index des questions. Il en a **1069**, autant que le
 comptage — chacune vit dans un bloc et porte un repère, donc chacune a une
 identité et peut être rangée dans un domaine. Parmi elles, **652** sont
 interrogeables, réparties sur vingt-quatre chapitres de quatre matières : c'est la banque du quiz,
@@ -134,7 +134,7 @@ console.log({relevees, comptees, interrogeables, notions: notions.size, sansRenv
 "
 ```
 
-Attendu aujourd'hui : `{ relevees: 1064, comptees: 1064, interrogeables: 652,
+Attendu aujourd'hui : `{ relevees: 1069, comptees: 1069, interrogeables: 652,
 notions: 206, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
 signalerait une question hors bloc ou sans repère : elle se rendrait bien, mais
 n'aurait pas d'identité, donc pas de mémoire.
