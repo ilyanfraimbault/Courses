@@ -18,3 +18,5 @@ Le second chapitre met la logique au travail : chaque tautologie du chapitre pr�
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement" titre="L'entraînement" description="Trente et une questions en huit paliers, du raisonnement direct aux récurrences fortes et aux équations fonctionnelles — avec les questions à se poser et un exemple rédigé sous chaque question" type="entrainement" meta="31 questions"}
 ::
 
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement-recurrences" titre="L'entraînement aux récurrences" description="Cinq récurrences à rédiger, très guidées au début et sans aide à la fin : on coche simplement quand c'est fait" type="entrainement" meta="5 questions"}
+::

@@ -11,6 +11,13 @@ const props = defineProps<{
    * tableau de variations.
    */
   bonne?: string
+  /**
+   * Une question ouverte qui se contente d'être faite ou non : une case à cocher
+   * dès l'énoncé, au lieu du « J'avais bon » qui attend la solution. Sur une
+   * rédaction d'entraînement, exiger d'ouvrir le corrigé pour noter qu'on l'a
+   * faite pousserait à le lire avant d'avoir fini.
+   */
+  faire?: boolean
 }>()
 
 const slots = useSlots()
@@ -185,7 +192,20 @@ if (reveal) {
     <!-- Question ouverte : rien à cocher, donc on se note soi-même, mais
          seulement une fois la solution lue. -->
     <template
-      v-if="!aChoix && !remplie && solutionLue"
+      v-if="!aChoix && !remplie && faire"
+      #apres
+    >
+      <UCheckbox
+        class="mt-3"
+        color="success"
+        label="Fait"
+        :model-value="trouve"
+        @update:model-value="seNoter($event === true)"
+      />
+    </template>
+
+    <template
+      v-else-if="!aChoix && !remplie && solutionLue"
       #apres
     >
       <div class="mt-3 flex flex-wrap items-center gap-2">

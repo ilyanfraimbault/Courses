@@ -61,7 +61,7 @@ avec `--rendu` compte les questions dans le HTML servi.
 
 Il sort en erreur sur une erreur. Ses avertissements signalent ce qui marche
 mais dessert — une question sans indice. Aujourd'hui : **aucune erreur**,
-1126 questions dont 689 au quiz, 93 cartes dont le compte tombe juste, et 35
+1131 questions dont 689 au quiz, 97 cartes dont le compte tombe juste, et 35
 avertissements, tous connus : les 33 questions des contrôles express du cours de
 trigonométrie n'ont pas d'indice, et deux rappels de la réplique du QCM visent le
 cours des fonctions usuelles sans ancre — leurs huit questions tombent dans « Le
@@ -97,7 +97,7 @@ const rows=db.prepare('SELECT path, questions FROM _content_cours ORDER BY path'
 "
 ```
 
-Attendu aujourd'hui : `1126 / 1126 aucun écart`.
+Attendu aujourd'hui : `1131 / 1131 aucun écart`.
 
 Le compte porte sur le texte `cours-question` dans le HTML, et le serveur de
 développement garde les commentaires de gabarit : un commentaire qui cite ce nom
@@ -108,7 +108,7 @@ compteur, pas le contenu.
 Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/content`,
 `@nuxtjs/mdc` ou `remark-mdc` — c'est le seul moyen de voir la panne.
 
-Le même hook relève l'index des questions. Il en a **1126**, autant que le
+Le même hook relève l'index des questions. Il en a **1131**, autant que le
 comptage — chacune vit dans un bloc et porte un repère, donc chacune a une
 identité et peut être rangée dans un domaine. Parmi elles, **689** sont
 interrogeables, réparties sur vingt-quatre chapitres de quatre matières : c'est la banque du quiz,
@@ -134,8 +134,8 @@ console.log({relevees, comptees, interrogeables, notions: notions.size, sansRenv
 "
 ```
 
-Attendu aujourd'hui : `{ relevees: 1126, comptees: 1126, interrogeables: 689,
-notions: 243, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
+Attendu aujourd'hui : `{ relevees: 1131, comptees: 1131, interrogeables: 689,
+notions: 242, sansRenvoi: 48 }`. Un écart entre `relevees` et `comptees`
 signalerait une question hors bloc ou sans repère : elle se rendrait bien, mais
 n'aurait pas d'identité, donc pas de mémoire.
 
