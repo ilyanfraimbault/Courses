@@ -43,6 +43,10 @@ services:
       # certificat à chaque démarrage et se fait limiter par Let's Encrypt.
       - courses_caddy_data:/data
       - courses_caddy_config:/config
+    # Le port 3002 de l'hôte, où l'admin de la préprod TrueMain écoute : voir
+    # le second bloc du Caddyfile.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       app:
         condition: service_healthy
@@ -72,6 +76,30 @@ configs:
         log
         encode zstd gzip
         reverse_proxy app:3000
+      }
+
+      # Les journaux de la préprod TrueMain, pour la routine cloud qui les lit
+      # chaque jour : son proxy de sortie ne laisse passer que le 443, que ce
+      # Caddy occupe, et l'admin de la préprod n'écoute que sur le 3002. Seules
+      # la connexion et les deux lectures passent ; tout le reste répond 404.
+      preprod-admin.truemain.lol {
+        @connexion {
+          method POST
+          path /api/auth/login
+        }
+        @journaux {
+          method GET
+          path /api/ops/logs /api/ops/crashes
+        }
+        handle @connexion {
+          reverse_proxy host.docker.internal:3002
+        }
+        handle @journaux {
+          reverse_proxy host.docker.internal:3002
+        }
+        handle {
+          respond 404
+        }
       }
 
 volumes:
