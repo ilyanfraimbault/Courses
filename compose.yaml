@@ -82,7 +82,11 @@ configs:
       # chaque jour : son proxy de sortie ne laisse passer que le 443, que ce
       # Caddy occupe, et l'admin de la préprod n'écoute que sur le 3002. Seules
       # la connexion et les deux lectures passent ; tout le reste répond 404.
-      preprod-admin.truemain.lol {
+      # Un sous-domaine du nom offert par Hostinger : son DNS répond pour
+      # tout « *.srv1355415.hstgr.cloud », et hstgr.cloud figure dans la Public
+      # Suffix List, donc Let's Encrypt compte ses certificats à part. Origine
+      # distincte du site : aucun cookie partagé avec lui.
+      truemain-preprod.srv1355415.hstgr.cloud {
         @connexion {
           method POST
           path /api/auth/login
