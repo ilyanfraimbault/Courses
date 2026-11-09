@@ -315,6 +315,11 @@ export default defineNuxtConfig({
         toc: {
           searchDepth: 1
         },
+        // Le C n'est pas dans les langages chargés par défaut : sans lui, les
+        // programmes de la mise à niveau s'affichent en gris, sans erreur.
+        highlight: {
+          langs: ['c']
+        },
         remarkPlugins: {
           'remark-math': {}
         },
