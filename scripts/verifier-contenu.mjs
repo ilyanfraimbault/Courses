@@ -212,6 +212,32 @@ for (const page of visees) {
     else if (question[1]?.bonne !== undefined) erreur(c, `${nom} : une commande à taper et une bonne lettre — la question ne sait pas laquelle croire`)
   })
 
+  // Des cases à cocher sans bonnes réponses se réussissent en ne cochant rien,
+  // et un numéro hors des propositions les rend impossibles : ni l'un ni
+  // l'autre ne se voit à l'écran.
+  parcourir(page.corps, (n, parents) => {
+    if (n[0] !== 'cases-a-cocher') return
+    const props = n[1] ?? {}
+    const question = [...parents].reverse().find(p => BALISES_QUESTION.has(p[0]))
+    const nom = question ? `${slugifier([...parents].reverse().find(p => BALISES_BLOC.has(p[0]))?.[1]?.titre ?? '?')}#${question[1]?.label}` : 'cases hors question'
+    let propositions, bonnes
+    try {
+      propositions = JSON.parse(props[':propositions'] ?? '[]')
+      bonnes = JSON.parse(props[':bonnes'] ?? '[]')
+    } catch {
+      erreur(c, `${nom} : les propositions ou les bonnes réponses ne se lisent pas`)
+      return
+    }
+    if (!Array.isArray(propositions) || propositions.length < 2) erreur(c, `${nom} : moins de deux propositions à cocher`)
+    if (!Array.isArray(bonnes) || !bonnes.length) erreur(c, `${nom} : aucune bonne réponse — la question se réussit sans rien cocher`)
+    else for (const b of bonnes) {
+      if (!Number.isInteger(b) || b < 1 || b > propositions.length) erreur(c, `${nom} : bonne réponse ${b} hors des propositions (1 à ${propositions.length})`)
+    }
+    if (!question) avertir(c, 'des cases à cocher hors question : elles se corrigent, mais n\'ont pas de mémoire')
+    else if (question[0] !== 'exo-question') erreur(c, `${nom} : des cases à cocher ne se posent que dans une exo-question`)
+    else if (question[1]?.bonne !== undefined) erreur(c, `${nom} : des cases à cocher et une bonne lettre — la question ne sait pas laquelle croire`)
+  })
+
   // Les rappels de cours doivent viser une section qui existe : c'est leur
   // ancre qui range la question dans le plan du chapitre. Une ancre morte ne
   // casse rien à l'écran, et range la question sous un intitulé fabriqué.
