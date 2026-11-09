@@ -659,6 +659,68 @@ function slots(noeud: Noeud): Record<string, FragmentContenu> {
   return sortie
 }
 
+/**
+ * Renomme, dans une correction ou un indice, les lettres de la fiche en repères
+ * affichés.
+ *
+ * La correction est écrite pour la fiche, où les propositions gardent l'ordre
+ * de leur écriture : « **a** et **b** ont une hypothèse fausse… Réponse : d ».
+ * Le quiz les brasse ; lue telle quelle sous des propositions remises dans un
+ * autre ordre, elle désignait la mauvaise ligne et se contredisait avec le
+ * verdict « Juste ». Réécrire les ~260 corrections sans lettres aurait appauvri
+ * la fiche, où elles sont exactes ; on les traduit donc au moment de les
+ * envoyer.
+ *
+ * Deux écritures seulement désignent une proposition dans le contenu : une
+ * lettre seule en gras, et une réponse encadrée `\boxed{\text{d}}`. Ailleurs un
+ * « a » est une variable — $(a+b)^2$ — et n'a pas à bouger.
+ */
+function renommerLettres(fragment: FragmentContenu | null, reperes: Record<string, string>): FragmentContenu | null {
+  if (!fragment) return null
+
+  // Une lettre de la fiche, ou rien : on ne renomme qu'une proposition qui
+  // existe, pour ne pas toucher un « **e** » qui serait autre chose.
+  const repere = (texte: unknown) =>
+    typeof texte === 'string' && Object.hasOwn(reperes, texte.trim()) ? reperes[texte.trim()]! : null
+
+  // Dans une formule, la lettre apparaît deux fois — en MathML pour les
+  // lecteurs d'écran et en HTML pour l'œil — plus dans l'annotation TeX : tout
+  // ce qui la porte change ensemble, sans quoi la copie d'une formule rendrait
+  // l'ancienne réponse.
+  const remplacerFeuilles = (valeur: unknown, ancienne: string, nouvelle: string): unknown => {
+    if (typeof valeur === 'string') return valeur === ancienne ? nouvelle : valeur
+    if (!estNoeud(valeur)) return valeur
+    const [balise, attributs, ...enfants] = valeur
+    if (balise === 'annotation') {
+      return [balise, attributs, ...enfants.map(e => typeof e === 'string' ? e.replace(`{${ancienne}}`, `{${nouvelle}}`) : e)]
+    }
+    return [balise, attributs, ...enfants.map(e => remplacerFeuilles(e, ancienne, nouvelle))]
+  }
+
+  const parcourir = (valeur: unknown): unknown => {
+    if (!estNoeud(valeur)) return valeur
+    const [balise, attributs, ...enfants] = valeur
+
+    if (balise === 'strong' && enfants.length === 1) {
+      const nouvelle = repere(enfants[0])
+      if (nouvelle) return [balise, attributs, nouvelle]
+    }
+
+    const classes = attributs?.className
+    if (balise === 'span' && Array.isArray(classes) && classes.includes('katex')) {
+      const annotation = chercher(enfants, n => n[0] === 'annotation')
+      const tex = typeof annotation?.[2] === 'string' ? annotation[2].trim() : ''
+      const lettre = /^\\boxed\{\\text\{([a-z])\}\}$/.exec(tex)?.[1]
+      const nouvelle = lettre ? repere(lettre) : null
+      return lettre && nouvelle ? remplacerFeuilles(valeur, lettre, nouvelle) : valeur
+    }
+
+    return [balise, attributs, ...enfants.map(parcourir)]
+  }
+
+  return fragment.map(parcourir)
+}
+
 /** Le contenu par défaut d'un nœud : ses enfants, slots exclus. */
 function corps(noeud: Noeud): FragmentContenu {
   return noeud.slice(2).filter(enfant => !(estNoeud(enfant) && enfant[0] === 'template'))
@@ -816,8 +878,19 @@ export async function poserQuestion(
   graine: string,
   cache?: CachePages
 ): Promise<{ question: QuestionQuiz, lue: QuestionLue } | null> {
-  const lue = await lireQuestion(event, entree, cache)
-  if (!lue) return null
+  const lu = await lireQuestion(event, entree, cache)
+  if (!lu) return null
+
+  const lettres = melangerAvecGraine(lu.lettres, `${graine}:${entree.id}`)
+  // La correction suit l'ordre brassé : elle nomme les propositions comme
+  // l'écran les a montrées. `bonne` et `lettres`, eux, restent ceux de la
+  // fiche — ce sont eux qu'on compare à la réponse et qu'on reporte.
+  const reperes = reperesQuiz(lettres)
+  const lue: QuestionLue = {
+    ...lu,
+    indice: renommerLettres(lu.indice, reperes),
+    solution: renommerLettres(lu.solution, reperes)
+  }
 
   return {
     lue,
@@ -841,8 +914,8 @@ export async function poserQuestion(
       // l'ordre où elle est écrite, et la bonne réponse d'un exercice donné
       // finit par se retenir comme « c'est la c » plutôt que par son contenu.
       // Le client, lui, ne voit que des repères de position : la lettre écrite
-      // dans la fiche ne transparaît nulle part.
-      lettres: melangerAvecGraine(lue.lettres, `${graine}:${entree.id}`),
+      // dans la fiche ne transparaît nulle part — pas même dans la correction.
+      lettres,
       enonceBloc: lue.enonceBloc,
       enonce: lue.enonce,
       choix: lue.choix,

@@ -354,6 +354,16 @@ cette séance**, et l'écran ne montre jamais les lettres de la fiche : il
 numérote les propositions dans l'ordre où elles s'affichent, et le clavier
 désigne ce rang. La lettre écrite dans le contenu ne transparaît nulle part.
 
+Pas même dans la correction. Elle est rédigée pour la fiche — « **a** et **b**
+ont une hypothèse fausse… Réponse : $\boxed{\text{d}}$ » — et, lue telle quelle
+sous un ordre brassé, elle désignait la mauvaise ligne juste sous un verdict
+« Juste ». `poserQuestion` la traduit donc avant de l'envoyer, indice compris :
+une lettre seule en gras et une réponse encadrée `\boxed{\text{d}}` prennent le
+repère affiché. Ce sont les deux seules écritures qui désignent une proposition
+dans le contenu ; un `a` dans une formule est une variable et ne bouge pas. Une
+correction qui en inventerait une troisième — « la réponse c » en clair —
+échapperait à la traduction : on écrit la lettre **en gras**.
+
 Le brassage est **déterministe** — un mulberry32 amorcé par `séance:place:question`.
 Ce n'est pas un raffinement : la même question est lue deux ou trois fois — pour
 l'afficher, pour la corriger, au préchargement — et un ordre retiré à chaque
