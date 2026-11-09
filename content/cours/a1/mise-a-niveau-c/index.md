@@ -12,6 +12,8 @@ Le cours tient en cinq jeux de diapos, un par séance de TP. Chacun devient ici 
 - **prédire ce qu'affiche un programme**, en tapant la sortie ;
 - **écrire des fonctions**, à compiler et tester chez soi avant de comparer à la solution.
 
+Un sixième chapitre reprend le **contrôle d'exemple** du professeur, corrigé, avec un entraînement sur son modèle : c'est lui qui dit ce qui est attendu. Aucun code ASCII n'y est demandé, et les fiches n'en demandent pas non plus — il suffit de savoir que les lettres et les chiffres se suivent.
+
 Toutes les sorties annoncées ont été vérifiées en compilant les programmes. Là où une diapo se trompe (un calcul bit à bit, un affichage de `%f`, une variable masquée), la fiche le signale.
 
 ## Les bases du C
@@ -52,6 +54,14 @@ Toutes les sorties annoncées ont été vérifiées en compilant les programmes.
 ::
 
 ::carte-lien{to="/cours/a1/mise-a-niveau-c/types-personnalises/entrainement" titre="L'entraînement" description="Structures et unions dans la mémoire, ce qu'affiche le programme, les tailles, fonctions sur des structures" type="entrainement" meta="15 questions"}
+::
+
+## Le contrôle d'exemple
+
+::carte-lien{to="/cours/a1/mise-a-niveau-c/controle-exemple/sujet" titre="Le sujet corrigé" description="Le contrôle d'entraînement du professeur : QCM à plusieurs réponses, types à compléter, affichage, struct User, erreurs mémoire, socket, faille" type="exercices" meta="28 questions"}
+::
+
+::carte-lien{to="/cours/a1/mise-a-niveau-c/controle-exemple/entrainement" titre="L'entraînement sur le modèle du contrôle" description="Les mêmes formes de questions sur d'autres programmes" type="entrainement" meta="30 questions"}
 ::
 
 ## Emporter mes résultats

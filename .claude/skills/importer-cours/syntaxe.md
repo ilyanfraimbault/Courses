@@ -368,6 +368,51 @@ cases:
 - **Compiler** chaque programme pour vérifier les valeurs (`cc -Wall`), comme on
   calcule les colonnes d'une table de vérité.
 
+## Des cases à cocher
+
+Tiré de `mise-a-niveau-c/6.controle-exemple/1.sujet.md`. Un QCM **à plusieurs
+bonnes réponses**, la forme des QCM du contrôle de C : on coche tout ce qui est
+vrai, et rien d'autre. Même contrat que la table de vérité : une question sans
+`bonne`, le verdict rendu à la question, hors du quiz.
+
+```md
+::::exercice{titre="Exercice 0 — QCM" theme="…"}
+Plusieurs réponses possibles, pas de points négatifs.
+
+:::exo-question{label="1." cours="ctl-tableaux"}
+Pour accéder au deuxième élément du tableau `t`, j'écris :
+
+::cases-a-cocher
+---
+propositions:
+  - '`t[1]`'
+  - '`(*t) + 2`'
+  - '`*(t + 1)`'
+  - '`(*t)[2]`'
+bonnes: [1, 3]
+---
+::
+
+#indice
+…
+#solution
+…
+:::
+::::
+```
+
+- `bonnes` : les **numéros** des propositions justes, à partir de 1 comme dans
+  un sujet. `verifier-contenu` refuse une liste vide (la question se réussirait
+  sans rien cocher) ou un numéro hors des propositions.
+- Une proposition qui contient du code, un `:` ou commence par un accent grave
+  s'écrit **entre apostrophes** ; seul le code entre accents graves est mis en
+  forme, le reste est du texte.
+- Faux, seules les cases **cochées à tort** passent au rouge ; une bonne réponse
+  oubliée est seulement annoncée (« il manque au moins une bonne réponse ») —
+  la marquer la désignerait.
+- Une question à **une seule** bonne réponse reste un `bonne="b"` : c'est elle
+  que le quiz sait poser.
+
 ## Une commande à taper
 
 Tiré de `virtualisation-conteneurisation/01.commandes/1.atelier.md`. Comme la

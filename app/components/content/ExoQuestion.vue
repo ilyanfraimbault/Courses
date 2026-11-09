@@ -124,6 +124,7 @@ const messageFaux = computed(() => {
   if (remplie.value === 'table') return 'Des cases sont fausses : elles sont marquées en rouge.'
   if (remplie.value === 'champs') return 'Des champs sont faux : ils sont marqués en rouge.'
   if (remplie.value === 'memoire') return 'Des cases mémoire sont fausses : elles sont marquées en rouge.'
+  if (remplie.value === 'cases') return 'Ce n\'est pas encore ça : les cases cochées à tort sont en rouge.'
   return 'Ce n\'est pas ça.'
 })
 

@@ -17,5 +17,5 @@ icone: i-lucide-graduation-cap
 ::carte-lien{to="/cours/a1/virtualisation-conteneurisation" titre="Virtualisation et conteneurisation" description="Docker par la pratique, atelier par atelier — des premières commandes à Docker Compose, en tapant les commandes" icone="i-simple-icons-docker" meta="15 ateliers"}
 ::
 
-::carte-lien{to="/cours/a1/mise-a-niveau-c" titre="Mise à niveau en C" description="Les cinq séances du cours — bases, tableaux et boucles, fonctions, pointeurs et allocation, types personnalisés — en dessinant la mémoire à chaque ligne" icone="i-simple-icons-c" meta="5 chapitres"}
+::carte-lien{to="/cours/a1/mise-a-niveau-c" titre="Mise à niveau en C" description="Les cinq séances du cours — bases, tableaux et boucles, fonctions, pointeurs et allocation, types personnalisés — en dessinant la mémoire à chaque ligne, et le contrôle d'exemple corrigé" icone="i-simple-icons-c" meta="6 chapitres"}
 ::
