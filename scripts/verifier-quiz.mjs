@@ -35,8 +35,10 @@ const TRIGO = MATIERE + '/trigonometrie'
 // ateliers de Docker — dont les commandes, qui se tapent, restent hors du
 // quiz : seuls leurs 33 vrai ou faux y entrent —, 689 avec les deux fiches
 // d'entraînement de logique et de raisonnements (37 questions à lettre, les
-// tables de vérité et les démonstrations restant ouvertes).
-const BANQUE = 689
+// tables de vérité et les démonstrations restant ouvertes), 772 avec les cinq
+// chapitres de mise à niveau en C (les tableaux mémoire à remplir, les sorties
+// à taper et les fonctions à écrire restant hors du quiz).
+const BANQUE = 772
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)
