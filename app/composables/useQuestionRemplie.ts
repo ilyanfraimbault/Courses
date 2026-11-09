@@ -6,7 +6,7 @@ import type { ComputedRef, InjectionKey } from 'vue'
  * sait corriger sa saisie ; la question sait ce qu'une réponse juste ou fausse
  * écrit en base. Ni l'un ni l'autre n'a à connaître la règle de l'autre.
  */
-export type NatureRemplie = 'table' | 'champs' | 'commande'
+export type NatureRemplie = 'table' | 'champs' | 'commande' | 'memoire'
 
 export interface QuestionRemplieApi {
   /** La question est déjà trouvée : le composant s'affiche rempli et figé. */

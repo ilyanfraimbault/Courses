@@ -16,11 +16,11 @@ au bout de N questions : elle se termine quand les N **places** sont acquises.
 Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 `qcm_tentative`, une séance de quiz dans `quiz_session`.
 
-## La banque : 689 questions, aucune écrite pour le quiz
+## La banque : 772 questions, aucune écrite pour le quiz
 
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
 les exercices du TD, les fiches d'entraînement, les révisions, le cours et le QCM
-de contenu. Sur les 1131 questions du site, **689** sont exploitables — celles qui portent
+de contenu. Sur les 1281 questions du site, **772** sont exploitables — celles qui portent
 une lettre attendue et au moins deux propositions. Les **442** autres sont des
 questions ouvertes, des tables de vérité, des champs à remplir ou des commandes
 à taper (322 dans les ateliers de Docker), qui se corrigent sur leur fiche :
@@ -94,7 +94,7 @@ par question, **de quoi la choisir et la classer, jamais de quoi la poser**.
 L'ensemble se charge une fois en mémoire ; les énoncés, eux, ne sont jamais mis
 en cache.
 
-Le relevé porte les **1131** questions du site et non les seules 689 du quiz. Le
+Le relevé porte les **1281** questions du site et non les seules 772 du quiz. Le
 champ `interrogeable` fait le tri, et la banque n'est que la part vraie de ce
 champ. C'est la progression par domaine qui a demandé cet élargissement — elle
 compte aussi les questions ouvertes, sans quoi le total d'un chapitre ne
@@ -119,7 +119,7 @@ console.log(n, t);
 Attendu aujourd'hui, les chapitres désignés par leur chemin :
 
 ```
-689 {
+772 {
   '/cours/a1/mathematiques-ingenieur/logique-et-raisonnements': 89,
   '/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques': 29,
   '/cours/a1/remise-a-niveau-maths/trigonometrie': 63,
@@ -129,6 +129,11 @@ Attendu aujourd'hui, les chapitres désignés par leur chemin :
   '/cours/a1/reseaux-protocoles/planification': 30,
   '/cours/a1/reseaux-protocoles/adressage-ip': 101,
   '/cours/a1/reseaux-protocoles/introduction': 58,
+  '/cours/a1/mise-a-niveau-c/les-bases': 20,
+  '/cours/a1/mise-a-niveau-c/tableaux-et-boucles': 16,
+  '/cours/a1/mise-a-niveau-c/fonctions': 10,
+  '/cours/a1/mise-a-niveau-c/pointeurs-et-allocation': 22,
+  '/cours/a1/mise-a-niveau-c/types-personnalises': 15,
   // et les quinze chapitres de Docker, de 1 à 3 chacun — 33 en tout
   '/cours/a1/virtualisation-conteneurisation/commandes': 3,
   …
@@ -208,7 +213,7 @@ par construction, et une question sans rappel se rattache au **titre de niveau 2
 qui la précède dans sa propre page** — ce qui est précisément la section dont
 elle parle, puisqu'un contrôle express est écrit sous le cours qu'il vérifie.
 
-Le relevé donne aujourd'hui **106 cases pour 689 questions**, et chaque chapitre
+Le relevé donne aujourd'hui **144 cases pour 772 questions**, et chaque chapitre
 est couvert sans reste :
 
 | Chapitre | Cases | Questions |
@@ -223,6 +228,11 @@ est couvert sans reste :
 | Adressage et routage IP (réseaux et protocoles) | 10 | 101 |
 | La planification réseau (réseaux et protocoles) | 5 | 30 |
 | Les quinze ateliers de Docker (virtualisation et conteneurisation) | 30 | 33 |
+| Les bases du C (mise à niveau en C) | 10 | 20 |
+| Tableaux et boucles (mise à niveau en C) | 7 | 16 |
+| Les fonctions (mise à niveau en C) | 5 | 10 |
+| Pointeurs et allocation dynamique (mise à niveau en C) | 10 | 22 |
+| Structures, unions et enums (mise à niveau en C) | 6 | 15 |
 
 Huit questions n'ont pas de section : deux rappels de cours pointent vers une
 page sans ancre. Elles tombent dans une case « Le reste du chapitre », qui
@@ -501,8 +511,8 @@ QUIZ_BASE=http://localhost:3210 NUXT_CODE_INSCRIPTION=essai pnpm verif:quiz
 
 Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 
-- 689 questions dans la banque, rangées par matière puis sur vingt-quatre
-  chapitres désignés par leur chemin et 106 sections de cours, chaque chapitre couvert
+- 772 questions dans la banque, rangées par matière puis sur vingt-neuf
+  chapitres désignés par leur chemin et 144 sections de cours, chaque chapitre couvert
   **sans reste** et sans intitulé en double ;
 - la bonne réponse n'est pas dans la charge utile d'une question ;
 - l'ordre des propositions est brassé, et deux lectures d'une même place

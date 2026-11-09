@@ -309,6 +309,65 @@ champs:
 - **Calculer les valeurs par programme** (`python3 -I` et le module
   `ipaddress`), comme les colonnes d'une table de vérité.
 
+## Une mémoire à remplir
+
+Tiré de `mise-a-niveau-c/4.pointeurs-et-allocation/2.entrainement.md`. Le
+tableau « Valeurs / Adresses » que le cours de C dessine à chaque exemple : on
+écrit ce que contient chaque case une fois le programme déroulé. Même contrat
+que la table de vérité : une question sans `bonne`, des cases corrigées une à
+une, le verdict rendu à la question. Hors du quiz.
+
+````md
+::::exercice{titre="Palier 1 — Les adresses, case par case" theme="…" entete="introduction"}
+…
+
+:::exo-question{label="1." cours="p-c-etoile"}
+```c
+int a = 7;
+int* p = &a;
+```
+
+::tableau-memoire
+---
+titre: Après la dernière ligne
+cases:
+  - variable: a
+    adresse: '0xff150'
+    octets: 2
+    attendu: '7'
+  - variable: contexte d'appel
+    adresse: '0xff152'
+    octets: 4
+    attendu: '—'
+    donnee: true
+  - variable: p
+    adresse: '0xff156'
+    octets: 4
+    attendu: '0xff150'
+---
+::
+
+#indice
+…
+#solution
+…
+:::
+::::
+````
+
+- `adresse` : la première, en hexadécimal (`'0xff150'`, entre apostrophes) ou
+  `Octet 3`. Les suivantes se **calculent** d'après `octets` — `0xff15c`,
+  `0xff15d`… — au lieu de s'écrire à la main.
+- `attendu` : une valeur, ou la liste des écritures acceptées. Un caractère
+  s'accepte par son code et entre apostrophes : `['67', "'C'", 'C']` ; une case
+  jamais écrite, `['??', '?']`. Casse et espaces ne comptent pas.
+- `donnee: true` : case fournie, déjà remplie — le contexte d'appel, un octet
+  qu'il serait absurde de faire deviner.
+- Annoncer les **tailles** dans l'énoncé ou le mode d'emploi de la fiche : le
+  cours prend `int` sur 2 octets et un pointeur sur 4, un PC non.
+- **Compiler** chaque programme pour vérifier les valeurs (`cc -Wall`), comme on
+  calcule les colonnes d'une table de vérité.
+
 ## Une commande à taper
 
 Tiré de `virtualisation-conteneurisation/01.commandes/1.atelier.md`. Comme la
