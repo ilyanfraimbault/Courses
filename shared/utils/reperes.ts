@@ -11,6 +11,10 @@
  * lettres : il numérote les propositions dans l'ordre où elles s'affichent.
  * Sans cela on lirait « c, a, d, b » dans la marge, et le clavier ne saurait
  * plus quoi désigner.
+ *
+ * La table vit dans `shared/` parce que le serveur en a besoin aussi : la
+ * correction rédigée cite les propositions par la lettre de la fiche (« **b**
+ * est le piège »), et c'est lui qui la renomme avant de l'envoyer.
  */
 export const REPERES_QUIZ = ['a', 'b', 'c', 'd', 'e']
 
