@@ -46,6 +46,9 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/arithmetique/exercices" titre="La feuille d'exercices" description="Les seize exercices de la feuille Arithmétique n° 1 : congruences, bases, critères de divisibilité, exponentiation rapide" type="exercices" meta="57 questions"}
 ::
 
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/arithmetique/entrainement" titre="L'entraînement" description="Huit paliers, des diviseurs aux restes de très grandes puissances, avec les questions à se poser et un exemple rédigé sous chaque question" type="entrainement" meta="34 questions"}
+::
+
 ## Emporter mes résultats
 
 ::export-resultats
