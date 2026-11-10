@@ -8,7 +8,7 @@ icone: i-lucide-drafting-compass
 
 Chaque chapitre se décline en fiches, et chaque lien ci-dessous porte une pastille qui dit laquelle. Sous chaque question, les mêmes trois boutons, et aucun ne quitte la page : **Indice** et **Solution** se déplient sous la question, **Cours** ouvre le rappel visé dans un tiroir latéral. Une réponse est corrigée dès qu'on la donne : si elle est fausse, l'indice s'ouvre, et l'on retente autant qu'on veut.
 
-Les réponses ont été vérifiées par le calcul — tables de vérité et négations éprouvées sur toutes les valuations, identités contrôlées avec sympy — et, pour le travail en autonomie, confrontées au corrigé du sujet.
+Les réponses ont été vérifiées par le calcul — tables de vérité et négations éprouvées sur toutes les valuations, identités contrôlées avec sympy, restes et écritures en base recalculés par programme — et, pour le travail en autonomie, confrontées au corrigé du sujet.
 
 ## Logique propositionnelle
 
@@ -36,6 +36,17 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement-recurrences" titre="L'entraînement aux récurrences" description="Cinq récurrences à rédiger, très guidées au début et sans aide à la fin : on coche simplement quand c'est fait" type="entrainement" meta="5 questions"}
+::
+
+## Arithmétique
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/arithmetique/cours" titre="Le cours" description="Divisibilité, division euclidienne, systèmes de numération, congruences, critères de divisibilité et exponentiation modulaire rapide" type="cours" meta="21 questions"}
+::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/arithmetique/exercices" titre="La feuille d'exercices" description="Les seize exercices de la feuille Arithmétique n° 1 : congruences, bases, critères de divisibilité, exponentiation rapide" type="exercices" meta="57 questions"}
+::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/arithmetique/entrainement" titre="L'entraînement" description="Huit paliers, des diviseurs aux restes de très grandes puissances, avec les questions à se poser et un exemple rédigé sous chaque question" type="entrainement" meta="34 questions"}
 ::
 
 ## Emporter mes résultats
