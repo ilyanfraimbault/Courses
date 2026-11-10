@@ -39,8 +39,10 @@ const TRIGO = MATIERE + '/trigonometrie'
 // chapitres de mise à niveau en C (les tableaux mémoire à remplir, les sorties
 // à taper et les fonctions à écrire restant hors du quiz), 778 avec le contrôle
 // d'exemple (ses QCM à plusieurs réponses se cochent, hors du quiz : seules les
-// six questions à une réponse de son entraînement y entrent).
-const BANQUE = 778
+// six questions à une réponse de son entraînement y entrent), 811 avec
+// l'arithmétique des maths pour l'ingénieur (les restes et les écritures en
+// base s'écrivent dans des champs, hors du quiz : 33 questions à lettre).
+const BANQUE = 811
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)
