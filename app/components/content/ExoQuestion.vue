@@ -87,10 +87,26 @@ function choisir(lettre: string) {
   if (hasIndice.value) indiceOuvert.value = true
 }
 
+// « J'avais faux » sur une question pas encore trouvée n'a rien à retirer : il
+// appelait `annuler`, qui ne fait rien sur une question absente de la
+// progression, et le clic restait sans effet. C'est un aveu de faute, au même
+// titre qu'une mauvaise lettre : il entre dans la dette, une fois par visite.
+const avoueeFausse = ref(false)
+
 function seNoter(juste: boolean) {
   if (!connexion.exiger(() => seNoter(juste))) return
-  if (juste) progression?.reussir(identite.value, 'auto')
-  else progression?.annuler(identite.value)
+  if (juste) {
+    avoueeFausse.value = false
+    progression?.reussir(identite.value, 'auto')
+    return
+  }
+  if (trouve.value) {
+    progression?.annuler(identite.value)
+    return
+  }
+  if (!errones.value.length) progression?.rater(identite.value)
+  errones.value = [...errones.value, 'auto']
+  avoueeFausse.value = true
 }
 
 watch(solutionOuverte, (ouverte) => {
@@ -220,6 +236,17 @@ if (reveal) {
             icon="i-lucide-undo-2"
             label="Me dédire"
             @click="seNoter(false)"
+          />
+        </template>
+        <template v-else-if="avoueeFausse">
+          <span class="text-sm text-muted">Comptée comme ratée : elle reviendra en révision.</span>
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-undo-2"
+            label="Me dédire"
+            @click="avoueeFausse = false"
           />
         </template>
         <template v-else>
