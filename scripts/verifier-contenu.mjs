@@ -177,6 +177,17 @@ for (const page of visees) {
     } else if (lettres.length) {
       avertir(c, `${identite} : des propositions mais pas de bonne réponse — la question s'auto-évalue et sort du quiz`)
     }
+    // Le quiz pose une question avec l'entête de son bloc, et rien d'autre :
+    // un « dans l'exemple ci-dessus » qui vise un ::exemple du cours, posé
+    // seul, renvoie à un exemple que l'élève n'a pas sous les yeux. Quand le
+    // bloc a un entête, « ci-dessus » le désigne le plus souvent, et le quiz
+    // le rappelle : on ne signale que les blocs sans entête.
+    const enonce = n.slice(2).filter(e => !(Array.isArray(e) && e[0] === 'template')).map(texte).join(' ')
+    const renvoi = /ci-dessus|plus haut|(exemple|tableau|programme|code) précédent/i.exec(enonce)
+    const entete = bloc.slice(2).some(e => Array.isArray(e) && e[0] !== 'template' && !BALISES_QUESTION.has(e[0]) && texte(e).trim())
+    if (renvoi && !entete) {
+      avertir(c, `${identite} : l'énoncé renvoie « ${renvoi[0]} » hors de son bloc — posée seule au quiz, la question perd son contexte`)
+    }
     if (!slots.has('solution')) avertir(c, `${identite} : pas de solution rédigée`)
     if (!slots.has('indice')) avertir(c, `${identite} : pas d'indice`)
     if (props.cours && !extraits.has(props.cours)) {
