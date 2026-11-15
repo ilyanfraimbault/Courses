@@ -35,7 +35,7 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement" titre="L'entraînement" description="Huit paliers, du raisonnement direct aux récurrences fortes, avec les questions à se poser et un exemple rédigé sous chaque question" type="entrainement" meta="31 questions"}
 ::
 
-::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement-recurrences" titre="L'entraînement aux récurrences" description="Cinq récurrences à rédiger, très guidées au début et sans aide à la fin : on coche simplement quand c'est fait" type="entrainement" meta="5 questions"}
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/entrainement-recurrences" titre="L'entraînement aux récurrences" description="Huit récurrences à rédiger, très guidées au début et sans aide à la fin : on coche simplement quand c'est fait" type="entrainement" meta="8 questions"}
 ::
 
 ## Arithmétique
