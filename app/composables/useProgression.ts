@@ -25,6 +25,26 @@ export const progressionKey: InjectionKey<ProgressionApi> = Symbol('progression'
 /** Assez pour fondre en un seul envoi la correction d'un QCM de vingt questions. */
 const DELAI_ENVOI = 800
 
+// État de module, donc partagé entre les requêtes au serveur : il n'y est jamais
+// touché — on n'écrit qu'au client, et le résumé ne se lit qu'au montage.
+
+/**
+ * Les écritures de progression parties et pas encore revenues. Quitter une fiche
+ * envoie son instantané au démontage, et le sommaire qui se monte aussitôt
+ * relit le résumé : sans attendre l'un, l'autre peut le doubler et relire
+ * l'état d'avant la réponse.
+ */
+const ecrituresEnCours = new Set<Promise<unknown>>()
+
+function suivreEcriture<T>(envoi: Promise<T>): Promise<T> {
+  ecrituresEnCours.add(envoi)
+  envoi.finally(() => ecrituresEnCours.delete(envoi)).catch(() => {})
+  return envoi
+}
+
+/** La navigation pour laquelle le résumé a été lu, ou est en train de l'être. */
+let resumeLuPour: unknown = null
+
 /**
  * Progression d'une fiche : combien de ses questions ont fini par être trouvées.
  *
@@ -143,7 +163,7 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
   const envoyer = useDebounceFn(async () => {
     const corps = instantane()
     try {
-      await $fetch('/api/fiche', { method: 'PUT', body: corps })
+      await suivreEcriture($fetch('/api/fiche', { method: 'PUT', body: corps }))
       // Un retrait parti n'a plus à repartir : renvoyé plus tard, il déferait
       // une réussite acquise entre-temps sur un autre écran.
       for (const id of corps.annulees) annulees.delete(id)
@@ -175,12 +195,12 @@ export function provideProgression(chemin: MaybeRefOrGetter<string>, source?: Do
   function vider() {
     if (!chargee.value || !total.value) return
     try {
-      fetch('/api/fiche', {
+      suivreEcriture(fetch('/api/fiche', {
         method: 'PUT',
         keepalive: true,
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(instantane())
-      }).catch(() => {})
+      })).catch(() => {})
       if (fautes.size) {
         const lot = [...fautes]
         fautes.clear()
@@ -275,26 +295,37 @@ export function useComptesQuestions() {
 }
 
 /**
- * L'état de toutes les fiches, chargé une fois par visite.
+ * L'état de toutes les fiches, relu à chaque page qui l'affiche.
  *
  * Là où le stockage local imposait une lecture par carte de lien, une seule
  * requête sert désormais les quinze cartes d'un sommaire comme le tableau de
- * bord. L'état est partagé par `useState`, donc chargé une fois même si dix
- * composants le demandent.
+ * bord : l'état est partagé par `useState`, et les cartes d'une même page
+ * partagent la lecture.
+ *
+ * Une lecture par navigation, et non une par visite : lu une fois, le résumé
+ * restait figé, et le sommaire où l'on revenait par un lien annonçait « 0 / 75 »
+ * à côté d'une fiche à 43. Le quiz et les QCM composés cochent aussi les fiches
+ * au serveur : seule une relecture voit tout ce qui a changé ailleurs. Elle
+ * pèse quelques centaines d'octets.
  */
 export function useResumeProgression() {
   const resume = useState<Record<string, ResumeFiche>>('progression-resume', () => ({}))
-  const chargeDemandee = useState('progression-resume-demande', () => false)
+  const router = useRouter()
 
   async function charger() {
-    if (chargeDemandee.value) return
-    chargeDemandee.value = true
+    // Chaque navigation produit un nouvel objet de route : c'est lui qui dit
+    // « déjà lu pour cette page », sans compter sur le chemin, identique
+    // quand on revient au sommaire qu'on vient de quitter.
+    const navigation = router.currentRoute.value
+    if (resumeLuPour === navigation) return
+    resumeLuPour = navigation
+    await Promise.allSettled([...ecrituresEnCours])
     try {
       resume.value = await $fetch<Record<string, ResumeFiche>>('/api/progression/resume')
     } catch {
       // Hors session : les cartes n'affichent pas de progression, ce qui est
-      // exactement l'information juste.
-      chargeDemandee.value = false
+      // exactement l'information juste. La connexion relira.
+      if (resumeLuPour === navigation) resumeLuPour = null
     }
   }
 
