@@ -20,8 +20,9 @@ export const donneesFicheKey: InjectionKey<DonneesFicheApi> = Symbol('donnees-fi
  *
  * On ne lit qu'au montage, jamais au rendu serveur — exactement le contrat que
  * respectait le stockage local. Ce n'est pas une contrainte technique, c'est un
- * choix : le HTML d'une fiche reste ainsi identique pour tout le monde, donc
- * cacheable et prérendable, et l'hydratation ne peut pas diverger. La barre de
+ * choix : le HTML d'une fiche reste ainsi identique pour tout élève connecté,
+ * sans rien qui fuie d'un compte à l'autre, et l'hydratation ne peut pas
+ * diverger. La barre de
  * progression apparaissait déjà après hydratation, on ne perd rien.
  */
 export function provideDonneesFiche(chemin: MaybeRefOrGetter<string>) {

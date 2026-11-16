@@ -60,23 +60,34 @@ site n'a pas les mêmes champs. Les deux cas sont traités au même endroit — 
 session est vidée et la réponse est un 401 qui invite à se reconnecter, plutôt
 qu'une violation de clé étrangère ou une 500.
 
-## Lire sans compte, répondre avec
+## Lire demande un compte
 
-Les fiches se lisent sans session : leur HTML est le même pour tous, et c'est
-ce qui le rend cacheable. **Répondre** en demande une, parce qu'une réponse sans
-compte n'irait nulle part. La demande vient au moment du geste — cliquer une
-proposition, « Vérifier » une table ou une commande, « Corriger » un QCM, se
-noter après la solution — et non à l'arrivée sur la page.
+Les fiches se lisaient d'abord sans session, héritage du portfolio. Elles ne
+le peuvent plus : ce sont les cours des professeurs, qu'on partage avec la
+classe et pas avec quiconque tombe sur l'adresse. Seules `/connexion` et
+`/inscription` s'ouvrent sans compte, et l'inscription demande déjà son code.
 
-La connexion s'ouvre alors en fenêtre par-dessus la fiche (`useConnexion`),
-et le geste interrompu est rejoué une fois connecté : on ne perd ni l'endroit
-où l'on était, ni le clic. Les lectures faites au montage, qui avaient échoué
-en 401, se refont d'elles-mêmes (`quandConnecte`) ; tant que celle de la fiche
-n'a pas abouti, la garde de `provideProgression` retient l'écriture, comme
-toujours.
+La garde est posée **sur les données**, pas sur les pages.
+`server/middleware/contenu.ts` répond 401 à toute requête vers
+`/__nuxt_content/**` sans session. C'est par là que passe tout le contenu : le
+texte d'une fiche rendu au serveur (qui relaie les en-têtes, cookie compris),
+la navigation, la recherche, la banque du quiz, et `sql_dump.txt` — la base
+entière, que le navigateur télécharge pour interroger en local. Le middleware
+de route (`auth.global.ts`) ne fait ensuite que conduire à la connexion.
 
-La page `/connexion` reste pour ce qu'aucune fenêtre ne couvre : arriver par
-une adresse réservée sans session, quand il n'y a pas de page en dessous.
+Ce dump, Nuxt Content le **prérend** par défaut en fichier statique, que le
+serveur sert avant tout middleware. Il était donc téléchargeable par n'importe
+qui, cours entiers compris. Le hook `nitro:config` de `nuxt.config.ts` lève ce
+prérendu ; le témoin est l'absence de `.output/public/__nuxt_content/` après le
+build.
+
+Si la session expire pendant qu'une fiche est ouverte, **répondre** demande à
+se reconnecter au moment du geste — cliquer une proposition, « Vérifier »,
+« Corriger », se noter après la solution. La connexion s'ouvre en fenêtre
+par-dessus la fiche (`useConnexion`), et le geste interrompu est rejoué : on ne
+perd ni l'endroit, ni le clic. Les lectures faites au montage, qui avaient
+échoué en 401, se refont d'elles-mêmes (`quandConnecte`) ; tant que celle de la
+fiche n'a pas abouti, la garde de `provideProgression` retient l'écriture.
 
 ## L'administration
 
