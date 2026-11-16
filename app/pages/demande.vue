@@ -36,13 +36,7 @@ useSeoMeta({ title: 'Demande d\'accès' })
         <DemandeAcces @accorde="navigateTo('/')" />
 
         <template #footer>
-          <div class="flex items-center justify-between gap-2 text-sm">
-            <ULink
-              to="/cours"
-              class="text-primary"
-            >
-              Lire les cours
-            </ULink>
+          <div class="flex items-center justify-end gap-2 text-sm">
             <ULink
               as="button"
               class="text-muted"

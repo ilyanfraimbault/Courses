@@ -29,7 +29,7 @@ Ils ont chacun coûté quelque chose. Les comprendre avant de les contourner.
 
 **Aucune donnée d'utilisateur au rendu serveur.** Progression, QCM et to-do ne
 sont lus qu'au montage, côté client. Le HTML d'une fiche reste ainsi identique
-pour tout le monde — cacheable, prérendable, sans risque de fuite par le cache.
+pour tout élève connecté, sans risque de fuite d'un compte à l'autre.
 Vérifiable : avec des questions trouvées en base, le HTML servi n'en porte
 aucune trace.
 
@@ -158,15 +158,20 @@ est appliqué en base, pas au client. Une règle vit à un seul endroit.
 requête. Seules les routes `/api/admin/*` lisent au delà du compte connecté, et
 leur première ligne est `exigerAdministrateur(event)`. Voir `docs/comptes.md`.
 
-**Lire est libre, répondre demande un compte accepté.** Les fiches s'affichent sans
-session ; le clic qui répond — une proposition, « Vérifier », « Corriger »,
-« J'avais bon » — passe par `useConnexion().exiger(geste)`, qui ouvre la
-fenêtre de connexion et rejoue le geste une fois connecté. Une lecture faite au
-montage se refait alors par `quandConnecte`, sans quoi `chargee` resterait faux
-et la page n'écrirait rien. Un compte créé sans code d'invitation n'a pas
-d'accès : `idUtilisateur` lui répond 403, et il ne peut que le demander à
-l'administration. Être connecté ne suffit donc pas — c'est `useAccesAccorde`
-qui ouvre, pas `loggedIn`.
+**Lire demande un compte accepté.** Les cours sont ceux des professeurs : on les
+partage avec la classe, pas avec quiconque tient l'adresse. La garde est au
+serveur, sur les **données** — `server/middleware/contenu.ts` refuse
+`/__nuxt_content/**` sans session (401) et sans accès (403), ce qui ferme d'un
+coup fiches, navigation, recherche et dump de la base. Ce dump ne doit
+**jamais** être prérendu : servi en fichier statique, il passerait avant le
+middleware (le hook `nitro:config` de `nuxt.config.ts` y veille). Un compte
+créé sans code d'invitation n'a pas d'accès : `idUtilisateur` lui répond 403,
+et il ne peut que le demander à l'administration. Être connecté ne suffit donc
+pas — c'est `useAccesAccorde` qui ouvre, pas `loggedIn`. Si la session expire
+en cours de page, le clic qui répond passe encore par
+`useConnexion().exiger(geste)`, qui rejoue le geste une fois reconnecté, et la
+lecture du montage se refait par `quandConnecte`, sans quoi `chargee`
+resterait faux et la page n'écrirait rien.
 
 ## Comment travailler ici
 
@@ -241,7 +246,7 @@ est d'être relancées quand on touche au schéma ou aux routes. La configuratio
 `cours-verif` de `.claude/launch.json` lance le serveur avec un code
 d'inscription et une base à part (`.data/verif/`), ce qu'elles demandent.
 
-Le contrôle qui compte pour le contenu tient en une commande, serveur lancé :
+Le contrôle qui compte pour le contenu tient en une commande, serveur `cours-verif` lancé :
 `pnpm verif:contenu --rendu` — rendu contre comptage du build, et toutes les
 pannes silencieuses du contenu. Voir `docs/contenu.md`. Un nouveau cours arrive
 par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : **1811 questions rendues sur 1811**, et les

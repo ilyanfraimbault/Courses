@@ -17,9 +17,16 @@ useSeoMeta({
   description: 'Cette page n\'existe pas ou a été déplacée.'
 })
 
-const { data: navigation } = await useAsyncData('navigation', () => queryCollectionNavigation('cours'))
-const { data: files } = useLazyAsyncData('search', () => queryCollectionSearchSections('cours'), {
-  server: false
+// Sans session ou sans accès, le serveur refuse le contenu
+// (`server/middleware/contenu.ts`) : on ne demande rien plutôt que d'essuyer un
+// 401 ou un 403, et l'accès obtenu relance la lecture.
+const autorise = useAccesAccorde()
+const { data: navigation } = await useAsyncData('navigation', () => autorise.value ? queryCollectionNavigation('cours') : Promise.resolve([]), {
+  watch: [autorise]
+})
+const { data: files } = useLazyAsyncData('search', () => autorise.value ? queryCollectionSearchSections('cours') : Promise.resolve([]), {
+  server: false,
+  watch: [autorise]
 })
 
 provide('navigation', navigation)

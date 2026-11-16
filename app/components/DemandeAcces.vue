@@ -48,8 +48,7 @@ async function verifier() {
     <template v-if="acces === 'aucun'">
       <p class="text-sm text-muted">
         Ton compte <strong class="text-highlighted">{{ user?.pseudo }}</strong> est créé, mais il
-        n'ouvre rien tant que l'administration ne l'a pas accepté. Les cours restent lisibles
-        en attendant.
+        n'ouvre rien, pas même les cours, tant que l'administration ne l'a pas accepté.
       </p>
 
       <form

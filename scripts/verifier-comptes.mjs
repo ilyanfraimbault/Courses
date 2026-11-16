@@ -153,6 +153,14 @@ check('sans accès, les données → 403', (await carole(`/api/fiche?chemin=${U}
 check('sans accès, l\'écriture → 403', (await carole('/api/fiche', {
   method: 'PUT', body: JSON.stringify({ chemin: U, total: 2, faites: { 'exercice-1#1.': 'a' } })
 })).statut === 403)
+// Le contenu est gardé comme les données : sans quoi s'inscrire sans code
+// suffirait à lire tous les cours.
+const DUMP = '/__nuxt_content/cours/sql_dump.txt'
+check('sans session, le dump du contenu → 401', (await anon(DUMP)).statut === 401)
+check('sans accès, le dump du contenu → 403', (await carole(DUMP)).statut === 403)
+const pageSansAcces = await carole(U, { redirect: 'manual' })
+check('sans accès, une fiche renvoie à la demande', pageSansAcces.statut === 302,
+  `${pageSansAcces.statut}`)
 check('le 403 garde la session', (await carole('/api/_auth/session')).corps?.user?.pseudo === 'carole')
 check('demande avec un message trop long → 400', (await carole('/api/acces/demande', {
   method: 'POST', body: JSON.stringify({ message: 'x'.repeat(501) })
@@ -186,6 +194,7 @@ check('accorder → 200', (await alice('/api/admin/acces', {
   method: 'POST', body: JSON.stringify({ id: fCarole?.id, decision: 'accorder' })
 })).statut === 200)
 check('l\'accès vaut dès la requête suivante, sans reconnexion', (await carole(`/api/fiche?chemin=${U}`)).statut === 200)
+check('accordé, le dump du contenu → 200', (await carole(DUMP)).statut === 200)
 check('la session se lit « accorde »', (await carole('/api/_auth/session')).corps?.user?.acces === 'accorde')
 
 const dan = session()

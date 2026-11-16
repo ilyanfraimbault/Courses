@@ -16,7 +16,8 @@ let enAttente: (() => void) | null = null
 /**
  * La fenêtre de connexion, ouverte par-dessus la page plutôt qu'à sa place.
  *
- * Les fiches se lisent sans compte ; c'est **répondre** qui en demande un, parce
+ * On n'arrive sur une fiche que connecté, mais la session peut expirer pendant
+ * qu'elle est ouverte : c'est alors **répondre** qui redemande un compte, parce
  * qu'une réponse sans compte n'irait nulle part. Quitter la page pour se
  * connecter ferait perdre l'endroit où l'on en était, et le clic qui a tout
  * déclenché : la fenêtre garde l'un et rejoue l'autre.
