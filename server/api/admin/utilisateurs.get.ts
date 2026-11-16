@@ -13,6 +13,9 @@ import type { MatiereAdministration, UtilisateurAdministration, VueAdministratio
  * compte pourrait afficher plus de questions trouvées que la matière n'en a.
  * Les clôtures, elles, sont ignorées : elles disent ce qu'un élève ne veut plus
  * voir, pas ce qu'il a fait.
+ *
+ * Les comptes sans accès y figurent aussi, avec leur demande : c'est d'ici que
+ * l'administration les accepte ou les refuse.
  */
 export default defineEventHandler(async (event): Promise<VueAdministration> => {
   await exigerAdministrateur(event)
@@ -51,15 +54,27 @@ export default defineEventHandler(async (event): Promise<VueAdministration> => {
   const admins = pseudosAdministrateurs(event)
 
   const comptes = db.prepare(`
-    SELECT id, pseudo, pseudo_replie, cree_le FROM utilisateur
-  `).all() as { id: number, pseudo: string, pseudo_replie: string, cree_le: number }[]
+    SELECT id, pseudo, pseudo_replie, cree_le, acces, demande_le, demande_message FROM utilisateur
+  `).all() as {
+    id: number
+    pseudo: string
+    pseudo_replie: string
+    cree_le: number
+    acces: UtilisateurAdministration['acces']
+    demande_le: number | null
+    demande_message: string | null
+  }[]
 
   const vue = new Map<number, UtilisateurAdministration>()
   for (const c of comptes) {
     vue.set(c.id, {
       id: c.id,
       pseudo: c.pseudo,
-      admin: admins.has(c.pseudo_replie),
+      // Comme `estAdministrateur` : un pseudo listé sans accès n'administre rien.
+      admin: c.acces === 'accorde' && admins.has(c.pseudo_replie),
+      acces: c.acces,
+      demandeLe: c.demande_le,
+      demandeMessage: c.demande_message,
       inscritLe: c.cree_le,
       derniereActivite: null,
       acquises: 0,

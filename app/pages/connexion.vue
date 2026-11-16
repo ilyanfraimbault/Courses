@@ -10,6 +10,7 @@ definePageMeta({ layout: false })
  */
 const route = useRoute()
 const { loggedIn } = useUserSession()
+const autorise = useAccesAccorde()
 
 const suite = computed(() => {
   const s = route.query.suite
@@ -20,8 +21,12 @@ const suite = computed(() => {
   return typeof s === 'string' && s.startsWith('/') && !s.startsWith('//') && !s.startsWith('/api/') ? s : '/'
 })
 
+// Un compte sans accès irait vers une page qui le renverrait : autant
+// l'emmener droit à sa demande.
+const apres = () => navigateTo(autorise.value ? suite.value : PAGE_DEMANDE)
+
 watchEffect(() => {
-  if (loggedIn.value) navigateTo(suite.value)
+  if (loggedIn.value) apres()
 })
 
 useSeoMeta({ title: 'Connexion' })
@@ -40,7 +45,7 @@ useSeoMeta({ title: 'Connexion' })
           </p>
         </template>
 
-        <ConnexionFormulaire @connecte="navigateTo(suite)" />
+        <ConnexionFormulaire @connecte="apres" />
 
         <template #footer>
           <p class="text-sm text-muted">

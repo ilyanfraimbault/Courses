@@ -3,6 +3,9 @@
  * professeurs, partagés avec la classe et pas au delà. Le serveur refuse déjà
  * leur contenu sans session (`server/middleware/contenu.ts`) ; ce middleware
  * conduit à la connexion plutôt qu'à une page vide.
+ *
+ * Et un compte que l'administration n'a pas accepté ne voit que sa demande
+ * d'accès : le serveur lui refuse le contenu comme les données.
  */
 export default defineNuxtRouteMiddleware((to) => {
   if (estPublique(to.path)) return
@@ -17,6 +20,21 @@ export default defineNuxtRouteMiddleware((to) => {
       return abortNavigation()
     }
     return navigateTo({ path: '/connexion', query: { suite: to.fullPath } })
+  }
+
+  // Un compte sans accès ne voit que sa demande. Depuis une page déjà
+  // affichée, la fenêtre la montre par-dessus, comme la connexion.
+  const accorde = user.value?.acces === 'accorde'
+  if (to.path === PAGE_DEMANDE) {
+    if (accorde) return navigateTo('/')
+    return
+  }
+  if (!accorde) {
+    if (import.meta.client && !useNuxtApp().isHydrating) {
+      useConnexion().exiger(() => navigateTo(to.fullPath))
+      return abortNavigation()
+    }
+    return navigateTo(PAGE_DEMANDE)
   }
 
   // Confort d'affichage seulement : c'est le serveur qui refuse les données

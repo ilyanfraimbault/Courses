@@ -13,6 +13,9 @@ export function estPublique(chemin: string): boolean {
   return PUBLIQUES.some(p => chemin === p || chemin.startsWith(p + '/'))
 }
 
+/** La page où un compte sans accès demande à en avoir un. */
+export const PAGE_DEMANDE = '/demande'
+
 export function estAdministration(chemin: string): boolean {
   return chemin === '/admin' || chemin.startsWith('/admin/')
 }

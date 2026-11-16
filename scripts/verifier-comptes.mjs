@@ -5,7 +5,7 @@
  *   pnpm dev            # avec NUXT_CODE_INSCRIPTION=code-de-classe NUXT_ADMINISTRATEURS=alice
  *   node scripts/verifier-comptes.mjs
  */
-const B = 'http://localhost:3000'
+const B = process.env.COURS_BASE ?? 'http://localhost:3000'
 const U = '/cours/a1/remise-a-niveau-maths/fonctions-usuelles/exercices'
 const CODE = 'code-de-classe'
 const ok = []
@@ -36,8 +36,10 @@ const bob = session()
 const anon = session()
 
 // --- inscription -----------------------------------------------------------
-check('inscription sans code → 403', (await alice('/api/auth/register', {
-  method: 'POST', body: JSON.stringify({ pseudo: 'alice', motDePasse: 'motdepasse1' })
+// Sans code, l'inscription crée un compte sans accès (voir plus bas) ; un code
+// faux, lui, est refusé plutôt que pris pour une demande.
+check('inscription avec un code faux → 403', (await alice('/api/auth/register', {
+  method: 'POST', body: JSON.stringify({ pseudo: 'alice', motDePasse: 'motdepasse1', code: 'faux' })
 })).statut === 403)
 
 check('mot de passe trop court → 400', (await alice('/api/auth/register', {
@@ -139,6 +141,73 @@ check('aucun détail de réponse ne sort', !JSON.stringify(vue.corps ?? {}).incl
 
 check('la session d\'alice se lit administratrice', (await alice('/api/_auth/session')).corps?.user?.admin === true)
 check('celle de bob, non', (await bob('/api/_auth/session')).corps?.user?.admin === false)
+
+// --- accès sur demande -------------------------------------------------------
+const carole = session()
+const c = await carole('/api/auth/register', {
+  method: 'POST', body: JSON.stringify({ pseudo: 'carole', motDePasse: 'motdepasse3' })
+})
+check('inscription sans code → 200, compte sans accès', c.statut === 200 && c.corps?.acces === 'aucun', JSON.stringify(c.corps))
+check('sans accès, la session se lit « aucun »', (await carole('/api/_auth/session')).corps?.user?.acces === 'aucun')
+check('sans accès, les données → 403', (await carole(`/api/fiche?chemin=${U}`)).statut === 403)
+check('sans accès, l\'écriture → 403', (await carole('/api/fiche', {
+  method: 'PUT', body: JSON.stringify({ chemin: U, total: 2, faites: { 'exercice-1#1.': 'a' } })
+})).statut === 403)
+// Le contenu est gardé comme les données : sans quoi s'inscrire sans code
+// suffirait à lire tous les cours.
+const DUMP = '/__nuxt_content/cours/sql_dump.txt'
+check('sans session, le dump du contenu → 401', (await anon(DUMP)).statut === 401)
+check('sans accès, le dump du contenu → 403', (await carole(DUMP)).statut === 403)
+const pageSansAcces = await carole(U, { redirect: 'manual' })
+check('sans accès, une fiche renvoie à la demande', pageSansAcces.statut === 302,
+  `${pageSansAcces.statut}`)
+check('le 403 garde la session', (await carole('/api/_auth/session')).corps?.user?.pseudo === 'carole')
+check('demande avec un message trop long → 400', (await carole('/api/acces/demande', {
+  method: 'POST', body: JSON.stringify({ message: 'x'.repeat(501) })
+})).statut === 400)
+const d = await carole('/api/acces/demande', { method: 'POST', body: JSON.stringify({ message: 'Carole, de la classe de 1re' }) })
+check('demande d\'accès → 200', d.statut === 200 && d.corps?.acces === 'demande', JSON.stringify(d.corps))
+check('la session se lit « demande »', (await carole('/api/_auth/session')).corps?.user?.acces === 'demande')
+check('demande sans session → 401', (await anon('/api/acces/demande', { method: 'POST', body: '{}' })).statut === 401)
+
+const vue2 = await alice('/api/admin/utilisateurs')
+const fCarole = vue2.corps?.utilisateurs?.find(u => u.pseudo === 'carole')
+check('l\'administration voit la demande et son message',
+  fCarole?.acces === 'demande' && fCarole?.demandeMessage === 'Carole, de la classe de 1re' && typeof fCarole?.demandeLe === 'number',
+  JSON.stringify(fCarole))
+
+const idBob = vue2.corps?.utilisateurs?.find(u => u.pseudo === 'bob')?.id
+check('décider hors de la liste → 403', (await bob('/api/admin/acces', {
+  method: 'POST', body: JSON.stringify({ id: fCarole?.id, decision: 'accorder' })
+})).statut === 403)
+check('décider sans accès → 403', (await carole('/api/admin/acces', {
+  method: 'POST', body: JSON.stringify({ id: fCarole?.id, decision: 'accorder' })
+})).statut === 403)
+check('décision invalide → 400', (await alice('/api/admin/acces', {
+  method: 'POST', body: JSON.stringify({ id: fCarole?.id, decision: 'supprimer' })
+})).statut === 400)
+check('refuser un compte qui a accès → 404, rien n\'est supprimé', (await alice('/api/admin/acces', {
+  method: 'POST', body: JSON.stringify({ id: idBob, decision: 'refuser' })
+})).statut === 404 && (await bob(`/api/fiche?chemin=${U}`)).statut === 200)
+
+check('accorder → 200', (await alice('/api/admin/acces', {
+  method: 'POST', body: JSON.stringify({ id: fCarole?.id, decision: 'accorder' })
+})).statut === 200)
+check('l\'accès vaut dès la requête suivante, sans reconnexion', (await carole(`/api/fiche?chemin=${U}`)).statut === 200)
+check('accordé, le dump du contenu → 200', (await carole(DUMP)).statut === 200)
+check('la session se lit « accorde »', (await carole('/api/_auth/session')).corps?.user?.acces === 'accorde')
+
+const dan = session()
+await dan('/api/auth/register', { method: 'POST', body: JSON.stringify({ pseudo: 'dan', motDePasse: 'motdepasse4' }) })
+await dan('/api/acces/demande', { method: 'POST', body: '{}' })
+const idDan = (await alice('/api/admin/utilisateurs')).corps?.utilisateurs?.find(u => u.pseudo === 'dan')?.id
+check('refuser → 200', (await alice('/api/admin/acces', {
+  method: 'POST', body: JSON.stringify({ id: idDan, decision: 'refuser' })
+})).statut === 200)
+check('refusé, la session ne mène plus à rien → 401', (await dan('/api/acces/demande', { method: 'POST', body: '{}' })).statut === 401)
+check('refusé, le pseudo redevient libre', (await session()('/api/auth/register', {
+  method: 'POST', body: JSON.stringify({ pseudo: 'dan', motDePasse: 'motdepasse4' })
+})).statut === 200)
 
 console.log(JSON.stringify({ reussis: ok.length, echecs: ko.length, ok, ko }, null, 1))
 process.exit(ko.length ? 1 : 0)

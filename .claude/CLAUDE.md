@@ -158,16 +158,20 @@ est appliqué en base, pas au client. Une règle vit à un seul endroit.
 requête. Seules les routes `/api/admin/*` lisent au delà du compte connecté, et
 leur première ligne est `exigerAdministrateur(event)`. Voir `docs/comptes.md`.
 
-**Lire demande un compte.** Les cours sont ceux des professeurs : on les
+**Lire demande un compte accepté.** Les cours sont ceux des professeurs : on les
 partage avec la classe, pas avec quiconque tient l'adresse. La garde est au
 serveur, sur les **données** — `server/middleware/contenu.ts` refuse
-`/__nuxt_content/**` sans session, ce qui ferme d'un coup fiches, navigation,
-recherche et dump de la base. Ce dump ne doit **jamais** être prérendu : servi
-en fichier statique, il passerait avant le middleware (le hook `nitro:config`
-de `nuxt.config.ts` y veille). Si la session expire en cours de page, le clic
-qui répond passe encore par `useConnexion().exiger(geste)`, qui rejoue le geste
-une fois reconnecté, et la lecture du montage se refait par `quandConnecte`,
-sans quoi `chargee` resterait faux et la page n'écrirait rien.
+`/__nuxt_content/**` sans session (401) et sans accès (403), ce qui ferme d'un
+coup fiches, navigation, recherche et dump de la base. Ce dump ne doit
+**jamais** être prérendu : servi en fichier statique, il passerait avant le
+middleware (le hook `nitro:config` de `nuxt.config.ts` y veille). Un compte
+créé sans code d'invitation n'a pas d'accès : `idUtilisateur` lui répond 403,
+et il ne peut que le demander à l'administration. Être connecté ne suffit donc
+pas — c'est `useAccesAccorde` qui ouvre, pas `loggedIn`. Si la session expire
+en cours de page, le clic qui répond passe encore par
+`useConnexion().exiger(geste)`, qui rejoue le geste une fois reconnecté, et la
+lecture du montage se refait par `quandConnecte`, sans quoi `chargee`
+resterait faux et la page n'écrirait rien.
 
 ## Comment travailler ici
 

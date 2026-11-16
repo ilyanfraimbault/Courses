@@ -5,6 +5,7 @@ const sommaire = useSommaire()
 
 const { header } = useAppConfig()
 const { loggedIn, user, clear } = useUserSession()
+const autorise = useAccesAccorde()
 const connexion = useConnexion()
 const route = useRoute()
 
@@ -19,7 +20,16 @@ const liens = [
   { label: 'Quiz', to: '/quiz', icon: 'i-lucide-zap' }
 ]
 
-const menu = computed<DropdownMenuItem[][]>(() => [
+const menu = computed<DropdownMenuItem[][]>(() => autorise.value ? menuComplet.value : menuSansAcces.value)
+
+/** Sans accès, rien de ce qui est à soi n'existe encore : seulement la demande. */
+const menuSansAcces = computed<DropdownMenuItem[][]>(() => [
+  [{ type: 'label', label: user.value?.pseudo, icon: 'i-lucide-circle-user' }],
+  [{ label: 'Demande d\'accès', to: PAGE_DEMANDE, icon: 'i-lucide-hourglass' }],
+  [{ label: 'Se déconnecter', icon: 'i-lucide-log-out', onSelect: deconnecter }]
+])
+
+const menuComplet = computed<DropdownMenuItem[][]>(() => [
   [{ type: 'label', label: user.value?.pseudo, icon: 'i-lucide-circle-user' }],
   [
     { label: 'Mes contrôles', to: '/mes-controles', icon: 'i-lucide-calendar-check' },
@@ -76,7 +86,7 @@ async function deconnecter() {
       />
 
       <div
-        v-if="loggedIn"
+        v-if="autorise"
         class="hidden items-center gap-1 sm:flex"
       >
         <UButton
@@ -132,7 +142,7 @@ async function deconnecter() {
 
     <template #body>
       <div
-        v-if="loggedIn"
+        v-if="autorise"
         class="mb-4 flex flex-col gap-1 sm:hidden"
       >
         <UButton

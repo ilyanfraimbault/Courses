@@ -4,9 +4,14 @@ import { fr } from '@nuxt/ui/locale'
 definePageMeta({ layout: false })
 
 const { loggedIn } = useUserSession()
+const autorise = useAccesAccorde()
+
+// Sans code d'invitation, le compte tout neuf n'a pas d'accès : c'est sa
+// demande qu'on lui montre, pas un accueil qui le renverrait aussitôt.
+const suite = () => navigateTo(autorise.value ? '/' : PAGE_DEMANDE)
 
 watchEffect(() => {
-  if (loggedIn.value) navigateTo('/')
+  if (loggedIn.value) suite()
 })
 
 useSeoMeta({ title: 'Créer un compte' })
@@ -21,11 +26,11 @@ useSeoMeta({ title: 'Créer un compte' })
             Créer un compte
           </h1>
           <p class="text-sm text-muted mt-1">
-            Il te faut le code d'inscription.
+            Sans code d'invitation, l'administration devra accepter ton compte.
           </p>
         </template>
 
-        <InscriptionFormulaire @connecte="navigateTo('/')" />
+        <InscriptionFormulaire @connecte="suite" />
 
         <template #footer>
           <p class="text-sm text-muted">

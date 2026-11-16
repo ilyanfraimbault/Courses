@@ -22,10 +22,16 @@ export function pseudosAdministrateurs(event: H3Event): Set<string> {
     .filter(Boolean))
 }
 
+/**
+ * Il faut aussi que le compte ait accès. Le rôle suit un pseudo, et un pseudo
+ * listé sans compte peut être pris par le premier venu : sans code
+ * d'invitation, ce premier venu n'obtient qu'un compte sans accès, qui
+ * n'administre donc rien tant que personne ne l'a accepté.
+ */
 export function estAdministrateur(event: H3Event, db: DatabaseSync, uid: number): boolean {
   const liste = pseudosAdministrateurs(event)
   if (!liste.size) return false
-  const ligne = db.prepare('SELECT pseudo_replie FROM utilisateur WHERE id = ?').get(uid) as { pseudo_replie: string } | undefined
+  const ligne = db.prepare('SELECT pseudo_replie FROM utilisateur WHERE id = ? AND acces = \'accorde\'').get(uid) as { pseudo_replie: string } | undefined
   return !!ligne && liste.has(ligne.pseudo_replie)
 }
 

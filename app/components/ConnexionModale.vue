@@ -14,11 +14,14 @@ const visible = computed({
   }
 })
 
-const titre = computed(() => (mode.value === 'connexion' ? 'Se connecter' : 'Créer un compte'))
-const description = computed(() => motif.value
-  ?? (mode.value === 'connexion'
-    ? 'Connecte-toi pour retrouver ta progression.'
-    : 'Il te faut le code d\'inscription.'))
+const TITRES = { connexion: 'Se connecter', inscription: 'Créer un compte', demande: 'Demande d\'accès' }
+const DESCRIPTIONS = {
+  connexion: 'Connecte-toi pour retrouver ta progression.',
+  inscription: 'Sans code d\'invitation, l\'administration devra accepter ton compte.',
+  demande: 'Ton compte attend l\'accord de l\'administration.'
+}
+const titre = computed(() => TITRES[mode.value])
+const description = computed(() => motif.value ?? DESCRIPTIONS[mode.value])
 </script>
 
 <template>
@@ -37,9 +40,15 @@ const description = computed(() => motif.value
         @connecte="reussie"
       />
       <InscriptionFormulaire
-        v-else
+        v-else-if="mode === 'inscription'"
         key="inscription"
         @connecte="reussie"
+      />
+      <!-- L'accès accordé pendant que la fenêtre est ouverte rejoue le geste. -->
+      <DemandeAcces
+        v-else
+        key="demande"
+        @accorde="reussie"
       />
     </template>
 
@@ -58,7 +67,7 @@ const description = computed(() => motif.value
         </ULink>
       </p>
       <p
-        v-else
+        v-else-if="mode === 'inscription'"
         class="text-sm text-muted"
       >
         Déjà un compte ?
