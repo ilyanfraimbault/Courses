@@ -12,7 +12,7 @@ Chaque cours devient ici un chapitre : une **fiche de cours** en français, qui 
 
 Sous chaque question, les mêmes trois boutons : **Indice** et **Solution** se déplient sous la question, **Cours** ouvre le rappel visé dans un tiroir latéral.
 
-Ce que le site ne couvre pas encore, et qu'il faut réviser sur les diapos et ses notes de TP : les cours 07 à 11 — RFI, LFI et traversée de répertoires, injection SQL et Burp Suite, reverse shell, élévation de privilèges, la boîte à outils —, les autres rooms spécifiques et les cinq labs Vulnhub.
+Les cinq **labs Vulnhub** ont leur propre section de révision — l'essentiel de leurs gestes, sans le détail de chaque machine. Ce que le site ne couvre pas encore, et qu'il faut réviser sur les diapos et ses notes de TP : les cours 07 à 11 — RFI, LFI et traversée de répertoires, injection SQL et Burp Suite, reverse shell, élévation de privilèges, la boîte à outils —, et les autres rooms spécifiques.
 
 ## Introduction à la cybersécurité
 
@@ -80,6 +80,14 @@ Ce que le site ne couvre pas encore, et qu'il faut réviser sur les diapos et se
 ## TryHackMe — les rooms spécifiques
 
 ::carte-lien{to="/cours/a1/ethical-hacking/tryhackme/further-nmap" titre="S-01 — Further Nmap" description="Ports et poignée de main, types de scans, états, NSE et évasion" type="exercices" meta="15 questions"}
+::
+
+## Les labs Vulnhub
+
+::carte-lien{to="/cours/a1/ethical-hacking/labs/cours" titre="Le cours" description="La démarche et le rapport, énumérer large et l'injection de commande, énumérer un CMS, de l'injection SQL au shell, backdoor de service et énumération web, l'élévation de privilèges" type="cours" meta="8 sections"}
+::
+
+::carte-lien{to="/cours/a1/ethical-hacking/labs/qcm" titre="Le QCM" description="Les gestes des cinq labs en anglais, comme à l'examen : démarche, énumération, injection de commande, CMS, injection SQL jusqu'au shell, backdoor de service, élévation de privilèges" type="qcm" meta="19 questions · 20 min"}
 ::
 
 ## Emporter mes résultats
