@@ -20,7 +20,7 @@ Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
 les exercices du TD, les fiches d'entraînement, les révisions, le cours et le QCM
-de contenu. Sur les 1808 questions du site, **1180** sont exploitables — celles qui portent
+de contenu. Sur les 1811 questions du site, **1180** sont exploitables — celles qui portent
 une lettre attendue et au moins deux propositions. Les **628** autres sont des
 questions ouvertes, des tables de vérité, des champs à remplir ou des commandes
 à taper (322 dans les ateliers de Docker), qui se corrigent sur leur fiche :
@@ -94,7 +94,7 @@ par question, **de quoi la choisir et la classer, jamais de quoi la poser**.
 L'ensemble se charge une fois en mémoire ; les énoncés, eux, ne sont jamais mis
 en cache.
 
-Le relevé porte les **1808** questions du site et non les seules 1180 du quiz. Le
+Le relevé porte les **1811** questions du site et non les seules 1180 du quiz. Le
 champ `interrogeable` fait le tri, et la banque n'est que la part vraie de ce
 champ. C'est la progression par domaine qui a demandé cet élargissement — elle
 compte aussi les questions ouvertes, sans quoi le total d'un chapitre ne
