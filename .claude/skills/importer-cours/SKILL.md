@@ -203,7 +203,7 @@ pas au calcul (raisonnement, lecture de figure) iront dans la PR.
 ## 4. Contrôler
 
 ```bash
-pnpm dev                                                  # relève et rend le contenu
+NUXT_CODE_INSCRIPTION=code-de-classe pnpm dev            # relève et rend le contenu ; --rendu se crée un compte
 node scripts/verifier-contenu.mjs /cours/<annee>/<matiere> --rendu
 pnpm lint && pnpm typecheck && pnpm build
 ```

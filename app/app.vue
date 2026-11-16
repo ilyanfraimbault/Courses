@@ -6,11 +6,18 @@ const { seo } = useAppConfig()
 // L'arbre complet, tel quel. La barre latérale n'en montre qu'une matière à la
 // fois (voir `useSommaire`) ; la recherche et les fils d'Ariane, eux, ont besoin
 // de tout.
-const { data: navigationBrute } = await useAsyncData('navigation', () => queryCollectionNavigation('cours'))
+// Sans session, le serveur refuse le contenu (`server/middleware/contenu.ts`) :
+// on ne demande rien plutôt que d'essuyer un 401, et la connexion relance la
+// lecture.
+const { loggedIn } = useUserSession()
+const { data: navigationBrute } = await useAsyncData('navigation', () => loggedIn.value ? queryCollectionNavigation('cours') : Promise.resolve([]), {
+  watch: [loggedIn]
+})
 const navigation = computed(() => navigationBrute.value ?? [])
 
-const { data: files } = useLazyAsyncData('search', () => queryCollectionSearchSections('cours'), {
-  server: false
+const { data: files } = useLazyAsyncData('search', () => loggedIn.value ? queryCollectionSearchSections('cours') : Promise.resolve([]), {
+  server: false,
+  watch: [loggedIn]
 })
 
 useHead({

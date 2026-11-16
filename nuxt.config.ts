@@ -366,6 +366,17 @@ export default defineNuxtConfig({
   },
 
   hooks: {
+    // Nuxt Content prérend la base de chaque collection en fichier statique,
+    // que le serveur sert avant tout middleware : n'importe qui la
+    // téléchargerait sans compte, cours entiers compris. Servie par sa route,
+    // elle passe par la garde de `server/middleware/contenu.ts`. Le module force
+    // `prerender: true` après lecture de nos `routeRules`, d'où ce hook, qui
+    // passe après lui.
+    'nitro:config'(config) {
+      for (const [route, regle] of Object.entries(config.routeRules ?? {})) {
+        if (route.startsWith('/__nuxt_content/') && route.endsWith('/sql_dump.txt')) regle.prerender = false
+      }
+    },
     'content:file:afterParse'(ctx: { content?: Record<string, unknown> }) {
       const contenu = ctx.content as {
         path?: string

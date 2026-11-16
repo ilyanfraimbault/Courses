@@ -36,7 +36,7 @@ useSeoMeta({ title: 'Connexion' })
             Cours
           </h1>
           <p class="text-sm text-muted mt-1">
-            Connecte-toi pour retrouver ta progression.
+            Connecte-toi pour lire les cours et retrouver ta progression.
           </p>
         </template>
 

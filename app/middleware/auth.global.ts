@@ -1,10 +1,8 @@
 /**
- * Les fiches restent lisibles sans session : c'est le statu quo du portfolio, et
- * surtout ça garde leur HTML **identique pour tous**, donc cacheable, et sans
- * aucun risque de fuite de données par le cache. Y répondre, en revanche,
- * demande un compte — c'est la question qui le réclame, au clic (`useConnexion`).
- *
- * Le tableau de bord, lui, n'a de sens que connecté.
+ * Tout le site demande un compte, fiches comprises : ce sont les cours des
+ * professeurs, partagés avec la classe et pas au delà. Le serveur refuse déjà
+ * leur contenu sans session (`server/middleware/contenu.ts`) ; ce middleware
+ * conduit à la connexion plutôt qu'à une page vide.
  */
 export default defineNuxtRouteMiddleware((to) => {
   if (estPublique(to.path)) return

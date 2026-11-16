@@ -317,8 +317,34 @@ const types = pages.filter(p => p.type).length
 if (types !== ecrits.length) erreur('frontmatter', `${ecrits.length} fichiers écrivent un type, ${types} l'ont dans la base : un frontmatter ne se lit plus (un « : » sans guillemets ?)`)
 
 if (rendu) {
+  // Les fiches demandent un compte. On en crée un pour lire, et l'on vérifie
+  // d'abord, sans lui, que rien ne fuit : ni le contenu d'une fiche, ni la base
+  // entière qu'est le dump — prérendu, il serait servi avant toute garde.
+  const temoin = visees.find(p => p.questions)
+  if (temoin) {
+    const anonyme = await fetch(BASE + temoin.path, { redirect: 'manual' })
+    const fuite = (await anonyme.text()).match(/class="[^"]*\bcours-question\b/g)?.length ?? 0
+    if (fuite) erreur(temoin.chemin, `sans compte : ${fuite} questions servies (statut ${anonyme.status})`)
+  }
+  for (const route of ['/__nuxt_content/cours/sql_dump.txt', '/__nuxt_content/cours/query']) {
+    const r = await fetch(BASE + route, route.endsWith('query') ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"sql":"SELECT path FROM _content_cours"}' } : {})
+    if (r.status !== 401) erreur(route, `sans compte : statut ${r.status}, 401 attendu`)
+  }
+
+  const code = process.env.NUXT_CODE_INSCRIPTION ?? 'code-de-classe'
+  const inscription = await fetch(BASE + '/api/auth/register', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ pseudo: `contenu-${Date.now().toString(36)}`, motDePasse: 'motdepasse-de-verification', code })
+  })
+  const cookie = inscription.headers.getSetCookie?.().map(c => c.split(';')[0]).join('; ')
+  if (!inscription.ok || !cookie) {
+    console.error(`Inscription impossible (${inscription.status}) : le rendu demande un serveur lancé avec NUXT_CODE_INSCRIPTION (configuration « cours-verif »).`)
+    process.exit(1)
+  }
+
   for (const page of visees.filter(p => p.questions)) {
-    const html = await (await fetch(BASE + page.path)).text()
+    const html = await (await fetch(BASE + page.path, { headers: { cookie } })).text()
     const n = (html.match(/class="[^"]*\bcours-question\b/g) ?? []).length
     if (n !== page.questions) erreur(page.chemin, `rendu : ${n} questions affichées pour ${page.questions} comptées — un bloc s'est replié dans un autre (voir docs/contenu.md, remark-mdc)`)
   }

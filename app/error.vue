@@ -17,9 +17,16 @@ useSeoMeta({
   description: 'Cette page n\'existe pas ou a été déplacée.'
 })
 
-const { data: navigation } = await useAsyncData('navigation', () => queryCollectionNavigation('cours'))
-const { data: files } = useLazyAsyncData('search', () => queryCollectionSearchSections('cours'), {
-  server: false
+// Sans session, le serveur refuse le contenu (`server/middleware/contenu.ts`) :
+// on ne demande rien plutôt que d'essuyer un 401, et la connexion relance la
+// lecture.
+const { loggedIn } = useUserSession()
+const { data: navigation } = await useAsyncData('navigation', () => loggedIn.value ? queryCollectionNavigation('cours') : Promise.resolve([]), {
+  watch: [loggedIn]
+})
+const { data: files } = useLazyAsyncData('search', () => loggedIn.value ? queryCollectionSearchSections('cours') : Promise.resolve([]), {
+  server: false,
+  watch: [loggedIn]
 })
 
 provide('navigation', navigation)

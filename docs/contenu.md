@@ -45,6 +45,7 @@ La borne exacte d'apparition du défaut (3.10 ou 3.11) n'a pas été cherchée :
 
 ```bash
 pnpm dev                                 # ou pnpm build : il écrit la base de contenu
+                                         # --rendu : configuration « cours-verif » (code d'inscription)
 pnpm verif:contenu                       # tout le site
 pnpm verif:contenu /cours/a1/remise-a-niveau-maths --rendu   # une matière, rendu compris
 ```
@@ -78,27 +79,19 @@ chaque fiche au build (balises `exo-question`, `qcm-question`, `question`) et
 écrit le total dans le champ `questions`. Ce nombre est le témoin : il vient de
 l'arbre parsé, donc il reste juste même quand le rendu, lui, perd des nœuds.
 
-Serveur de développement lancé, comparer le rendu au compte du build :
+Serveur lancé, comparer le rendu au compte du build :
 
 ```bash
-node -e "
-const {DatabaseSync}=require('node:sqlite');
-const db=new DatabaseSync('.data/content/contents.sqlite');
-const rows=db.prepare('SELECT path, questions FROM _content_cours ORDER BY path').all();
-(async()=>{
-  let rendu=0, attendu=0, ecarts=[];
-  for (const r of rows){
-    const html = await (await fetch('http://localhost:3000'+r.path)).text();
-    const n = (html.match(/cours-question/g)||[]).length;
-    rendu+=n; attendu+=(r.questions??0);
-    if (n!==(r.questions??0)) ecarts.push(r.path+': '+n+' vs '+(r.questions??0));
-  }
-  console.log(rendu, '/', attendu, ecarts.length?('ÉCARTS: '+ecarts.join(', ')):'aucun écart');
-})();
-"
+pnpm verif:contenu --rendu
 ```
 
-Attendu aujourd'hui : `1811 / 1811 aucun écart`.
+Les fiches demandent un compte : le script s'en crée un avec le code
+d'inscription (`NUXT_CODE_INSCRIPTION`, « code-de-classe » par défaut), d'où la
+configuration `cours-verif` de `.claude/launch.json`. Il vérifie au passage, sans
+compte, qu'une fiche ne sert aucune question et que les routes de Nuxt Content
+répondent 401 — le dump de la base compris (voir `docs/comptes.md`).
+
+Attendu aujourd'hui : 1811 questions, « rendu vérifié », aucune erreur.
 
 Le compte porte sur le texte `cours-question` dans le HTML, et le serveur de
 développement garde les commentaires de gabarit : un commentaire qui cite ce nom
