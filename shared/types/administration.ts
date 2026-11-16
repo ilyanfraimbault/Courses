@@ -19,6 +19,11 @@ export interface UtilisateurAdministration {
   id: number
   pseudo: string
   admin: boolean
+  /** « aucun » : rien demandé encore ; « demande » : attend une décision. */
+  acces: 'aucun' | 'demande' | 'accorde'
+  /** La dernière demande d'accès, et ce que l'élève y a dit de lui. */
+  demandeLe: number | null
+  demandeMessage: string | null
   inscritLe: number
   /** La trace la plus récente, toutes tables confondues. Nulle pour un compte jamais servi. */
   derniereActivite: number | null

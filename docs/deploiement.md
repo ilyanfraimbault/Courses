@@ -23,15 +23,17 @@ effectivement tourner.
 `COURSES_ENV_FILE` doit contenir au minimum :
 
 ```
-NUXT_CODE_INSCRIPTION=…          # le code à donner pour créer un compte
+NUXT_CODE_INSCRIPTION=…          # code d'invitation : un compte créé avec a accès d'emblée
 NUXT_ADMINISTRATEURS=…           # pseudo(s) de l'administration, séparés par des virgules
 NUXT_SESSION_PASSWORD=…          # openssl rand -base64 32
 COURS_ADRESSE=srv1355415.hstgr.cloud
 ACME_EMAIL=…
 ```
 
-Laisser `NUXT_CODE_INSCRIPTION` vide **ferme les inscriptions** : c'est le
-défaut voulu, le site vivant sur un domaine public.
+Laisser `NUXT_CODE_INSCRIPTION` vide fait passer **toute** inscription par une
+demande d'accès, que l'administration accepte depuis `/admin` (voir
+`docs/comptes.md`). Sur une base neuve, il faut un code le temps de créer le
+premier compte administrateur : personne d'autre ne pourrait l'accepter.
 
 **Ce secret ne doit jamais être vide.** L'action Hostinger réécrit
 `/docker/courses/.env` à chaque exécution : un secret vide effacerait la

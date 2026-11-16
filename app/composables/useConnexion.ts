@@ -1,4 +1,4 @@
-export type ModeConnexion = 'connexion' | 'inscription'
+export type ModeConnexion = 'connexion' | 'inscription' | 'demande'
 
 /** Ce que dit la fenêtre quand c'est une réponse qui l'a ouverte. */
 export const MOTIF_REPONSE = 'Connecte-toi pour répondre : ta progression te suivra d\'un appareil à l\'autre.'
@@ -23,6 +23,7 @@ let enAttente: (() => void) | null = null
  */
 export function useConnexion() {
   const { loggedIn } = useUserSession()
+  const autorise = useAccesAccorde()
   const ouverte = useState('connexion-ouverte', () => false)
   const mode = useState<ModeConnexion>('connexion-mode', () => 'connexion')
   const motif = useState<string | null>('connexion-motif', () => null)
@@ -38,14 +39,26 @@ export function useConnexion() {
    * l'appelant s'arrête là, et c'est elle qui reprendra une fois connecté.
    */
   function exiger(action: () => void, pourquoi: string = MOTIF_REPONSE): boolean {
-    if (loggedIn.value) return true
+    if (autorise.value) return true
     enAttente = action
-    ouvrir('connexion', pourquoi)
+    // Connecté sans accès, se reconnecter n'y changerait rien : la fenêtre
+    // montre où en est la demande.
+    if (loggedIn.value) ouvrir('demande')
+    else ouvrir('connexion', pourquoi)
     return false
   }
 
-  /** À appeler une fois la session rafraîchie : `loggedIn` doit déjà être vrai. */
+  /**
+   * À appeler une fois la session rafraîchie : `loggedIn` doit déjà être vrai.
+   * Un compte sans accès ne reprend pas le geste — il passe à la demande, et le
+   * geste attend que l'accès vienne pendant que la fenêtre est ouverte.
+   */
   function reussie() {
+    if (!autorise.value) {
+      mode.value = 'demande'
+      motif.value = null
+      return
+    }
     const action = enAttente
     enAttente = null
     ouverte.value = false
@@ -62,14 +75,28 @@ export function useConnexion() {
 }
 
 /**
+ * Connecté **et** accepté par l'administration : la seule condition qui ouvre
+ * les pages de travail et les réponses. Être connecté ne suffit plus — un
+ * compte créé sans code d'invitation n'a que de quoi demander l'accès.
+ *
+ * Confort d'affichage seulement : c'est `idUtilisateur` qui refuse les données.
+ */
+export function useAccesAccorde() {
+  const { loggedIn, user } = useUserSession()
+  return computed(() => loggedIn.value && user.value?.acces === 'accorde')
+}
+
+/**
  * Relance une lecture au moment où l'on se connecte sans quitter la page. Une
  * lecture faite au montage a échoué en 401 et ne se refera pas d'elle-même :
  * sans cela, la fiche continuerait de se croire hors session, et rien de ce
  * qu'on y répond ne serait enregistré.
  */
 export function quandConnecte(relire: () => void) {
-  const { loggedIn } = useUserSession()
-  watch(loggedIn, (connecte, avant) => {
-    if (connecte && !avant) relire()
+  // Sur l'accès et non sur la seule connexion : un compte sans accès a lu en
+  // 403, et c'est le jour où l'accès lui est accordé qu'il faut relire.
+  const autorise = useAccesAccorde()
+  watch(autorise, (ouvert, avant) => {
+    if (ouvert && !avant) relire()
   })
 }

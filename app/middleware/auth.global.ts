@@ -4,7 +4,8 @@
  * aucun risque de fuite de données par le cache. Y répondre, en revanche,
  * demande un compte — c'est la question qui le réclame, au clic (`useConnexion`).
  *
- * Le tableau de bord, lui, n'a de sens que connecté.
+ * Le tableau de bord, lui, n'a de sens que connecté — et avec un compte que
+ * l'administration a accepté.
  */
 export default defineNuxtRouteMiddleware((to) => {
   if (estPublique(to.path)) return
@@ -19,6 +20,21 @@ export default defineNuxtRouteMiddleware((to) => {
       return abortNavigation()
     }
     return navigateTo({ path: '/connexion', query: { suite: to.fullPath } })
+  }
+
+  // Un compte sans accès ne voit que sa demande. Depuis une page déjà
+  // affichée, la fenêtre la montre par-dessus, comme la connexion.
+  const accorde = user.value?.acces === 'accorde'
+  if (to.path === PAGE_DEMANDE) {
+    if (accorde) return navigateTo('/')
+    return
+  }
+  if (!accorde) {
+    if (import.meta.client && !useNuxtApp().isHydrating) {
+      useConnexion().exiger(() => navigateTo(to.fullPath))
+      return abortNavigation()
+    }
+    return navigateTo(PAGE_DEMANDE)
   }
 
   // Confort d'affichage seulement : c'est le serveur qui refuse les données

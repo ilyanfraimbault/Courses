@@ -375,6 +375,25 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (utilisateur_id, chemin),
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
   ) STRICT;
+  `,
+
+  // v9 — l'accès sur demande.
+  //
+  // Un compte créé sans code d'invitation n'ouvre rien : il peut seulement
+  // demander l'accès, que l'administration accorde ou refuse. « aucun » est un
+  // compte qui n'a encore rien demandé, « demande » une demande qui attend.
+  //
+  // Le défaut de la colonne est « aucun », le sens sûr : une insertion qui
+  // oublierait de le dire ne donnerait accès à rien. Les comptes déjà créés
+  // l'ont été avec le code, ils gardent leur accès.
+  `
+  ALTER TABLE utilisateur ADD COLUMN acces TEXT NOT NULL DEFAULT 'aucun'
+    CHECK (acces IN ('aucun', 'demande', 'accorde'));
+  ALTER TABLE utilisateur ADD COLUMN demande_le INTEGER;
+  -- Ce que l'élève dit de lui à l'administration : qui il est, d'où il vient.
+  ALTER TABLE utilisateur ADD COLUMN demande_message TEXT;
+
+  UPDATE utilisateur SET acces = 'accorde';
   `
 ]
 

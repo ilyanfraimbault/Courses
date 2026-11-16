@@ -66,12 +66,18 @@ async function inscrire() {
       </p>
     </div>
 
-    <UInput
-      v-model="code"
-      placeholder="Code d'inscription"
-      size="lg"
-      :disabled="envoi"
-    />
+    <div>
+      <UInput
+        v-model="code"
+        placeholder="Code d'invitation (facultatif)"
+        size="lg"
+        class="w-full"
+        :disabled="envoi"
+      />
+      <p class="mt-1 text-xs text-dimmed">
+        Sans code, ton compte attendra l'accord de l'administration.
+      </p>
+    </div>
 
     <UAlert
       v-if="erreur"
@@ -87,7 +93,7 @@ async function inscrire() {
       size="lg"
       block
       :loading="envoi"
-      :disabled="!pseudo || !assezLong || !code"
+      :disabled="!pseudo || !assezLong"
     />
   </form>
 </template>

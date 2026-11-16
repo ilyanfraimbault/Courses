@@ -9,7 +9,7 @@ const props = defineProps<{
   type?: string | null
 }>()
 
-const { loggedIn } = useUserSession()
+const autorise = useAccesAccorde()
 const { contient, basculer } = useTodo()
 
 const cible = computed<CibleTodo>(() => ({
@@ -35,10 +35,10 @@ async function cliquer() {
 </script>
 
 <template>
-  <!-- Hors session, la to-do n'a pas d'existence : mieux vaut ne rien montrer
+  <!-- Hors session, ou sans accès, la to-do n'a pas d'existence : mieux vaut ne rien montrer
        qu'un bouton qui ne fera rien. -->
   <UButton
-    v-if="loggedIn"
+    v-if="autorise"
     size="xs"
     variant="ghost"
     :color="dedans ? 'primary' : 'neutral'"

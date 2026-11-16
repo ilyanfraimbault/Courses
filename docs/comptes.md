@@ -12,14 +12,41 @@ Le pseudo est unique à la casse et aux accents près : « Chloé », « chloe �
 « CHLOE » désignent le même compte. Deux comptes qu'on ne distingue pas à l'œil
 finissent par ressembler à un vol de compte.
 
-## Les inscriptions passent par un code
+## L'accès se demande, ou s'obtient par invitation
 
-`NUXT_CODE_INSCRIPTION` est exigé pour créer un compte. **Vide, les inscriptions
-sont fermées** — c'est le défaut : le site n'est lié depuis nulle part mais vit
-sur un domaine public, et une inscription libre invite les robots.
+Créer un compte ne donne accès à rien. Un compte a un **accès** (`acces` en
+base) parmi trois : `aucun` à la création, `demande` une fois la demande
+envoyée, `accorde` quand l'administration l'a acceptée. Seul le dernier ouvre
+les données : `idUtilisateur`, par où passe toute route de données, répond 403
+aux deux autres — sans vider la session, dont le compte a besoin pour
+demander. La seule route qui l'accepte sans accès est `POST /api/acces/demande`,
+qui passe par `compteConnecte`.
 
-Changer le code coupe les inscriptions en cours sans toucher aux comptes déjà
-créés.
+L'accès est relu en base à chaque requête, comme le rôle d'administrateur :
+l'accorder vaut à la requête suivante, sans reconnexion. Une page ouverte
+pendant l'attente relit d'elle-même la fiche (`quandConnecte` suit l'accès, plus
+la seule connexion), et un geste interrompu par la fenêtre de demande est
+rejoué si l'accès vient pendant qu'elle est ouverte.
+
+**Le code d'invitation** (`NUXT_CODE_INSCRIPTION`) court-circuite la demande :
+un compte créé avec lui a accès d'emblée — le donner, c'est déjà accepter. Un
+code faux est refusé plutôt que pris pour une demande, sans quoi on se croirait
+inscrit. Vide, aucun code n'est bon et toute inscription passe par une demande.
+
+**Refuser supprime le compte.** Il n'a jamais rien pu écrire, il n'y a rien à
+perdre, et son pseudo redevient libre. La route de décision
+(`POST /api/admin/acces`) ne touche qu'un compte sans accès : elle ne retire
+l'accès à personne et ne supprime aucun compte qui a des données — la règle est
+dans sa clause `WHERE`.
+
+Le site vit sur un domaine public, et une inscription sans code invite les
+robots. Ils n'obtiennent qu'un compte qui ne peut rien faire ; pour qu'ils ne
+noient pas les vraies demandes, l'inscription sans code s'arrête à **50 comptes
+sans accès** (503), en plus de la limite par IP.
+
+La colonne `acces` vaut `aucun` par défaut, le sens sûr : une insertion qui
+l'oublierait ne donnerait accès à rien. La migration a accordé l'accès aux
+comptes qui existaient avant elle — ils avaient tous été créés avec le code.
 
 ## Ce que le serveur refuse de dire
 
@@ -98,13 +125,18 @@ jamais le détail des réponses de personne.
 
 Un piège à connaître : le rôle suit un pseudo. Un pseudo listé qui n'a pas
 encore de compte peut être pris par le premier venu muni du code
-d'inscription. Ne lister qu'un pseudo déjà créé.
+d'invitation. Sans le code, il n'obtiendrait qu'un compte sans accès, et
+`estAdministrateur` exige l'accès : il n'administrerait rien tant que
+personne ne l'a accepté. Ne lister qu'un pseudo déjà créé quand même.
+
+L'administration voit en tête de `/admin` les comptes sans accès, la demande
+d'abord, avec le mot que l'élève y a laissé, et les accepte ou les refuse.
 
 ## Vérifier
 
 ```bash
 pnpm dev
-node scripts/verifier-comptes.mjs   # inscription, connexion, isolation
+node scripts/verifier-comptes.mjs   # inscription, connexion, isolation, demandes d'accès
 node scripts/verifier-api.mjs       # progression, QCM, to-do, export
 ```
 

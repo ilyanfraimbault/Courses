@@ -10,7 +10,45 @@ definePageMeta({ layout: 'cours' })
  */
 const { data, status, error, refresh } = await useLazyFetch<VueAdministration>('/api/admin/utilisateurs', { server: false })
 
-const utilisateurs = computed(() => data.value?.utilisateurs ?? [])
+const tous = computed(() => data.value?.utilisateurs ?? [])
+const utilisateurs = computed(() => tous.value.filter(u => u.acces === 'accorde'))
+
+/**
+ * Les comptes sans accès, à part et en tête : ce sont eux qui attendent
+ * quelque chose. Une demande envoyée passe devant un compte qui n'a encore
+ * rien demandé, la plus récente d'abord.
+ */
+const demandes = computed(() => tous.value
+  .filter(u => u.acces !== 'accorde')
+  .sort((a, b) => Number(b.acces === 'demande') - Number(a.acces === 'demande')
+    || (b.demandeLe ?? b.inscritLe) - (a.demandeLe ?? a.inscritLe)))
+
+const toast = useToast()
+/** La décision en cours, « id:decision » : seul le bouton cliqué tourne. */
+const enCours = ref<string | null>(null)
+
+async function decider(u: UtilisateurAdministration, decision: 'accorder' | 'refuser') {
+  enCours.value = `${u.id}:${decision}`
+  try {
+    await $fetch('/api/admin/acces', { method: 'POST', body: { id: u.id, decision } })
+    toast.add({
+      title: decision === 'accorder' ? `Accès accordé à ${u.pseudo}` : `Demande de ${u.pseudo} refusée`,
+      description: decision === 'refuser' ? 'Le compte est supprimé, son pseudo redevient libre.' : undefined,
+      icon: decision === 'accorder' ? 'i-lucide-check' : 'i-lucide-x',
+      color: decision === 'accorder' ? 'success' : 'neutral'
+    })
+    await refresh()
+  } catch (e) {
+    toast.add({
+      title: 'Décision impossible',
+      description: (e as { statusMessage?: string })?.statusMessage,
+      icon: 'i-lucide-triangle-alert',
+      color: 'error'
+    })
+  } finally {
+    enCours.value = null
+  }
+}
 const matieres = computed(() => data.value?.matieres ?? [])
 
 const SEMAINE = 7 * 24 * 60 * 60 * 1000
@@ -105,6 +143,70 @@ useSeoMeta({ title: 'Utilisateurs' })
       </div>
 
       <template v-else-if="data">
+        <section
+          v-if="demandes.length"
+          class="mb-10"
+        >
+          <h2 class="text-lg font-semibold text-highlighted">
+            Demandes d'accès
+          </h2>
+          <p class="mt-1 text-sm text-muted">
+            Ces comptes ne peuvent rien faire tant qu'ils ne sont pas acceptés. Refuser supprime le compte.
+          </p>
+
+          <ul class="mt-4 flex flex-col gap-3">
+            <li
+              v-for="u of demandes"
+              :key="u.id"
+              class="rounded-lg border px-4 py-4 sm:px-5"
+              :class="u.acces === 'demande' ? 'border-primary/50 bg-primary/5' : 'border-default'"
+            >
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <UIcon
+                  name="i-lucide-user-round-plus"
+                  class="size-6 shrink-0 text-primary"
+                />
+                <span class="font-semibold text-highlighted">{{ u.pseudo }}</span>
+                <UBadge
+                  size="sm"
+                  :color="u.acces === 'demande' ? 'primary' : 'neutral'"
+                  variant="subtle"
+                  :label="u.acces === 'demande' ? 'En attente' : 'Rien demandé'"
+                />
+                <span class="text-sm text-dimmed">
+                  {{ u.acces === 'demande' && u.demandeLe ? `demandé ${ilYA(u.demandeLe)}` : `inscrit le ${date(u.inscritLe)}` }}
+                </span>
+                <div class="ms-auto flex gap-2">
+                  <UButton
+                    size="sm"
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-lucide-x"
+                    label="Refuser"
+                    :loading="enCours === `${u.id}:refuser`"
+                    :disabled="enCours !== null"
+                    @click="decider(u, 'refuser')"
+                  />
+                  <UButton
+                    size="sm"
+                    icon="i-lucide-check"
+                    label="Accepter"
+                    :loading="enCours === `${u.id}:accorder`"
+                    :disabled="enCours !== null"
+                    @click="decider(u, 'accorder')"
+                  />
+                </div>
+              </div>
+              <p
+                v-if="u.demandeMessage"
+                class="mt-3 whitespace-pre-line text-sm text-default"
+              >
+                « {{ u.demandeMessage }} »
+              </p>
+            </li>
+          </ul>
+        </section>
+
         <p class="text-sm text-muted">
           {{ utilisateurs.length }} compte{{ utilisateurs.length > 1 ? 's' : '' }},
           dont {{ actifsSemaine }} actif{{ actifsSemaine > 1 ? 's' : '' }} ces sept derniers jours.

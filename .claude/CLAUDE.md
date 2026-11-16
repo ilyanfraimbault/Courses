@@ -158,12 +158,15 @@ est appliqué en base, pas au client. Une règle vit à un seul endroit.
 requête. Seules les routes `/api/admin/*` lisent au delà du compte connecté, et
 leur première ligne est `exigerAdministrateur(event)`. Voir `docs/comptes.md`.
 
-**Lire est libre, répondre demande un compte.** Les fiches s'affichent sans
+**Lire est libre, répondre demande un compte accepté.** Les fiches s'affichent sans
 session ; le clic qui répond — une proposition, « Vérifier », « Corriger »,
 « J'avais bon » — passe par `useConnexion().exiger(geste)`, qui ouvre la
 fenêtre de connexion et rejoue le geste une fois connecté. Une lecture faite au
 montage se refait alors par `quandConnecte`, sans quoi `chargee` resterait faux
-et la page n'écrirait rien.
+et la page n'écrirait rien. Un compte créé sans code d'invitation n'a pas
+d'accès : `idUtilisateur` lui répond 403, et il ne peut que le demander à
+l'administration. Être connecté ne suffit donc pas — c'est `useAccesAccorde`
+qui ouvre, pas `loggedIn`.
 
 ## Comment travailler ici
 
