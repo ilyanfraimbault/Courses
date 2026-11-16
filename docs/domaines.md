@@ -63,6 +63,15 @@ ne partagent pas un pourcentage, qui ne dirait rien de l'un ni de l'autre. La
 barre du haut reste, pour la vue d'ensemble, et la somme des matières tombe sur
 elle comme la somme des chapitres tombe sur leur matière.
 
+**Une matière à la fois**, choisie parmi des cartes qui portent chacune leur
+barre ; le choix vit dans l'adresse (`?matiere=`). Les cinq cents domaines
+empilés d'un bloc, chacun sur deux lignes, faisaient 35 000 pixels de haut :
+on ne cherchait plus où ça coince, on faisait défiler. Les chapitres sont
+**repliés** en une ligne — titre, barre, pourcentage, lien et quiz — et c'est en
+en ouvrant un qu'on lit ses domaines, une ligne chacun. Ce qui est tout trouvé
+se replie sous « N points tout trouvés » en bas du chapitre : il ne dit plus
+rien de ce qui reste à faire. Repliée, une matière tient en un écran.
+
 ## D'où viennent les chiffres
 
 `GET /api/progression/domaines`, une requête, quatre lectures qui ne dépendent
