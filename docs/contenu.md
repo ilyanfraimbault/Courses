@@ -105,7 +105,7 @@ Ce contrôle vaut d'être relancé après toute montée de version de `@nuxt/con
 Le même hook relève l'index des questions. Il en a **2142**, autant que le
 comptage — chacune vit dans un bloc et porte un repère, donc chacune a une
 identité et peut être rangée dans un domaine. Parmi elles, **1379** sont
-interrogeables, réparties sur quarante et un chapitres de sept matières : c'est la banque du quiz,
+interrogeables, réparties sur quarante chapitres de sept matières : c'est la banque du quiz,
 décrite dans `docs/quiz.md`. Ce second témoin vaut d'être relu au même moment
 qu'un changement de contenu — une question qui cesse d'être relevée disparaît du
 quiz et d'un domaine sans que rien ne le signale.

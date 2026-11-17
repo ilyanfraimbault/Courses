@@ -16,12 +16,12 @@ au bout de N questions : elle se termine quand les N **places** sont acquises.
 Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 `qcm_tentative`, une séance de quiz dans `quiz_session`.
 
-## La banque : 1270 questions, aucune écrite pour le quiz
+## La banque : 1379 questions, aucune écrite pour le quiz
 
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
 les exercices du TD, les fiches d'entraînement, les révisions, le cours et le QCM
-de contenu. Sur les 1948 questions du site, **1270** sont exploitables — celles qui portent
-une lettre attendue et au moins deux propositions. Les **678** autres sont des
+de contenu. Sur les 2142 questions du site, **1379** sont exploitables — celles qui portent
+une lettre attendue et au moins deux propositions. Les **763** autres sont des
 questions ouvertes, des tables de vérité, des champs à remplir ou des commandes
 à taper (322 dans les ateliers de Docker), qui se corrigent sur leur fiche :
 une file qui doit savoir si la réponse était juste ne peut rien en faire — pas
@@ -94,7 +94,7 @@ par question, **de quoi la choisir et la classer, jamais de quoi la poser**.
 L'ensemble se charge une fois en mémoire ; les énoncés, eux, ne sont jamais mis
 en cache.
 
-Le relevé porte les **1948** questions du site et non les seules 1270 du quiz. Le
+Le relevé porte les **2142** questions du site et non les seules 1379 du quiz. Le
 champ `interrogeable` fait le tri, et la banque n'est que la part vraie de ce
 champ. C'est la progression par domaine qui a demandé cet élargissement — elle
 compte aussi les questions ouvertes, sans quoi le total d'un chapitre ne
@@ -119,7 +119,7 @@ console.log(n, t);
 Attendu aujourd'hui, les chapitres désignés par leur chemin :
 
 ```
-1270 {
+1379 {
   '/cours/a1/mathematiques-ingenieur/logique-et-raisonnements': 119,
   '/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques': 44,
   '/cours/a1/mathematiques-ingenieur/arithmetique': 46,
@@ -142,6 +142,9 @@ Attendu aujourd'hui, les chapitres désignés par leur chemin :
   '/cours/a1/ethical-hacking/scanning': 53,
   '/cours/a1/ethical-hacking/nmap': 64,
   '/cours/a1/ethical-hacking/labs': 19,
+  '/cours/a1/structures-donnees-algorithmique/listes': 45,
+  '/cours/a1/structures-donnees-algorithmique/arbres': 33,
+  '/cours/a1/structures-donnees-algorithmique/tables-de-hachage-et-recursion': 31,
   // et les quinze chapitres de Docker, de 1 à 3 chacun — 33 en tout
   '/cours/a1/virtualisation-conteneurisation/commandes': 3,
   …
@@ -221,7 +224,7 @@ par construction, et une question sans rappel se rattache au **titre de niveau 2
 qui la précède dans sa propre page** — ce qui est précisément la section dont
 elle parle, puisqu'un contrôle express est écrit sous le cours qu'il vérifie.
 
-Le relevé donne aujourd'hui **210 cases pour 1270 questions**, et chaque chapitre
+Le relevé donne aujourd'hui **244 cases pour 1379 questions**, et chaque chapitre
 est couvert sans reste :
 
 | Chapitre | Cases | Questions |
@@ -249,6 +252,9 @@ est couvert sans reste :
 | Scanning et énumération (ethical hacking) | 6 | 53 |
 | Nmap (ethical hacking) | 7 | 64 |
 | Les labs Vulnhub (ethical hacking) | 8 | 19 |
+| Listes, piles et files (structures de données) | 13 | 45 |
+| Arbres (structures de données) | 11 | 33 |
+| Tables de hachage et récursion (structures de données) | 10 | 31 |
 
 Huit questions n'ont pas de section : deux rappels de cours pointent vers une
 page sans ancre. Elles tombent dans une case « Le reste du chapitre », qui
@@ -537,8 +543,8 @@ QUIZ_BASE=http://localhost:3210 NUXT_CODE_INSCRIPTION=essai pnpm verif:quiz
 
 Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 
-- 1270 questions dans la banque, rangées par matière puis sur trente-sept
-  chapitres désignés par leur chemin et 210 sections de cours, chaque chapitre couvert
+- 1379 questions dans la banque, rangées par matière puis sur quarante
+  chapitres désignés par leur chemin et 244 sections de cours, chaque chapitre couvert
   **sans reste** et sans intitulé en double ;
 - la bonne réponse n'est pas dans la charge utile d'une question ;
 - l'ordre des propositions est brassé, et deux lectures d'une même place
