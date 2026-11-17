@@ -8,9 +8,11 @@ icone: i-lucide-drafting-compass
 
 Chaque chapitre se décline en fiches, et chaque lien ci-dessous porte une pastille qui dit laquelle. Sous chaque question, les mêmes trois boutons, et aucun ne quitte la page : **Indice** et **Solution** se déplient sous la question, **Cours** ouvre le rappel visé dans un tiroir latéral. Une réponse est corrigée dès qu'on la donne : si elle est fausse, l'indice s'ouvre, et l'on retente autant qu'on veut.
 
-Les réponses ont été vérifiées par le calcul — tables de vérité et négations éprouvées sur toutes les valuations, identités contrôlées avec sympy, restes et écritures en base recalculés par programme — et, pour le travail en autonomie, confrontées au corrigé du sujet.
+Les réponses ont été vérifiées par le calcul — tables de vérité et négations éprouvées sur toutes les valuations, identités contrôlées avec sympy, restes, écritures en base, PGCD, coefficients de Bézout et solutions des équations diophantiennes recalculés par programme — et, pour le travail en autonomie, confrontées au corrigé du sujet.
 
-## Logique propositionnelle
+## Éléments de logique mathématique
+
+### Logique propositionnelle
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/cours" titre="Le cours" description="Calcul propositionnel et calcul des prédicats : connecteurs, tables de vérité, tautologies, quantificateurs, leur négation et leur ordre" type="cours" meta="33 questions"}
 ::
@@ -24,7 +26,7 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/logique-et-raisonnements/entrainement" titre="L'entraînement" description="Six paliers, des tables de vérité aux suites et familles de vecteurs, avec un exemple rédigé sous chaque question" type="entrainement" meta="31 questions"}
 ::
 
-## Raisonnements mathématiques
+### Raisonnements mathématiques
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques/cours" titre="Le cours" description="Modus ponens, disjonction de cas, absurde, contraposition, équivalence, analyse et synthèse, récurrences" type="cours" meta="24 questions"}
 ::
@@ -40,6 +42,8 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 
 ## Arithmétique
 
+### Divisibilité et congruences
+
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/arithmetique/cours" titre="Le cours" description="Divisibilité, division euclidienne, systèmes de numération, congruences, critères de divisibilité et exponentiation modulaire rapide" type="cours" meta="21 questions"}
 ::
 
@@ -47,6 +51,14 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/arithmetique/entrainement" titre="L'entraînement" description="Huit paliers, des diviseurs aux restes de très grandes puissances, avec les questions à se poser et un exemple rédigé sous chaque question" type="entrainement" meta="34 questions"}
+::
+
+### Nombres premiers entre eux
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/nombres-premiers-entre-eux/cours" titre="Le cours" description="PGCD et algorithme d'Euclide, nombres premiers entre eux, Bézout, Gauss, PPCM, équations diophantiennes et théorème des restes chinois" type="cours" meta="24 questions"}
+::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/nombres-premiers-entre-eux/exercices" titre="La feuille d'exercices" description="Les seize exercices de la feuille Arithmétique n° 2 : PGCD, Bézout, fractions irréductibles, équations diophantiennes, PPCM, restes chinois" type="exercices" meta="33 questions"}
 ::
 
 ## Emporter mes résultats

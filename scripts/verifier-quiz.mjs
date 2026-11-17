@@ -43,8 +43,10 @@ const TRIGO = MATIERE + '/trigonometrie'
 // l'arithmétique des maths pour l'ingénieur (les restes et les écritures en
 // base s'écrivent dans des champs, hors du quiz : 33 questions à lettre), 823
 // avec son entraînement (12 questions à lettre sur 34), 1180 avec l'ethical
-// hacking (357 questions, toutes à une seule bonne réponse : l'examen est un QCM).
-const BANQUE = 1180
+// hacking (357 questions, toutes à une seule bonne réponse : l'examen est un QCM),
+// 1199 avec ses labs Vulnhub, 1241 avec « Nombres premiers entre eux » (42
+// questions à lettre sur 57 : PGCD, PPCM et effectifs s'écrivent dans des champs).
+const BANQUE = 1241
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)
