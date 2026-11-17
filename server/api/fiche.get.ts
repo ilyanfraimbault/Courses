@@ -41,5 +41,14 @@ export default defineEventHandler(async (event): Promise<DonneesFiche> => {
     })
   }
 
-  return { chemin, total: fiche?.total ?? 0, faites, qcm }
+  // Les brouillons de code voyagent avec le reste : un appel de plus par
+  // question à écrire referait les allers-retours que cette route existe
+  // pour éviter.
+  const ecrites: Record<string, string> = {}
+  const textes = db
+    .prepare('SELECT bloc, label, texte FROM reponse_ecrite WHERE utilisateur_id = ? AND chemin = ?')
+    .all(uid, chemin) as { bloc: string, label: string, texte: string }[]
+  for (const t of textes) ecrites[composerIdentite(chemin, t.bloc, t.label)] = t.texte
+
+  return { chemin, total: fiche?.total ?? 0, faites, qcm, ecrites }
 })

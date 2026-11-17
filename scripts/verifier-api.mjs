@@ -137,10 +137,25 @@ check('liste incomplète → 400', mauvaisOrdre.statut === 400)
 const suppr = await req(`/api/todo/${t1.corps.id}`, { method: 'DELETE' })
 check('suppression to-do → 200', suppr.statut === 200)
 
+// Réponses écrites : une question à la fois, un texte vide efface
+const QE = id('exercice-2', '1.')
+const ecrire = texte => req('/api/reponse-ecrite', { method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, question: QE, texte }) })
+check('écrire une réponse → 200', (await ecrire('int f(int x) {\n    return x;\n}')).statut === 200)
+await ecrire('int f(int x) {\n    return 2 * x;\n}')
+check('la réécrire remplace le texte', (await req(`/api/fiche?chemin=${CHEMIN}`)).corps.ecrites?.[QE] === 'int f(int x) {\n    return 2 * x;\n}')
+check('écrire ne crée pas de progression', !(await req(`/api/fiche?chemin=${CHEMIN}`)).corps.faites[QE])
+check('identité étrangère → 400', (await req('/api/reponse-ecrite', {
+  method: 'PUT', body: JSON.stringify({ chemin: CHEMIN, question: '/autre/fiche#b#1.', texte: 'x' })
+})).statut === 400)
+check('texte trop long → 413', (await ecrire('x'.repeat(20_001))).statut === 413)
+
 // Remise à zéro d'une fiche
 await req(`/api/fiche?chemin=${CHEMIN}`, { method: 'DELETE' })
 const g5 = await req(`/api/fiche?chemin=${CHEMIN}`)
 check('« repartir de zéro » vide la fiche', Object.keys(g5.corps.faites).length === 0)
+check('« repartir de zéro » garde ce qu\'on a écrit', typeof g5.corps.ecrites?.[QE] === 'string')
+await ecrire('   ')
+check('un texte vide efface la réponse', !(await req(`/api/fiche?chemin=${CHEMIN}`)).corps.ecrites?.[QE])
 
 console.log(JSON.stringify({ reussis: ok.length, echecs: ko.length, ok, ko }, null, 1))
 process.exit(ko.length ? 1 : 0)

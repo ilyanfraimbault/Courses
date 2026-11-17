@@ -74,6 +74,8 @@ export interface DonneesFiche {
   faites: Record<string, string>
   /** Slug de bloc → tentatives, de la plus ancienne à la plus récente. */
   qcm: Record<string, QcmTentative[]>
+  /** Identité complète de question → code écrit par l'élève sous cette question. */
+  ecrites: Record<string, string>
 }
 
 export interface ResumeFiche {

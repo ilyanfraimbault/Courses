@@ -27,7 +27,7 @@
 // une prop booléenne **absente** en `false`, pas en `undefined`. Écrit
 // `aide !== false`, le défaut cachait l'aide de toutes les questions qui ne
 // passaient pas la prop — c'est-à-dire de toutes les fiches.
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   /** Repère affiché devant l'énoncé : « 12. », « a) ». */
   label?: string
   /** Identifiant DOM, pour qu'un récapitulatif puisse y conduire. */
@@ -51,6 +51,18 @@ const indiceOuvert = defineModel<boolean>('indiceOuvert', { default: false })
 const solutionOuverte = defineModel<boolean>('solutionOuverte', { default: false })
 
 const emit = defineEmits<{ cours: [] }>()
+
+const slots = useSlots()
+
+// Une question où l'on écrit du code range la solution **à côté** de ce qu'on
+// a écrit, pour qu'on compare ligne à ligne avant de se noter. Le panneau de
+// solution n'est pas déplacé dans le DOM — il n'existe qu'une fois, construit à
+// sa première ouverture : c'est la grille qui le place dans la colonne de
+// droite, à hauteur de l'éditeur (`grid-flow-dense` le fait remonter dans la
+// seule rangée où cette colonne est libre). La grille ne s'installe que
+// solution ouverte, et seulement si la question a la place : elle se règle sur
+// la largeur de la question, pas sur celle de l'écran.
+const cote = computed(() => !!slots.saisie && !!props.solution && solutionOuverte.value)
 
 const uid = useId()
 
@@ -79,149 +91,159 @@ watch(solutionOuverte, (ouverte) => {
 <template>
   <div
     :id="ancre ?? uid"
-    class="cours-question scroll-mt-24 border-l-2 transition-colors pl-4 sm:pl-5 py-1 my-7"
+    class="cours-question @container scroll-mt-24 border-l-2 transition-colors pl-4 sm:pl-5 py-1 my-7"
     :class="verdict === 'juste'
       ? 'border-success'
       : verdict === 'faux' ? 'border-error' : 'border-default hover:border-primary/60'"
   >
-    <slot name="entete" />
+    <div :class="cote && 'grid grid-flow-row-dense items-start @4xl:grid-cols-2 @4xl:gap-x-5 [&>*]:col-span-full'">
+      <slot name="entete" />
 
-    <div class="flex gap-3 items-baseline">
-      <span
-        v-if="label"
-        class="shrink-0 font-semibold text-highlighted tabular-nums"
-      >{{ label }}</span>
-      <div class="min-w-0 flex-1 cours-enonce">
-        <slot />
+      <div class="flex gap-3 items-baseline">
+        <span
+          v-if="label"
+          class="shrink-0 font-semibold text-highlighted tabular-nums"
+        >{{ label }}</span>
+        <div class="min-w-0 flex-1 cours-enonce">
+          <slot />
+        </div>
+        <UIcon
+          v-if="verdict"
+          :name="verdict === 'juste' ? 'i-lucide-check' : 'i-lucide-x'"
+          class="size-5 shrink-0"
+          :class="verdict === 'juste' ? 'text-success' : 'text-error'"
+        />
       </div>
-      <UIcon
-        v-if="verdict"
-        :name="verdict === 'juste' ? 'i-lucide-check' : 'i-lucide-x'"
-        class="size-5 shrink-0"
-        :class="verdict === 'juste' ? 'text-success' : 'text-error'"
-      />
-    </div>
 
-    <slot name="choix" />
+      <slot name="choix" />
 
-    <slot name="message" />
-
-    <template v-if="aide">
       <div
-        v-if="indice || solution || cours"
-        class="flex flex-wrap gap-2 mt-3"
+        v-if="$slots.saisie"
+        class="min-w-0 @4xl:col-span-1! @4xl:col-start-1!"
       >
-        <UButton
-          v-if="indice"
-          size="xs"
-          color="warning"
-          variant="soft"
-          :icon="indiceOuvert ? 'i-lucide-lightbulb-off' : 'i-lucide-lightbulb'"
-          :label="indiceOuvert ? 'Masquer l\'indice' : 'Indice'"
-          :aria-expanded="indiceOuvert"
-          :aria-controls="`${uid}-indice`"
-          @click="indiceOuvert = !indiceOuvert"
-        />
-        <UButton
-          v-if="solution"
-          size="xs"
-          color="primary"
-          variant="soft"
-          :icon="solutionOuverte ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-          :label="solutionOuverte ? 'Masquer la solution' : 'Solution'"
-          :aria-expanded="solutionOuverte"
-          :aria-controls="`${uid}-solution`"
-          @click="solutionOuverte = !solutionOuverte"
-        />
-        <UButton
-          v-if="cours"
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          icon="i-lucide-book-open-text"
-          label="Cours"
-          @click="emit('cours')"
-        />
+        <slot name="saisie" />
       </div>
 
-      <slot name="apres" />
+      <slot name="message" />
 
-      <!-- Indice et solution se déplient sur place plutôt qu'en fenêtre : une
+      <template v-if="aide">
+        <div
+          v-if="indice || solution || cours"
+          class="flex flex-wrap gap-2 mt-3"
+        >
+          <UButton
+            v-if="indice"
+            size="xs"
+            color="warning"
+            variant="soft"
+            :icon="indiceOuvert ? 'i-lucide-lightbulb-off' : 'i-lucide-lightbulb'"
+            :label="indiceOuvert ? 'Masquer l\'indice' : 'Indice'"
+            :aria-expanded="indiceOuvert"
+            :aria-controls="`${uid}-indice`"
+            @click="indiceOuvert = !indiceOuvert"
+          />
+          <UButton
+            v-if="solution"
+            size="xs"
+            color="primary"
+            variant="soft"
+            :icon="solutionOuverte ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+            :label="solutionOuverte ? 'Masquer la solution' : 'Solution'"
+            :aria-expanded="solutionOuverte"
+            :aria-controls="`${uid}-solution`"
+            @click="solutionOuverte = !solutionOuverte"
+          />
+          <UButton
+            v-if="cours"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-book-open-text"
+            label="Cours"
+            @click="emit('cours')"
+          />
+        </div>
+
+        <slot name="apres" />
+
+        <!-- Indice et solution se déplient sur place plutôt qu'en fenêtre : une
            modale à chaque mauvaise réponse casserait le geste « je relis et je
            retente aussitôt », et une solution se lit mieux sous son énoncé. -->
-      <Transition name="cours-reveal">
-        <div
-          v-if="indice && indiceVu"
-          v-show="indiceOuvert"
-          :id="`${uid}-indice`"
-          class="cours-panel cours-panel-indice"
-        >
-          <p class="cours-panel-title">
-            <UIcon
-              name="i-lucide-lightbulb"
-              class="size-4 shrink-0"
-            />
-            <span>Indice</span>
-          </p>
-          <div class="cours-panel-body">
-            <slot name="indice" />
-          </div>
-
+        <Transition name="cours-reveal">
           <div
-            v-if="exemple"
-            class="mt-4 rounded-lg border border-default bg-default"
+            v-if="indice && indiceVu"
+            v-show="indiceOuvert"
+            :id="`${uid}-indice`"
+            class="cours-panel cours-panel-indice"
           >
-            <button
-              type="button"
-              class="flex w-full items-center gap-2 px-3 py-2 text-left"
-              :aria-expanded="exempleDeplie"
-              :aria-controls="`${uid}-exemple`"
-              @click="exempleDeplie = !exempleDeplie"
-            >
+            <p class="cours-panel-title">
               <UIcon
-                name="i-lucide-square-function"
-                class="size-4 shrink-0 text-primary"
+                name="i-lucide-lightbulb"
+                class="size-4 shrink-0"
               />
-              <span class="min-w-0 flex-1 text-sm font-medium text-highlighted">
-                Exemple similaire, entièrement traité
-              </span>
-              <UIcon
-                name="i-lucide-chevron-down"
-                class="size-4 shrink-0 text-dimmed transition-transform"
-                :class="exempleDeplie && 'rotate-180'"
-              />
-            </button>
+              <span>Indice</span>
+            </p>
+            <div class="cours-panel-body">
+              <slot name="indice" />
+            </div>
 
             <div
-              v-show="exempleDeplie"
-              :id="`${uid}-exemple`"
-              class="cours-panel-body border-t border-default px-3 py-3"
+              v-if="exemple"
+              class="mt-4 rounded-lg border border-default bg-default"
             >
-              <slot name="exemple" />
+              <button
+                type="button"
+                class="flex w-full items-center gap-2 px-3 py-2 text-left"
+                :aria-expanded="exempleDeplie"
+                :aria-controls="`${uid}-exemple`"
+                @click="exempleDeplie = !exempleDeplie"
+              >
+                <UIcon
+                  name="i-lucide-square-function"
+                  class="size-4 shrink-0 text-primary"
+                />
+                <span class="min-w-0 flex-1 text-sm font-medium text-highlighted">
+                  Exemple similaire, entièrement traité
+                </span>
+                <UIcon
+                  name="i-lucide-chevron-down"
+                  class="size-4 shrink-0 text-dimmed transition-transform"
+                  :class="exempleDeplie && 'rotate-180'"
+                />
+              </button>
+
+              <div
+                v-show="exempleDeplie"
+                :id="`${uid}-exemple`"
+                class="cours-panel-body border-t border-default px-3 py-3"
+              >
+                <slot name="exemple" />
+              </div>
             </div>
           </div>
-        </div>
-      </Transition>
+        </Transition>
 
-      <Transition name="cours-reveal">
-        <div
-          v-if="solution && solutionVue"
-          v-show="solutionOuverte"
-          :id="`${uid}-solution`"
-          class="cours-panel cours-panel-solution"
-        >
-          <p class="cours-panel-title">
-            <UIcon
-              name="i-lucide-circle-check"
-              class="size-4 shrink-0"
-            />
-            <span>Solution détaillée</span>
-          </p>
-          <div class="cours-panel-body">
-            <slot name="solution" />
+        <Transition name="cours-reveal">
+          <div
+            v-if="solution && solutionVue"
+            v-show="solutionOuverte"
+            :id="`${uid}-solution`"
+            class="cours-panel cours-panel-solution min-w-0"
+            :class="cote && '@4xl:col-span-1! @4xl:col-start-2!'"
+          >
+            <p class="cours-panel-title">
+              <UIcon
+                name="i-lucide-circle-check"
+                class="size-4 shrink-0"
+              />
+              <span>Solution détaillée</span>
+            </p>
+            <div class="cours-panel-body">
+              <slot name="solution" />
+            </div>
           </div>
-        </div>
-      </Transition>
-    </template>
+        </Transition>
+      </template>
+    </div>
   </div>
 </template>
