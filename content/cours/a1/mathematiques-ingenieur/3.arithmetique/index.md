@@ -1,5 +1,5 @@
 ---
-title: Arithmétique
+title: Divisibilité et congruences
 description: "Divisibilité et congruences — le cours, la feuille d'exercices Arithmétique n° 1 et un entraînement en huit paliers, corrigés question par question."
 annee: A1
 matiere: Mathématiques pour l'ingénieur
@@ -7,7 +7,7 @@ ordre: 3
 icone: i-lucide-divide
 ---
 
-Le troisième chapitre revient aux entiers : qui divise qui, la division euclidienne et son reste, l'écriture d'un nombre dans une base quelconque, puis les congruences — le calcul sur les restes, qui donne en quelques lignes le reste de $2^{65362}$ par $7$, démontre les critères de divisibilité et mène à l'exponentiation modulaire rapide.
+Le premier volet de l'arithmétique revient aux entiers : qui divise qui, la division euclidienne et son reste, l'écriture d'un nombre dans une base quelconque, puis les congruences — le calcul sur les restes, qui donne en quelques lignes le reste de $2^{65362}$ par $7$, démontre les critères de divisibilité et mène à l'exponentiation modulaire rapide. Le second volet, [Nombres premiers entre eux](/cours/a1/mathematiques-ingenieur/nombres-premiers-entre-eux), part de là vers le PGCD, Bézout et Gauss.
 
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/arithmetique/cours" titre="Le cours" description="Sept sections — divisibilité, division euclidienne, bases, congruences, opérations, critères, exponentiation rapide — chacune avec les exemples du cours traités et un contrôle express" type="cours" meta="21 questions"}
 ::
