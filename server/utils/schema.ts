@@ -394,6 +394,26 @@ const MIGRATIONS: string[] = [
   ALTER TABLE utilisateur ADD COLUMN demande_message TEXT;
 
   UPDATE utilisateur SET acces = 'accorde';
+  `,
+
+  // v10 — le code qu'on écrit sous une question.
+  //
+  // Un brouillon, pas un résultat : rien ne le corrige, il ne compte dans
+  // aucune progression, et l'élève se note lui-même après l'avoir comparé à la
+  // solution. Il est donc rattaché au compte et non à la fiche : une ligne de
+  // `fiche` ne se crée jamais avec un total à zéro, et « repartir de zéro » sur
+  // une fiche efface un score, pas le travail qu'on y a écrit.
+  `
+  CREATE TABLE reponse_ecrite (
+    utilisateur_id INTEGER NOT NULL,
+    chemin         TEXT    NOT NULL,
+    bloc           TEXT    NOT NULL,
+    label          TEXT    NOT NULL,
+    texte          TEXT    NOT NULL,
+    maj            INTEGER NOT NULL,
+    PRIMARY KEY (utilisateur_id, chemin, bloc, label),
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
+  ) STRICT, WITHOUT ROWID;
   `
 ]
 

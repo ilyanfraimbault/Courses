@@ -122,6 +122,15 @@ et son instantané effacerait toutes les autres. Une bonne réponse **éteint** 
 dette au lieu de supprimer la ligne — le compte des fautes distingue
 l'étourderie de la notion qui ne passe pas. Voir `docs/quiz.md`.
 
+**Le code qu'on écrit sous une question s'écrit question par question.** Ni
+instantané ni événement : `PUT /api/reponse-ecrite` remplace le texte d'**une**
+question, et rien d'autre. Dans le corps de `PUT /api/fiche`, un onglet périmé
+écraserait les brouillons écrits ailleurs depuis. Seule une frappe déclenche
+l'envoi, jamais le montage ni le départ de page sans saisie, et le texte lu en
+base ne remplit l'éditeur que tant qu'on n'y a rien tapé. Il est lu avec le
+reste par `GET /api/fiche`, rattaché au compte et non à la fiche :
+« repartir de zéro » efface un score, pas ce qu'on a écrit.
+
 **Le second niveau de la sélection du quiz est le plan du chapitre**, pas
 l'intitulé du rappel de cours visé. Les rappels ne formaient pas une
 nomenclature : le même titre apparaissait deux fois, et les questions qui n'en
@@ -210,7 +219,8 @@ accolée qui soufflerait la réponse ; si le sujet demande aussi la négation ou
 le contre-exemple, c'est une seconde question. Une
 table de vérité se **remplit** case par case (`table-verite`), une adresse de
 réseau **s'écrit** au lieu de se choisir (`champs-reponse`), une commande se
-**tape** dans un terminal (`commande`), un angle se lit sur un cercle
+**tape** dans un terminal (`commande`), une fonction s'**écrit** dans un
+éditeur avant d'être comparée à la solution (`code="c"`), un angle se lit sur un cercle
 (`cercle-trigo`), un tableau de variations se dresse : quand un
 cours demande un geste que les composants existants ne savent pas corriger, on
 écrit le composant. Le critère : ce que l'élève ferait sur sa copie, et ce qui

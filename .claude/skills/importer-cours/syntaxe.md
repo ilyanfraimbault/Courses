@@ -413,6 +413,36 @@ bonnes: [1, 3]
 - Une question à **une seule** bonne réponse reste un `bonne="b"` : c'est elle
   que le quiz sait poser.
 
+## Du code à écrire
+
+Une question qui demande d'**écrire** du code — une fonction, un programme —
+porte l'attribut `code`, avec le langage. Un éditeur apparaît sous l'énoncé ;
+ce qu'on y tape est enregistré sur le compte, et à l'ouverture de la solution,
+celle-ci se range **à côté** de l'éditeur quand la question a la place (dessous
+sur un téléphone). Rien ne corrige : la question reste ouverte, sans `bonne`, et
+l'élève se note toujours lui-même après lecture.
+
+````md
+:::exo-question{label="13." cours="eli-pile" code="c"}
+Implémente une pile d'entiers par **liste chaînée** : `creer_pile`, `empiler`…
+
+#indice
+…
+#solution
+```c
+Pile* creer_pile() {
+  …
+}
+```
+:::
+````
+
+- Le mettre sur toute question dont la réponse **est** du code ; pas sur une
+  question qui demande d'expliquer un code, ni sur une sortie à prédire (des
+  `champs-reponse`).
+- L'attribut ne touche pas l'identité de la question : l'ajouter à une fiche
+  publiée ne fait rien perdre.
+
 ## Une commande à taper
 
 Tiré de `virtualisation-conteneurisation/01.commandes/1.atelier.md`. Comme la

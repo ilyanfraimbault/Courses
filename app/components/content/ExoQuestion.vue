@@ -18,6 +18,12 @@ const props = defineProps<{
    * faite pousserait à le lire avant d'avoir fini.
    */
   faire?: boolean
+  /**
+   * Une question où l'on écrit du code : un éditeur sous l'énoncé garde ce
+   * qu'on a écrit, et la solution s'ouvre à côté pour comparer. Rien ne le
+   * corrige — on se note toujours soi-même. La valeur est le langage (« c »).
+   */
+  code?: string
 }>()
 
 const slots = useSlots()
@@ -190,6 +196,16 @@ if (reveal) {
           <slot :name="lettre" />
         </template>
       </ChoixReponses>
+    </template>
+
+    <template
+      v-if="code"
+      #saisie
+    >
+      <SaisieCode
+        :identite="identite"
+        :langage="code"
+      />
     </template>
 
     <template #message>

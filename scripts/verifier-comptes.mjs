@@ -21,13 +21,16 @@ function session() {
     })
     const sc = r.headers.getSetCookie?.() ?? []
     if (sc.length) cookie = sc.map(c => c.split(';')[0]).join('; ')
+    // Le texte brut aussi : c'est lui qu'on fouille pour s'assurer qu'une page
+    // servie ne porte rien du compte connecté.
+    const texte = await r.text()
     let corps = null
     try {
-      corps = await r.json()
+      corps = JSON.parse(texte)
     } catch {
       // pas de corps JSON : le statut suffit
     }
-    return { statut: r.status, corps }
+    return { statut: r.status, corps, texte }
   }
 }
 
@@ -82,6 +85,26 @@ check('les deux progressions coexistent', JSON.stringify(vueA.corps.faites) !== 
 await alice('/api/fiche', { method: 'PUT', body: JSON.stringify({ chemin: U, total: 40, faites: faitesA }) })
 check('un instantané n\'élague que son propre compte',
   Object.keys((await bob(`/api/fiche?chemin=${U}`)).corps.faites).length === 1)
+
+// --- réponses écrites ------------------------------------------------------
+// Le code écrit sous une question est une donnée du compte, comme la
+// progression : il ne se lit qu'au montage, jamais au rendu serveur.
+const QE = `${U}#exercice-1#1.`
+const MARQUE = `printf("brouillon-alice-${Math.random().toString(36).slice(2, 8)}");`
+check('Alice écrit sous une question → 200', (await alice('/api/reponse-ecrite', {
+  method: 'PUT', body: JSON.stringify({ chemin: U, question: QE, texte: MARQUE })
+})).statut === 200)
+check('Alice relit sa réponse avec la fiche', (await alice(`/api/fiche?chemin=${U}`)).corps.ecrites?.[QE] === MARQUE)
+check('Bob ne voit pas la réponse d\'Alice',
+  Object.keys((await bob(`/api/fiche?chemin=${U}`)).corps.ecrites ?? {}).length === 0)
+await bob('/api/reponse-ecrite', { method: 'PUT', body: JSON.stringify({ chemin: U, question: QE, texte: 'int main() {}' }) })
+check('écrire la même question ne touche que son compte', (await alice(`/api/fiche?chemin=${U}`)).corps.ecrites?.[QE] === MARQUE)
+const htmlAlice = await alice(U)
+check('le HTML servi de la fiche ne porte pas la réponse', htmlAlice.statut === 200 && !htmlAlice.texte.includes(MARQUE.slice(8, 30)),
+  `${htmlAlice.statut}`)
+check('écrire sans session → 401', (await anon('/api/reponse-ecrite', {
+  method: 'PUT', body: JSON.stringify({ chemin: U, question: QE, texte: 'x' })
+})).statut === 401)
 
 // --- to-do -----------------------------------------------------------------
 await alice('/api/todo', { method: 'POST', body: JSON.stringify({ chemin: U, bloc: 'exercice-1', titre: 'Exercice 1' }) })
@@ -150,6 +173,9 @@ const c = await carole('/api/auth/register', {
 check('inscription sans code → 200, compte sans accès', c.statut === 200 && c.corps?.acces === 'aucun', JSON.stringify(c.corps))
 check('sans accès, la session se lit « aucun »', (await carole('/api/_auth/session')).corps?.user?.acces === 'aucun')
 check('sans accès, les données → 403', (await carole(`/api/fiche?chemin=${U}`)).statut === 403)
+check('sans accès, écrire sous une question → 403', (await carole('/api/reponse-ecrite', {
+  method: 'PUT', body: JSON.stringify({ chemin: U, question: `${U}#exercice-1#1.`, texte: 'x' })
+})).statut === 403)
 check('sans accès, l\'écriture → 403', (await carole('/api/fiche', {
   method: 'PUT', body: JSON.stringify({ chemin: U, total: 2, faites: { 'exercice-1#1.': 'a' } })
 })).statut === 403)
