@@ -20,5 +20,8 @@ icone: i-lucide-graduation-cap
 ::carte-lien{to="/cours/a1/mise-a-niveau-c" titre="Mise à niveau en C" description="Les cinq séances du cours — bases, tableaux et boucles, fonctions, pointeurs et allocation, types personnalisés — en dessinant la mémoire à chaque ligne, et le contrôle d'exemple corrigé" icone="i-simple-icons-c" meta="6 chapitres"}
 ::
 
+::carte-lien{to="/cours/a1/structures-donnees-algorithmique" titre="Structures de données et algorithmique" description="Listes, piles et files, arbres, tables de hachage et récursion, en C — chaque cours, son TP corrigé et un entraînement, puis le contrôle d'exemple corrigé" icone="i-lucide-binary" meta="4 chapitres"}
+::
+
 ::carte-lien{to="/cours/a1/ethical-hacking" titre="Ethical hacking" description="Le premier cours — CIA, AAA, STRIDE, CVSS, ATT&CK —, la reconnaissance, le DNS, le scanning et Nmap, et les rooms TryHackMe du TD, en QCM en anglais comme l'examen" icone="i-lucide-shield-half" meta="6 chapitres"}
 ::
