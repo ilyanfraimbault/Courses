@@ -7,7 +7,7 @@ ordre: 1
 icone: i-lucide-list-ordered
 ---
 
-Le premier jeu de diapos : le vecteur qui réserve de la place, la recherche avec élément sentinelle, la complexité constante ou linéaire et le coût amorti ; la liste chaînée, ses sentinelles et ses limites sur une vraie machine, la liste doublement chaînée, le comparatif des trois structures et la liste déroulée ; enfin la pile et la file. Le TP les met en concurrence sur un dictionnaire de quatre millions de caractères.
+Le premier cours : le vecteur qui réserve de la place, la recherche avec élément sentinelle, la complexité constante ou linéaire et le coût amorti ; la liste chaînée, ses sentinelles et ses limites sur une vraie machine, la liste doublement chaînée, le comparatif des trois structures et la liste déroulée ; enfin la pile et la file. Le TP les met en concurrence sur un dictionnaire de quatre millions de caractères.
 
 ::carte-lien{to="/cours/a1/structures-donnees-algorithmique/listes/cours" titre="Le cours" description="Treize sections, chacune avec un exemple traité et un contrôle express" type="cours" meta="24 questions"}
 ::

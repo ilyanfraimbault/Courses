@@ -7,7 +7,7 @@ ordre: 2
 icone: i-lucide-network
 ---
 
-Le deuxième jeu de diapos : l'arbre et son vocabulaire, l'arbre binaire et ses pointeurs, les parcours préfixé, postfixé et infixé, en profondeur avec une pile et en largeur avec une file, l'arbre complet et l'arbre binaire de recherche ; puis les limites des pointeurs et les variantes qui les atténuent — l'arbre rangé dans un tableau, la rope, l'arbre B. Le TP range un dictionnaire dans une liste triée, puis dans un arbre binaire de recherche de mots.
+Le deuxième cours : l'arbre et son vocabulaire, l'arbre binaire et ses pointeurs, les parcours préfixé, postfixé et infixé, en profondeur avec une pile et en largeur avec une file, l'arbre complet et l'arbre binaire de recherche ; puis les limites des pointeurs et les variantes qui les atténuent — l'arbre rangé dans un tableau, la rope, l'arbre B. Le TP range un dictionnaire dans une liste triée, puis dans un arbre binaire de recherche de mots.
 
 ::carte-lien{to="/cours/a1/structures-donnees-algorithmique/arbres/cours" titre="Le cours" description="Onze sections, chacune avec un exemple traité et un contrôle express" type="cours" meta="18 questions"}
 ::
