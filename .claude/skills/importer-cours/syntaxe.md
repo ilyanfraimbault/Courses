@@ -413,6 +413,36 @@ bonnes: [1, 3]
 - Une question à **une seule** bonne réponse reste un `bonne="b"` : c'est elle
   que le quiz sait poser.
 
+## Un arbre
+
+Un arbre se **dessine** avec `::arbre`, jamais en caractères (`↙ ↘`, qui se
+cassent d'une police à l'autre) ni en ligne (`A → (B, C)`, illisible) : une
+question de parcours sans arbre visible est insoluble. Tiré de
+`structures-donnees-algorithmique/2.arbres/1.cours.md` :
+
+```md
+::arbre
+---
+titre: "Après insertion de G, rééquilibré"
+arbre: |-
+  A(B(D, E), C(·, F))
+---
+::
+```
+
+- Un nœud est son étiquette suivie de ses fils entre parenthèses ; `·` (ou une
+  place vide) est un **fils absent** : `C(·, F)` met `F` à droite de `C`.
+- Une étiquette sans guillemets peut contenir des espaces (les clés d'un nœud
+  d'arbre B : `F L(B D(A, C, E), …)`) ; entre guillemets, ses espaces se
+  montrent `␣` — les feuilles d'une rope, `"r à"`.
+- `arbre` en bloc `|-` : la notation passe telle quelle, guillemets et
+  apostrophes compris. `titre` entre guillemets doubles (il contient souvent un
+  « : »).
+- Dans une question, l'énoncé d'abord, l'arbre ensuite. Un bloc qui contient un
+  `::arbre` prend un deux-points de plus — `:::qcm-question`, `::::qcm`,
+  `:::exemple` —, et `--rendu` dit si l'on s'est trompé.
+- Le dessin se calcule au rendu, serveur compris : rien ne dépend du compte.
+
 ## Du code à écrire
 
 Une question qui demande d'**écrire** du code — une fonction, un programme —
