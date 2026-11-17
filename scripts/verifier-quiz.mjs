@@ -48,7 +48,7 @@ const TRIGO = MATIERE + '/trigonometrie'
 // questions à lettre sur 57 : PGCD, PPCM et effectifs s'écrivent dans des champs), 1270
 // avec son entraînement et les deux contrôles blancs (29 questions à lettre de
 // plus, rangées chacune avec le chapitre que vise son rappel de cours).
-const BANQUE = 1270
+const BANQUE = 1379
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)
