@@ -45,8 +45,10 @@ const TRIGO = MATIERE + '/trigonometrie'
 // avec son entraînement (12 questions à lettre sur 34), 1180 avec l'ethical
 // hacking (357 questions, toutes à une seule bonne réponse : l'examen est un QCM),
 // 1199 avec ses labs Vulnhub, 1241 avec « Nombres premiers entre eux » (42
-// questions à lettre sur 57 : PGCD, PPCM et effectifs s'écrivent dans des champs).
-const BANQUE = 1241
+// questions à lettre sur 57 : PGCD, PPCM et effectifs s'écrivent dans des champs), 1270
+// avec son entraînement et les deux contrôles blancs (29 questions à lettre de
+// plus, rangées chacune avec le chapitre que vise son rappel de cours).
+const BANQUE = 1270
 
 /** Toutes les sections du catalogue, toutes matières confondues. */
 const sectionsDe = catalogue => catalogue.matieres.flatMap(m => m.themes).flatMap(t => t.sections)

@@ -61,6 +61,19 @@ Les réponses ont été vérifiées par le calcul — tables de vérité et nég
 ::carte-lien{to="/cours/a1/mathematiques-ingenieur/nombres-premiers-entre-eux/exercices" titre="La feuille d'exercices" description="Les seize exercices de la feuille Arithmétique n° 2 : PGCD, Bézout, fractions irréductibles, équations diophantiennes, PPCM, restes chinois" type="exercices" meta="33 questions"}
 ::
 
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/nombres-premiers-entre-eux/entrainement" titre="L'entraînement" description="Huit paliers, du PGCD lu sur les diviseurs aux restes chinois, avec les questions à se poser et un exemple rédigé sous chaque question" type="entrainement" meta="34 questions"}
+::
+
+## Contrôles blancs
+
+Deux sujets d'une heure sur toute la matière, un exercice par cours, pour réviser le programme d'un coup.
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/controles/controle-1" titre="Contrôle blanc n° 1" description="Table de vérité et quantificateurs, récurrence et contraposition, congruences et base 8, PGCD, équation diophantienne et restes chinois" type="exercices" meta="13 questions · 1 h"}
+::
+
+::carte-lien{to="/cours/a1/mathematiques-ingenieur/controles/controle-2" titre="Contrôle blanc n° 2" description="Table de vérité, négation et ordre des quantificateurs, récurrence et analyse-synthèse, base 2, exponentiation rapide, critère par 11, fraction irréductible, diophantienne et PPCM" type="exercices" meta="14 questions · 1 h"}
+::
+
 ## Emporter mes résultats
 
 ::export-resultats

@@ -16,12 +16,12 @@ au bout de N questions : elle se termine quand les N **places** sont acquises.
 Les deux modes gardent leur mémoire séparément : un QCM écrit dans
 `qcm_tentative`, une séance de quiz dans `quiz_session`.
 
-## La banque : 1241 questions, aucune écrite pour le quiz
+## La banque : 1270 questions, aucune écrite pour le quiz
 
 Le quiz **n'a pas de questions à lui**. Il tire dans celles qui existent déjà :
 les exercices du TD, les fiches d'entraînement, les révisions, le cours et le QCM
-de contenu. Sur les 1887 questions du site, **1241** sont exploitables — celles qui portent
-une lettre attendue et au moins deux propositions. Les **646** autres sont des
+de contenu. Sur les 1948 questions du site, **1270** sont exploitables — celles qui portent
+une lettre attendue et au moins deux propositions. Les **678** autres sont des
 questions ouvertes, des tables de vérité, des champs à remplir ou des commandes
 à taper (322 dans les ateliers de Docker), qui se corrigent sur leur fiche :
 une file qui doit savoir si la réponse était juste ne peut rien en faire — pas
@@ -94,7 +94,7 @@ par question, **de quoi la choisir et la classer, jamais de quoi la poser**.
 L'ensemble se charge une fois en mémoire ; les énoncés, eux, ne sont jamais mis
 en cache.
 
-Le relevé porte les **1887** questions du site et non les seules 1241 du quiz. Le
+Le relevé porte les **1948** questions du site et non les seules 1270 du quiz. Le
 champ `interrogeable` fait le tri, et la banque n'est que la part vraie de ce
 champ. C'est la progression par domaine qui a demandé cet élargissement — elle
 compte aussi les questions ouvertes, sans quoi le total d'un chapitre ne
@@ -119,11 +119,11 @@ console.log(n, t);
 Attendu aujourd'hui, les chapitres désignés par leur chemin :
 
 ```
-1241 {
-  '/cours/a1/mathematiques-ingenieur/logique-et-raisonnements': 113,
-  '/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques': 42,
+1270 {
+  '/cours/a1/mathematiques-ingenieur/logique-et-raisonnements': 119,
+  '/cours/a1/mathematiques-ingenieur/raisonnements-mathematiques': 44,
   '/cours/a1/mathematiques-ingenieur/arithmetique': 46,
-  '/cours/a1/mathematiques-ingenieur/nombres-premiers-entre-eux': 41,
+  '/cours/a1/mathematiques-ingenieur/nombres-premiers-entre-eux': 62,
   '/cours/a1/remise-a-niveau-maths/trigonometrie': 63,
   '/cours/a1/remise-a-niveau-maths/fonctions-variable-reelle': 109,
   '/cours/a1/remise-a-niveau-maths/fonctions-usuelles': 38,
@@ -221,7 +221,7 @@ par construction, et une question sans rappel se rattache au **titre de niveau 2
 qui la précède dans sa propre page** — ce qui est précisément la section dont
 elle parle, puisqu'un contrôle express est écrit sous le cours qu'il vérifie.
 
-Le relevé donne aujourd'hui **210 cases pour 1241 questions**, et chaque chapitre
+Le relevé donne aujourd'hui **210 cases pour 1270 questions**, et chaque chapitre
 est couvert sans reste :
 
 | Chapitre | Cases | Questions |
@@ -230,10 +230,10 @@ est couvert sans reste :
 | Fonctions d'une variable réelle | 6 | 109 |
 | Fonctions usuelles | 8 | 38 |
 | Nombres complexes | 8 | 102 |
-| Logique propositionnelle (maths pour l'ingénieur) | 11 | 113 |
-| Raisonnements mathématiques (maths pour l'ingénieur) | 8 | 42 |
+| Logique propositionnelle (maths pour l'ingénieur) | 11 | 119 |
+| Raisonnements mathématiques (maths pour l'ingénieur) | 8 | 44 |
 | Divisibilité et congruences (maths pour l'ingénieur) | 7 | 46 |
-| Nombres premiers entre eux (maths pour l'ingénieur) | 8 | 41 |
+| Nombres premiers entre eux (maths pour l'ingénieur) | 8 | 62 |
 | Introduction aux réseaux (réseaux et protocoles) | 8 | 58 |
 | Adressage et routage IP (réseaux et protocoles) | 10 | 101 |
 | La planification réseau (réseaux et protocoles) | 5 | 30 |
@@ -537,7 +537,7 @@ QUIZ_BASE=http://localhost:3210 NUXT_CODE_INSCRIPTION=essai pnpm verif:quiz
 
 Ce que le script établit, et qui vaut d'être relu avant de toucher au mode :
 
-- 1241 questions dans la banque, rangées par matière puis sur trente-sept
+- 1270 questions dans la banque, rangées par matière puis sur trente-sept
   chapitres désignés par leur chemin et 210 sections de cours, chaque chapitre couvert
   **sans reste** et sans intitulé en double ;
 - la bonne réponse n'est pas dans la charge utile d'une question ;
