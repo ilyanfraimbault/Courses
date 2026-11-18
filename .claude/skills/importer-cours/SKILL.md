@@ -1,6 +1,6 @@
 ---
 name: importer-cours
-description: Importer un cours dans le site à partir de ses PDF (souvent écrits en LaTeX) ou de ses sources .tex — cours, TD, corrigés, annales. Produit les fiches Markdown/MDC du site (cours, exercices, entraînement), les pages d'index de la matière et du chapitre, vérifie chaque réponse par le calcul, passe le contrôle du contenu, et ouvre une PR à relire. À utiliser dès qu'on dépose un PDF de cours ou de TD, qu'on demande « ajoute ce chapitre », « importe ce cours », « mets ce TD sur le site », ou qu'une nouvelle matière arrive.
+description: Importer un cours dans le site à partir de ses PDF (souvent écrits en LaTeX) ou de ses sources .tex — cours, TD, corrigés, annales. Produit les fiches Markdown/MDC du site (cours, exercices, entraînement), les pages d'index de la matière et du chapitre, vérifie chaque réponse par le calcul, passe le contrôle du contenu, et ouvre une PR à relire. À utiliser dès qu'on dépose un PDF de cours ou de TD, qu'on joint des PDF en demandant « ajoute ce cours », « ajoute ce chapitre », « importe ce cours », « mets ce TD sur le site », ou qu'une nouvelle matière arrive.
 ---
 
 # Importer un cours
@@ -57,9 +57,14 @@ doubler).
 
 ### 0.3 Faire l'inventaire des documents
 
-Les documents arrivent d'ordinaire dans `sources/` à la racine (ignoré par git :
-les PDF des professeurs ne se versionnent pas), ou en pièces jointes. Ouvrir les
-**premières pages** de chacun et le classer : cours, TD / feuille d'exercices,
+Les documents arrivent **dans la conversation** : la personne joint ses PDF et
+écrit « ajoute ce cours ». Selon l'outil, ils arrivent avec leur chemin sur le
+disque (souvent hors du dépôt, `~/Downloads/…`) — on les lit alors par ce chemin,
+sur place — ou seulement en pièce jointe, et on les lit tels quels. Ils ne
+**s'écrivent jamais dans le dépôt** : les PDF des professeurs ne se versionnent
+pas. S'il faut une copie sur le disque (pour `pdftotext`), elle va dans
+`sources/`, ignoré par git. Un dossier entier de documents peut aussi être
+désigné par son chemin. Ouvrir les **premières pages** de chacun et le classer : cours, TD / feuille d'exercices,
 corrigé, TP, annale ou sujet de contrôle, diapos, formulaire. En retenir les
 titres tels que le prof les écrit et le plan du cours : c'est d'eux que viennent
 les noms proposés à l'étape suivante.
@@ -139,7 +144,8 @@ la PR.
   figures et les tableaux. C'est la lecture de référence.
 - `pdftotext -layout fichier.pdf -` en complément, pour chercher un mot ou
   compter les exercices — jamais pour recopier une formule : il aplatit les
-  fractions, perd les indices et invente des espaces.
+  fractions, perd les indices et invente des espaces. Un PDF joint sans chemin
+  n'y a pas accès : s'en passer, c'est un complément.
 - Si l'utilisateur a les **sources `.tex`**, les demander : elles valent mieux
   que tout. Développer alors les macros maison (`\R`, `\dx`…) — KaTeX ne connaît
   pas `\newcommand` du document.

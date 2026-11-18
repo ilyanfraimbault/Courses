@@ -12,8 +12,8 @@ pnpm dev
 
 ## Contribuer
 
-Tu as les documents d'un cours qui manque ? Dépose-les dans `sources/`, demande
-à Claude Code de l'importer, réponds à ses questions : il ouvre la PR. Tout est
+Tu as les documents d'un cours qui manque ? Envoie les PDF à Claude Code dans
+le dépôt avec « ajoute ce cours », réponds à ses questions : il ouvre la PR. Tout est
 dans **[CONTRIBUTING.md](CONTRIBUTING.md)**. Seule la propriétaire du dépôt
 fusionne.
 

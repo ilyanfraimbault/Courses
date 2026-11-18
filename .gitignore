@@ -36,6 +36,7 @@ quiz-*.png
 # une fois, pas des fichiers du dépôt.
 quiz-*.png
 
-# Les PDF et sources .tex des professeurs, déposés pour un import : on
-# versionne les fiches qu'on en tire, jamais les documents eux-mêmes.
+# Les PDF et sources .tex des professeurs arrivent dans la conversation ; si
+# l'import en demande une copie sur disque, elle va ici. On versionne les
+# fiches qu'on en tire, jamais les documents eux-mêmes.
 /sources/
