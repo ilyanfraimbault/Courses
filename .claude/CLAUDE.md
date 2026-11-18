@@ -44,8 +44,10 @@ gh repo view ilyanfraimbault/Courses --json viewerPermission -q .viewerPermissio
   `BANQUE`) ne se touchent pas : la propriétaire les recalcule à la fusion.
   Voir `CONTRIBUTING.md`.
 
-Les PDF des professeurs se déposent dans `sources/`, ignoré par git : on
-versionne les fiches, jamais les documents.
+Les PDF des professeurs arrivent dans la conversation (« ajoute ce cours »,
+pièces jointes) et ne s'écrivent jamais dans le dépôt : on versionne les
+fiches, jamais les documents. Une copie sur disque, s'il en faut une, va dans
+`sources/`, ignoré par git.
 
 ## Les invariants à ne pas casser
 

@@ -23,13 +23,14 @@ cp .env.example .env
 
 **À chaque cours :**
 
-1. Dépose les PDF dans un dossier `sources/` à la racine du dépôt. Il est
-   ignoré par git : les documents des profs ne sont jamais versionnés, seules
-   les fiches qu'on en tire le sont.
-2. Ouvre Claude Code dans le dépôt et demande-lui, simplement :
+1. Ouvre Claude Code dans le dossier `Courses`.
+2. Envoie-lui les PDF du chapitre (glisse-les dans la conversation) avec,
+   simplement :
 
-   > Importe le cours qui est dans `sources/`.
+   > Ajoute ce cours.
 
+   Les documents des profs ne sont jamais versionnés : seules les fiches qu'on
+   en tire le sont.
 3. Réponds à ses questions. Le skill `importer-cours` lui fait vérifier avec toi,
    avant d'écrire quoi que ce soit :
    - que tu as fourni **toutes** les pièces du chapitre (le corrigé du TD
