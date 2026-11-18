@@ -304,6 +304,11 @@ champs:
 - La comparaison ignore la casse et les espaces, et lit une adresse IPv4 octet
   par octet : `192.168.010.064` vaut `192.168.10.64`. Rien d'autre n'est
   deviné — une unité acceptée s'écrit dans la liste (`['50', '50Mb/s']`).
+- `lignes: 3` : une réponse qui s'écrit sur plusieurs lignes (ce qu'affiche un
+  programme, un nombre par ligne) prend une zone de texte de cette hauteur.
+  Les sauts de ligne comptent comme des espaces ; la première écriture de
+  `attendu`, montrée une fois trouvée, s'écrit alors entre guillemets doubles
+  avec ses `\n` (`["2\n3\n6", '2 3 6']`).
 - Un nombre entre apostrophes (`'30'`) : sans elles, le YAML en fait un entier,
   ce qui marche, mais `'08'` deviendrait 8.
 - **Calculer les valeurs par programme** (`python3 -I` et le module

@@ -18,6 +18,12 @@ interface Champ {
   attendu: string | string[]
   /** Le gabarit grisé dans le champ vide : « x.x.x.x ». */
   aide?: string
+  /**
+   * Une réponse qui s'écrit sur plusieurs lignes — ce qu'affiche un programme,
+   * un nombre par ligne. Le champ devient une zone de texte de cette hauteur,
+   * où Entrée revient à la ligne et Ctrl/⌘ + Entrée vérifie.
+   */
+  lignes?: number
 }
 
 const props = defineProps<{
@@ -116,8 +122,28 @@ function habillage(i: number) {
         <label
           :for="`${prefixe}-${i}`"
           class="text-sm text-muted"
+          :class="{ 'sm:self-start sm:pt-1.5': champ.lignes }"
         >{{ champ.libelle }}</label>
+        <UTextarea
+          v-if="champ.lignes"
+          :id="`${prefixe}-${i}`"
+          :model-value="valeur(i)"
+          :placeholder="champ.aide"
+          :disabled="trouvee"
+          :rows="champ.lignes"
+          :maxrows="champ.lignes"
+          :color="fausses.has(i) ? 'error' : trouvee ? 'success' : 'primary'"
+          :highlight="fausses.has(i) || trouvee"
+          :ui="{ base: `font-mono resize-none ${habillage(i)}` }"
+          autocomplete="off"
+          spellcheck="false"
+          class="w-full"
+          @update:model-value="poser(i, String($event ?? ''))"
+          @keydown.enter.ctrl.prevent="verifier"
+          @keydown.enter.meta.prevent="verifier"
+        />
         <UInput
+          v-else
           :id="`${prefixe}-${i}`"
           :model-value="valeur(i)"
           :placeholder="champ.aide"
