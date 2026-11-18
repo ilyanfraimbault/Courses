@@ -6,11 +6,11 @@ matiere: Structures de données et algorithmique
 icone: i-lucide-binary
 ---
 
-Le cours tient en trois jeux de diapos, chacun suivi d'un TP. Chacun devient ici un chapitre : une **fiche de cours** qui en garde tout le contenu, chaque notion suivie d'un exemple traité et d'un contrôle express ; une **fiche de TP** qui reprend le sujet question par question, avec le code des solutions — compilé et testé — et des questions qui se corrigent sur ce que les mesures doivent montrer ; et un **entraînement** écrit pour le site.
+Le cours tient en trois parties, chacune suivie d'un TP. Chacun devient ici un chapitre : une **fiche de cours** qui en garde tout le contenu, chaque notion suivie d'un exemple traité et d'un contrôle express ; une **fiche de TP** qui reprend le sujet question par question, avec le code des solutions — compilé et testé — et des questions qui se corrigent sur ce que les mesures doivent montrer ; et un **entraînement** écrit pour le site.
 
 Un quatrième chapitre reprend le **contrôle d'exemple** du professeur, corrigé, avec un entraînement sur son modèle.
 
-Là où une diapo ou le corrigé se trompe (un code qui ne compile pas, un parcours mal annoncé, une case de table de hachage), la fiche le signale.
+Là où le corrigé du contrôle se trompe (une case de table de hachage, une question sans bonne réponse), la fiche le signale.
 
 ## Listes, piles et files
 

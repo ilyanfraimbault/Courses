@@ -7,7 +7,7 @@ ordre: 3
 icone: i-lucide-hash
 ---
 
-Le troisième jeu de diapos, en deux parties. La première construit la table de hachage : fonction de hachage, collisions, adressage fermé et ses seaux, adressage ouvert avec probing linéaire, quadratique et double hashing, recherche et pierre tombale, temps d'accès et attaque HashDos, et les tables des vrais langages. La seconde montre ce que coûte la récursion — la pile, de taille limitée — et comment s'en passer : une variable pour une récursion linéaire, sa propre pile pour un arbre. Le TP fait planter un vérificateur de parenthèses récursif, puis le corrige.
+Le troisième cours, en deux parties. La première construit la table de hachage : fonction de hachage, collisions, adressage fermé et ses seaux, adressage ouvert avec probing linéaire, quadratique et double hashing, recherche et pierre tombale, temps d'accès et attaque HashDos, et les tables des vrais langages. La seconde montre ce que coûte la récursion — la pile, de taille limitée — et comment s'en passer : une variable pour une récursion linéaire, sa propre pile pour un arbre. Le TP fait planter un vérificateur de parenthèses récursif, puis le corrige.
 
 ::carte-lien{to="/cours/a1/structures-donnees-algorithmique/tables-de-hachage-et-recursion/cours" titre="Le cours" description="Dix sections, chacune avec un exemple traité et un contrôle express" type="cours" meta="14 questions"}
 ::
