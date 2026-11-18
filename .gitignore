@@ -35,3 +35,7 @@ quiz-*.png
 # Captures produites par `pnpm verif:quiz:rendu` : des témoins qu'on regarde
 # une fois, pas des fichiers du dépôt.
 quiz-*.png
+
+# Les PDF et sources .tex des professeurs, déposés pour un import : on
+# versionne les fiches qu'on en tire, jamais les documents eux-mêmes.
+/sources/

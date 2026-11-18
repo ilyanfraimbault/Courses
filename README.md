@@ -10,6 +10,13 @@ pnpm install
 pnpm dev
 ```
 
+## Contribuer
+
+Tu as les documents d'un cours qui manque ? Dépose-les dans `sources/`, demande
+à Claude Code de l'importer, réponds à ses questions : il ouvre la PR. Tout est
+dans **[CONTRIBUTING.md](CONTRIBUTING.md)**. Seule la propriétaire du dépôt
+fusionne.
+
 ## Documentation
 
 **[.claude/CLAUDE.md](.claude/CLAUDE.md)** — le projet, ses invariants, la façon
@@ -24,7 +31,7 @@ Pour l'usage courant :
 
 - [docs/contenu.md](docs/contenu.md) — la collection, le comptage des questions,
   l'import d'un ancien export, et pourquoi `remark-mdc` est épinglé.
-- [docs/quiz.md](docs/quiz.md) — le mode quiz : d'où viennent ses 432 questions,
+- [docs/quiz.md](docs/quiz.md) — le mode quiz : d'où viennent ses 1379 questions,
   comment la file rejoue une place ratée, et ce qu'il n'écrit pas.
 - [docs/comptes.md](docs/comptes.md) — comptes, mots de passe, isolation des
   données entre utilisateurs.

@@ -23,6 +23,30 @@ Les chemins d'URL sont **identiques** à ceux du portfolio (`/cours/a1/…`), et
 n'est pas un hasard : c'est ce qui rend la redirection triviale et l'import des
 anciens résultats possible sans conversion.
 
+## Qui travaille ici
+
+Le dépôt est **public** et reçoit les cours de toute la classe, le plus souvent
+par l'agent d'un camarade. Avant d'agir, savoir pour qui :
+
+```bash
+gh repo view ilyanfraimbault/Courses --json viewerPermission -q .viewerPermission
+```
+
+- `ADMIN` : la propriétaire. Elle seule fusionne.
+- Toute autre réponse : un **contributeur**. Il travaille depuis son fork et
+  ouvre une PR vers `ilyanfraimbault/Courses` ; il ne pousse jamais sur
+  `master`. Ce qu'il apporte, c'est du contenu : un nouveau cours passe
+  **toujours** par le skill `importer-cours`, qui commence par un entretien
+  (pièces fournies, nom de la matière et du chapitre, fiches à ajouter) avant
+  d'écrire une ligne. Du code hors de `content/` se demande d'abord à la
+  personne et s'annonce en tête de la PR — la fusion déploie en production. Les
+  totaux du site (la ligne « Aujourd'hui » plus bas, `docs/contenu.md`,
+  `BANQUE`) ne se touchent pas : la propriétaire les recalcule à la fusion.
+  Voir `CONTRIBUTING.md`.
+
+Les PDF des professeurs se déposent dans `sources/`, ignoré par git : on
+versionne les fiches, jamais les documents.
+
 ## Les invariants à ne pas casser
 
 Ils ont chacun coûté quelque chose. Les comprendre avant de les contourner.
@@ -167,9 +191,12 @@ est appliqué en base, pas au client. Une règle vit à un seul endroit.
 requête. Seules les routes `/api/admin/*` lisent au delà du compte connecté, et
 leur première ligne est `exigerAdministrateur(event)`. Voir `docs/comptes.md`.
 
-**Lire demande un compte accepté.** Les cours sont ceux des professeurs : on les
-partage avec la classe, pas avec quiconque tient l'adresse. La garde est au
-serveur, sur les **données** — `server/middleware/contenu.ts` refuse
+**Lire demande un compte accepté.** Le site est celui de la classe : quiz,
+progression et révisions ne s'ouvrent qu'à un compte accepté. Le **texte** des
+fiches, lui, n'est plus secret : le dépôt est public depuis novembre 2026, pour
+que la classe y importe ses cours (voir `CONTRIBUTING.md`). La garde ne protège
+donc plus la confidentialité des cours, mais elle garde le site — et l'image
+GHCR reste privée. Elle est au serveur, sur les **données** — `server/middleware/contenu.ts` refuse
 `/__nuxt_content/**` sans session (401) et sans accès (403), ce qui ferme d'un
 coup fiches, navigation, recherche et dump de la base. Ce dump ne doit
 **jamais** être prérendu : servi en fichier statique, il passerait avant le
