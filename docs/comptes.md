@@ -94,8 +94,10 @@ qu'une violation de clé étrangère ou une 500.
 ## Lire demande un compte accepté
 
 Les fiches se lisaient d'abord sans session, héritage du portfolio. Elles ne
-le peuvent plus : ce sont les cours des professeurs, qu'on partage avec la
-classe et pas avec quiconque tombe sur l'adresse. Seules `/connexion` et
+le peuvent plus : le site est celui de la classe. Depuis que le dépôt est
+public (novembre 2026, pour que la classe y contribue), le texte des fiches se
+lit aussi sur GitHub : la garde ne cache plus les cours, elle réserve le site —
+quiz, progression, comptes — à la classe. Seules `/connexion` et
 `/inscription` s'ouvrent sans compte, et `/demande` avec un compte sans accès.
 
 La garde est posée **sur les données**, pas sur les pages.

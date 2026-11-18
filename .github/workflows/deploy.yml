@@ -78,8 +78,9 @@ jobs:
       # On envoie le **contenu** du compose, pas un lien vers lui.
       #
       # `hostinger/deploy-on-vps` transmet une URL github.com/…/blob/<sha>/… que
-      # l'API Hostinger va chercher elle-même, anonymement. Ce dépôt est privé :
-      # cette URL ne rend pas le fichier, elle rend une page de connexion. Une
+      # l'API Hostinger va chercher elle-même, anonymement. Le dépôt était privé :
+      # cette URL ne rendait pas le fichier, mais une page de connexion. Public
+      # depuis, il reste plus sûr d'envoyer le contenu même du commit déployé. Une
       # clé de déploiement sur le VPS n'y changerait rien, puisque ce n'est pas
       # le VPS qui télécharge. Le champ `content` de l'API accepte aussi le YAML
       # brut — c'est ce qu'on lui donne, depuis la copie déjà extraite ici.

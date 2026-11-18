@@ -17,19 +17,120 @@ syntaxe exacte des composants est dans `syntaxe.md`, à côté de ce fichier.
 
 ## 0. Ce qu'on importe, et où
 
-Établir avant d'écrire une ligne :
+Rien ne s'écrit avant que ce plan soit établi **et confirmé** par la personne
+qui importe. Le dépôt est public et reçoit les cours de toute la classe : la
+plupart des imports viennent d'un camarade, par son propre agent, qui ne connaît
+ni les conventions du site ni ce que d'autres ont déjà importé. L'entretien
+ci-dessous est ce qui rend l'import « déposer les PDF, répondre à quelques
+questions, relire la PR ».
 
-- **l'année et la matière** : `content/cours/<annee>/<matiere>/` — `a1`, `a2`… et
-  un slug ASCII en minuscules (`physique-ondes`). Une matière nouvelle = un
-  dossier + un `index.md`, et une carte dans l'`index.md` de l'année. Rien à
-  déclarer ailleurs : `shared/utils/niveaux.ts` lit la hiérarchie dans le chemin ;
-- **le chapitre** : `N.slug/` — le préfixe numérique donne l'ordre et disparaît
-  de l'URL. Un `index.md` avec `title`, `description`, `ordre`, `icone` ;
-- **les documents** : cours seul ? TD ? corrigé du TD ? annales ? Le corrigé du
-  professeur fait foi sur nos propres calculs : s'il existe, le lire en entier.
+### 0.1 Qui importe
 
-Demander à l'utilisateur ce qui ne se déduit pas des documents (l'année, le nom
-qu'il donne à la matière). Pour le reste, trancher et le dire dans la PR.
+```bash
+gh api user --jq .login                                         # qui est connecté
+gh repo view ilyanfraimbault/Courses --json viewerPermission -q .viewerPermission
+```
+
+- `ADMIN` : c'est la propriétaire du dépôt. Branche locale, PR, et c'est elle
+  qui met à jour les comptes globaux (étape 5).
+- Autre chose (`READ`, ou `gh` non connecté) : c'est un **contributeur**. Il
+  travaille depuis un fork, ouvre sa PR vers `ilyanfraimbault/Courses`, et ne
+  touche pas aux comptes globaux. Voir `CONTRIBUTING.md` à la racine. Si `gh`
+  n'est pas connecté, le lui faire faire (`gh auth login`) avant la fin : la PR
+  en dépend.
+
+### 0.2 Ce qui existe déjà
+
+Avant de poser une question, regarder ce que le site a déjà, pour proposer au
+lieu de demander à l'aveugle :
+
+```bash
+ls content/cours/                       # les années
+ls content/cours/<annee>/               # les matières
+ls content/cours/<annee>/<matiere>/     # ses chapitres et leur numérotation
+gh pr list --repo ilyanfraimbault/Courses --state open --json number,title,headRefName
+```
+
+Une PR ouverte sur le même chapitre, c'est quelqu'un qui l'importe déjà : le
+dire tout de suite et demander s'il faut continuer (compléter plutôt que
+doubler).
+
+### 0.3 Faire l'inventaire des documents
+
+Les documents arrivent d'ordinaire dans `sources/` à la racine (ignoré par git :
+les PDF des professeurs ne se versionnent pas), ou en pièces jointes. Ouvrir les
+**premières pages** de chacun et le classer : cours, TD / feuille d'exercices,
+corrigé, TP, annale ou sujet de contrôle, diapos, formulaire. En retenir les
+titres tels que le prof les écrit et le plan du cours : c'est d'eux que viennent
+les noms proposés à l'étape suivante.
+
+### 0.4 L'entretien
+
+Poser les questions avec l'outil de question (`AskUserQuestion`), **par salves
+de trois ou quatre au plus**, chacune avec des propositions concrètes tirées des
+documents — pas de question ouverte quand une réponse se devine. Mettre la
+proposition qu'on recommande en premier. Sans outil de question, les poser en
+texte, numérotées, une salve à la fois.
+
+**Salve 1 — les pièces.**
+
+- « J'ai reçu : `cours.pdf` (cours, 34 p.), `td3.pdf` (TD, 6 exercices). Est-ce
+  **tout** ce que le prof a donné pour ce chapitre ? » — *Oui, c'est tout* / *Il
+  manque des pièces, je les ajoute*. Citer ce qui manque d'ordinaire : le
+  corrigé du TD, l'énoncé du TP, une annale, les sources `.tex`.
+- Si un TD arrive sans corrigé : « Le prof a-t-il donné un corrigé, même une
+  photo du tableau ? » — le corrigé fait foi sur nos calculs, il vaut la peine
+  de le chercher.
+- S'il y a des diapos, le dire : elles serviront à recouper le cours, elles ne
+  deviendront pas une fiche.
+
+**Salve 2 — où ça va.** Une question par niveau, chacune formulée comme une
+confirmation :
+
+- « L'année est-elle **A1** (`a1`) ? »
+- Matière existante : « Ce chapitre va-t-il dans la matière existante
+  **« Réseaux et protocoles »** ? ». Matière nouvelle : « Le nom de la matière
+  est-il **« Structures de données et algorithmique »** ? (dossier
+  `structures-donnees-algorithmique`) » — le nom du prof, celui qu'on lit sur
+  l'emploi du temps, en proposition principale ; une variante plus courte en
+  seconde.
+- « Le chapitre est-il **« 3. Tables de hachage et récursion »** ? (dossier
+  `3.tables-de-hachage-et-recursion`) » — le numéro suit les chapitres déjà
+  présents, ou celui que le prof donne.
+- Si plusieurs documents pourraient faire une ou deux fiches : « Une fiche par
+  document, nommées comme le prof (`cours`, `td`) ? » — c'est la règle ; fondre
+  deux documents ne se fait que sur réponse explicite.
+
+**Salve 3 — ce qu'on ajoute au cours du prof.** En choix multiple, chaque option
+dite avec ce qu'elle coûte et apporte :
+
+- **une feuille d'entraînement** — des questions en paliers, de zéro au niveau
+  du TD, pour qui bloque sur le premier exercice ;
+- **des révisions** — l'essentiel du chapitre en questions courtes ;
+- **un QCM de chapitre** — vingt questions mêlées, pour s'évaluer d'un coup ;
+- **le contrôle corrigé** — si une annale ou un sujet d'exemple a été fourni ;
+- **rien de plus** — seulement les documents du prof.
+
+Et, si le doute existe : « Le contrôle est-il en **anglais** ? » (les questions
+suivent alors la langue de l'examen, comme en ethical hacking).
+
+### 0.5 Le récapitulatif
+
+Avant d'écrire, montrer l'arborescence qui va être créée, et la faire
+confirmer :
+
+```
+content/cours/a1/structures-donnees-algorithmique/
+├── index.md                 (nouvelle matière, + carte dans a1/index.md)
+└── 3.tables-de-hachage-et-recursion/
+    ├── index.md
+    ├── cours.md             ← cours.pdf
+    ├── tp.md                ← tp3.pdf, corrigé tp3-corrige.pdf
+    └── entrainement.md      (ajoutée, demandée)
+```
+
+Ce qu'on a tranché sans demander (une icône, l'ordre des sections) se dit dans
+la PR.
 
 ## 1. Lire le PDF
 
@@ -125,7 +226,11 @@ format parmi d'autres :
   dresse ;
 - **quand un cours demande un geste qu'aucun composant ne sait corriger, on écrit
   le composant** (`app/components/content/`), puis on le documente dans
-  `syntaxe.md`.
+  `syntaxe.md`. Pour un contributeur, c'est permis mais **jamais en silence** :
+  la fusion déploie en production, et du code se relit autrement que du
+  contenu. Le demander d'abord à la personne (« aucun composant ne sait corriger
+  un tableau de Karnaugh : j'en écris un ? »), puis l'annoncer en tête de la PR,
+  avec les fichiers touchés hors de `content/`.
 
 Pour les choix à propositions :
 
@@ -202,6 +307,14 @@ pas au calcul (raisonnement, lecture de figure) iront dans la PR.
 
 ## 4. Contrôler
 
+Sur un clone neuf — c'est le cas d'un contributeur —, installer d'abord : Node 24
+(`node:sqlite` en fait partie) et pnpm.
+
+```bash
+pnpm install
+cp .env.example .env      # les valeurs d'exemple suffisent en local
+```
+
 ```bash
 NUXT_CODE_INSCRIPTION=code-de-classe pnpm dev            # relève et rend le contenu ; --rendu se crée un compte
 node scripts/verifier-contenu.mjs /cours/<annee>/<matiere> --rendu
@@ -230,7 +343,8 @@ question se corrige. Vérifier la chose, pas un substitut.
 ## 5. Livrer
 
 Une branche `contenu/<matiere>-<chapitre>`, des commits en français qui disent
-pourquoi, et une PR qui donne à l'utilisateur de quoi relire vite :
+pourquoi, et une PR qui donne à la relectrice de quoi relire vite. Le corps de la
+PR suit `.github/pull_request_template.md` :
 
 - les fiches créées, avec leurs comptes (sections, questions, dont au quiz) ;
 - « N questions vérifiées au calcul sur M » et la liste de celles qui ne l'ont
@@ -239,6 +353,26 @@ pourquoi, et une PR qui donne à l'utilisateur de quoi relire vite :
   (exemples, entraînement) ;
 - la sortie de `verifier-contenu`.
 
-Mettre à jour les chiffres qui en dépendent : `BANQUE` dans
+**Propriétaire** : mettre à jour les chiffres qui en dépendent — `BANQUE` dans
 `scripts/verifier-quiz.mjs`, les comptes attendus de `docs/contenu.md`, et la
 ligne « Aujourd'hui : N questions » de `.claude/CLAUDE.md`.
+
+**Contributeur** : ne **pas** toucher à ces chiffres. Plusieurs PR de
+camarades sont ouvertes en même temps ; si chacune réécrivait le total, elles
+entreraient toutes en conflit les unes avec les autres. Donner plutôt, dans la
+PR, ce que l'import ajoute (« +84 questions, dont +52 au quiz ») : la
+propriétaire recalcule les totaux à la fusion. Puis, depuis le fork :
+
+```bash
+gh repo fork ilyanfraimbault/Courses --clone=false    # crée le fork, ou dit qu'il existe
+git remote add fork "https://github.com/$(gh api user --jq .login)/Courses.git" 2>/dev/null
+git push -u fork contenu/<matiere>-<chapitre>
+gh pr create --repo ilyanfraimbault/Courses --base master \
+  --head "$(gh api user --jq .login):contenu/<matiere>-<chapitre>" \
+  --title "contenu(<matiere>) : <ce que la PR apporte>" --body-file <corps.md>
+```
+
+Si le clone vient déjà du fork (`origin` pointe sur lui), `git push -u origin`
+suffit. Ne jamais pousser sur `master`, ni ouvrir la PR vers le fork lui-même.
+Seule la propriétaire fusionne : la PR reste ouverte jusqu'à sa relecture, et
+ses remarques se traitent par de nouveaux commits sur la même branche.

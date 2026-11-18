@@ -45,8 +45,8 @@ plutôt que de sauter.
 L'action `hostinger/deploy-on-vps` ne téléverse pas le fichier compose : elle
 transmet à l'API une **URL** `github.com/<dépôt>/blob/<sha>/compose.yaml`, que
 l'API Hostinger va chercher elle-même, sans authentification. Sur un dépôt privé
-cette URL ne rend pas le fichier mais une page de connexion, et le déploiement
-échoue.
+— ce qu'était celui-ci jusqu'en novembre 2026 — cette URL ne rend pas le
+fichier mais une page de connexion, et le déploiement échoue.
 
 Une clé de déploiement SSH sur le VPS n'y changerait rien : ce n'est pas le VPS
 qui télécharge, c'est l'infrastructure de Hostinger, en HTTPS anonyme.
@@ -58,8 +58,8 @@ tierce.
 
 ## Amorçage, à faire une fois
 
-**Autoriser le VPS à tirer l'image.** Le paquet GHCR hérite de la visibilité
-privée du dépôt. Avec un jeton personnel de portée `read:packages` seulement :
+**Autoriser le VPS à tirer l'image.** Le paquet GHCR est privé — il l'est resté
+quand le dépôt est devenu public : leurs visibilités sont indépendantes. Avec un jeton personnel de portée `read:packages` seulement :
 
 ```bash
 echo "$PAT" | docker login ghcr.io -u ilyanfraimbault --password-stdin
@@ -74,8 +74,7 @@ suite à la CI :
 
 ```bash
 mkdir -p /docker/courses && cd /docker/courses
-# le dépôt est privé : copier le compose depuis un poste qui y a accès
-vim docker-compose.yml
+curl -fsSLo docker-compose.yml https://raw.githubusercontent.com/ilyanfraimbault/Courses/master/compose.yaml
 vim .env          # le même contenu que COURSES_ENV_FILE, plus IMAGE_TAG=latest
 docker compose up -d
 docker compose logs -f caddy

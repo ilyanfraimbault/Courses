@@ -9,6 +9,12 @@ name: journaux
 # L'API ne rend que les 300 dernières lignes, tous services confondus, et une
 # page chargée en produit des dizaines. Le résumé dit donc toujours quelle
 # fenêtre il couvre : « rien trouvé » ne vaut que pour cette fenêtre-là.
+#
+# Le dépôt est public, donc les journaux d'exécution aussi : n'importe qui lit
+# ce que ce job imprime. L'adresse IP n'y paraît que tronquée (/24 en IPv4,
+# /48 en IPv6) — assez pour distinguer le réseau du lycée de celui de la
+# maison, pas pour désigner une personne —, et une ligne brute de Caddy n'est
+# jamais recopiée telle quelle.
 on:
   workflow_dispatch:
     inputs:
@@ -55,6 +61,10 @@ jobs:
           # message de démarrage) est ignorée plutôt que de casser la lecture.
           # Cookie et Authorization sont caviardés par Caddy lui-même.
           jq -r --arg filtre "${FILTRE:-/api/}" --arg methodes "${METHODES}" '
+            def tronquer:
+              if . == null then "-"
+              elif test(":") then (split(":")[0:3] | join(":")) + "::/48"
+              else (split(".")[0:3] | join(".")) + ".0/24" end;
             ($methodes | split(",") | map(ascii_upcase | select(length > 0))) as $m
             | .[] | select(.service | test("caddy")) | .entries[]
             | (.line | try fromjson catch null) as $l
@@ -65,16 +75,20 @@ jobs:
                 $l.request.method,
                 ($l.status | tostring),
                 $l.request.uri,
-                ($l.request.client_ip // $l.request.remote_ip),
+                (($l.request.client_ip // $l.request.remote_ip) | tronquer),
                 ($l.request.headers.Referer[0] // "-"),
                 ($l.request.headers["User-Agent"][0] // "-") ]
             | join("  ")
           ' <<< "$corps" > retenues.txt
 
           if [ -s retenues.txt ]; then
-            echo "Requêtes retenues (heure, méthode, statut, URI, IP, page d'origine, navigateur) :"
+            echo "Requêtes retenues (heure, méthode, statut, URI, réseau, page d'origine, navigateur) :"
             cat retenues.txt
           else
-            echo "Aucune requête retenue dans cette fenêtre. Les dernières lignes brutes de Caddy :"
-            jq -r '.[] | select(.service | test("caddy")) | .entries[-5:][] | "\(.timestamp)  \(.line)"' <<< "$corps"
+            echo "Aucune requête retenue dans cette fenêtre. Les dernières requêtes vues par Caddy :"
+            jq -r '.[] | select(.service | test("caddy")) | .entries[-5:][]
+              | (.line | try fromjson catch null) as $l
+              | "\(.timestamp)  " + (if $l != null and $l.request != null
+                  then "\($l.request.method) \($l.status) \($l.request.uri)"
+                  else "(ligne non JSON, non recopiée)" end)' <<< "$corps"
           fi
