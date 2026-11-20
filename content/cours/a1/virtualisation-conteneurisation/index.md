@@ -4,6 +4,7 @@ description: Docker par la pratique, atelier par atelier — des premières comm
 annee: A1
 matiere: Virtualisation et conteneurisation
 icone: i-simple-icons-docker
+programme: s5-virtualisation-conteneurisation
 ---
 
 Le cours suit la formation **Docker par la pratique** de Microlinux, atelier après atelier, dans son ordre : chaque atelier est un chapitre. Les ateliers d'installation (préparer une VM, installer Docker sous Red Hat) n'y sont pas — on commence aux commandes de base.

@@ -17,13 +17,12 @@ nourrir la séance du jour. La clôture est le geste qui manquait.
 
 Une clôture retire ce qui est clos de **ce qu'on obtient sans rien choisir** :
 
-- les révisions du jour et la dette de l'accueil ;
+- les révisions du jour et la dette ;
 - une séance de quiz ou un tirage de QCM lancés sur toute la matière ;
-- l'avancement de l'accueil, ses matières, « Reprendre ici » ;
 - « Mes domaines ».
 
 Elle ne retire rien de **ce qu'on coche à la main**. Un chapitre clos, coché
-dans le quiz ou dans la séance du jour, est pris en entier. C'est ce qui garde
+dans le quiz, est pris en entier. C'est ce qui garde
 la clôture sans détour : on retravaille un chapitre fini sans avoir à le
 rouvrir, et le geste « je coche ceci » ne se fait jamais contredire en silence.
 
@@ -42,11 +41,6 @@ Une question est close quand **sa fiche**, **le chapitre de son rappel de
 cours** ou **sa matière** l'est. Le chapitre ne se lit pas seulement dans le
 chemin de la fiche : une question du QCM final vit dans la fiche du QCM mais
 relève de la trigonométrie, et clore la trigonométrie l'emporte avec elle.
-
-L'accueil, lui, compte par fiche : il retire les fiches dont le chemin est clos.
-Une question de QCM final rangée en trigonométrie y reste donc comptée tant que
-la fiche du QCM n'est pas close. L'écart est assumé : l'accueil n'a jamais
-compté autrement que par fiche.
 
 ## Où ça se voit
 
@@ -67,11 +61,10 @@ l'hydratation.
 
 ## La séance du jour, restreinte
 
-Sur l'accueil, « Choisir » ouvre le plan de la matière, case par case, avec ce
-que la séance peut y prendre **aujourd'hui** : « 2 à reprendre · 5 à revoir ·
-12 nouvelles ». Le catalogue compte pour cela, par section, les révisions dues
-(`aRevoir`, dans le fuseau de l'élève) et le neuf (`nouvelles`). Le choix vaut pour une séance et ne se retient pas : ce qui
-doit durer, c'est la clôture.
+L'accueil proposait de restreindre la séance du jour à quelques chapitres. Il ne
+porte plus de séance (voir `docs/revisions.md`) ; le catalogue garde ses comptes
+par section — révisions dues (`aRevoir`) et neuf (`nouvelles`) — pour la séance
+qui se lancera depuis la matière.
 
 ## Les routes
 

@@ -1,36 +1,25 @@
-interface CorpsControle {
-  titre?: unknown
-  matiere?: unknown
-  jour?: unknown
-  themes?: unknown
-  sections?: unknown
-}
-
 /**
- * Déclare un contrôle : un titre, une matière, une date, un programme.
- *
- * Tout est vérifié ici. Le programme se désigne dans la nomenclature du quiz —
- * chapitres et sections du cours — et chacune de ses parties doit exister dans
- * la matière : un contrôle ne mélange pas deux cours, pas plus qu'une séance.
+ * Planifier un contrôle : il apparaît dans le calendrier de tous ceux qu'il
+ * concerne. Tout est vérifié ici — la matière existe et le compte la voit, le
+ * programme reste dans son cours.
  */
 export default defineEventHandler(async (event) => {
   const uid = await idUtilisateur(event)
-  const corps = await readBody<CorpsControle>(event)
+  const db = useBase()
+  const l = lecteur(event, db, uid)
+  const corps = await readBody<Record<string, unknown>>(event) ?? {}
 
-  const titre = titreControle(corps?.titre)
-  const jour = jourControle(corps?.jour)
-  const banque = await chargerBanque(event)
-  const matiere = typeof corps?.matiere === 'string' ? corps.matiere : ''
-  if (!banque.matieres.has(matiere)) {
-    throw createError({ statusCode: 400, statusMessage: 'matière inconnue' })
-  }
-  const programme = programmeValide(banque, matiere, corps?.themes, corps?.sections)
+  const jour = jourControle(corps.jour)
+  const { matiere, parcours } = matiereEtParcours(await lireMatieres(event, db), l, corps.matiere, corps.parcours)
+  const titre = titreControle(corps.titre, matiere)
+  const programme = programmeControle(matiere, corps.programme)
+  const precisions = precisionsControle(corps.precisions)
 
   const maintenant = Date.now()
-  const resultat = useBase().prepare(`
-    INSERT INTO controle (utilisateur_id, titre, matiere, jour, programme, examen_blanc, note, bareme, cree_le, maj)
-    VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?)
-  `).run(uid, titre, matiere, jour, JSON.stringify(programme), maintenant, maintenant)
+  const resultat = db.prepare(`
+    INSERT INTO controle_classe (auteur_id, titre, matiere, jour, parcours, programme, precisions, cree_le, maj)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(uid, titre, matiere.code, jour, parcours, JSON.stringify(programme), precisions, maintenant, maintenant)
 
   setResponseStatus(event, 201)
   return { id: Number(resultat.lastInsertRowid) }

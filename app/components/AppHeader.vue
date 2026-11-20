@@ -8,6 +8,7 @@ const { loggedIn, user, clear } = useUserSession()
 const autorise = useAccesAccorde()
 const connexion = useConnexion()
 const route = useRoute()
+const { libelle: parcours, demande: changerParcours } = useProfil()
 
 /**
  * Seuls les deux lieux où l'on travaille restent dans la barre : le cours qu'on
@@ -30,13 +31,17 @@ const menuSansAcces = computed<DropdownMenuItem[][]>(() => [
 ])
 
 const menuComplet = computed<DropdownMenuItem[][]>(() => [
-  [{ type: 'label', label: user.value?.pseudo, icon: 'i-lucide-circle-user' }],
   [
-    { label: 'Mes contrôles', to: '/mes-controles', icon: 'i-lucide-calendar-check' },
+    { type: 'label', label: [user.value?.prenom, user.value?.nom].filter(Boolean).join(' ') || user.value?.pseudo, icon: 'i-lucide-circle-user' },
+    { label: 'Mon profil', icon: 'i-lucide-user-pen', onSelect: () => { changerParcours.value = true } }
+  ],
+  [
+    { label: 'Contrôles', to: '/controles', icon: 'i-lucide-calendar-check' },
     { label: 'Mes QCM', to: '/mes-qcm', icon: 'i-lucide-list-plus' },
     { label: 'Ma to-do', to: '/ma-to-do', icon: 'i-lucide-list-checks' }
   ],
   [
+    { label: 'Mes moyennes', to: '/mes-moyennes', icon: 'i-lucide-calculator' },
     { label: 'Mes domaines', to: '/mes-domaines', icon: 'i-lucide-target' },
     { label: 'Mes résultats', to: '/mes-resultats', icon: 'i-lucide-chart-line' }
   ],
@@ -75,8 +80,32 @@ async function deconnecter() {
       class="w-full"
     />
 
-    <template #title>
-      <span class="font-medium">{{ header?.title }}</span>
+    <!-- Le parcours, à côté du titre : il dit quelles matières le site montre.
+         Hors du lien du titre, pour qu'un clic ouvre le choix au lieu de
+         ramener à l'accueil. -->
+    <template #left>
+      <div class="flex items-center gap-2">
+        <ULink
+          :to="header?.to || '/'"
+          class="font-medium text-highlighted"
+        >
+          {{ header?.title }}
+        </ULink>
+        <ClientOnly>
+          <UBadge
+            v-if="autorise && parcours"
+            as="button"
+            type="button"
+            :label="parcours"
+            color="primary"
+            variant="subtle"
+            size="sm"
+            class="cursor-pointer"
+            title="Mon profil : parcours, nom"
+            @click="changerParcours = true"
+          />
+        </ClientOnly>
+      </div>
     </template>
 
     <template #right>

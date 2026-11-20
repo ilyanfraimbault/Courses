@@ -148,7 +148,7 @@ const PEREMPTION = import.meta.dev ? 5_000 : Number.POSITIVE_INFINITY
  */
 type RequeteCours = ReturnType<typeof queryCollection>
 
-function collectionCours(event: H3Event): RequeteCours {
+export function collectionCours(event: H3Event): RequeteCours {
   const interroger = queryCollection as (event: H3Event, collection: 'cours') => RequeteCours
   return interroger(event, 'cours')
 }

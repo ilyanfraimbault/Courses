@@ -4,6 +4,7 @@ description: Le cours d'algorithmique et de structures de données en C, chapitr
 annee: A1
 matiere: Structures de données et algorithmique
 icone: i-lucide-binary
+programme: s5-structures-donnees-algorithmique
 ---
 
 Le cours tient en trois parties, chacune suivie d'un TP. Chacun devient ici un chapitre : une **fiche de cours** qui en garde tout le contenu, chaque notion suivie d'un exemple traité et d'un contrôle express ; une **fiche de TP** qui reprend le sujet question par question, avec le code des solutions — compilé et testé — et des questions qui se corrigent sur ce que les mesures doivent montrer ; et un **entraînement** écrit pour le site.

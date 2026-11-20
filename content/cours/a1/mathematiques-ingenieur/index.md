@@ -4,6 +4,7 @@ description: Le cours de mathématiques de l'année, chapitre par chapitre, avec
 annee: A1
 matiere: Mathématiques pour l'ingénieur
 icone: i-lucide-drafting-compass
+programme: s5-mathematiques-ingenieur
 ---
 
 Chaque chapitre se décline en fiches, et chaque lien ci-dessous porte une pastille qui dit laquelle. Sous chaque question, les mêmes trois boutons, et aucun ne quitte la page : **Indice** et **Solution** se déplient sous la question, **Cours** ouvre le rappel visé dans un tiroir latéral. Une réponse est corrigée dès qu'on la donne : si elle est fausse, l'indice s'ouvre, et l'on retente autant qu'on veut.

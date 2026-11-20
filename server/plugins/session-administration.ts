@@ -1,6 +1,6 @@
 /**
- * Le navigateur apprend s'il parle à l'administrateur, et si son compte a
- * accès, à chaque lecture de la session, et non à la connexion : une session
+ * Le navigateur apprend s'il parle à l'administrateur, si son compte a accès
+ * et qui il est — prénom, nom, parcours —, à chaque lecture de la session, et non à la connexion : une session
  * scellée ne se réécrit pas, et un drapeau figé dedans survivrait au retrait du
  * rôle — ou manquerait à qui vient de recevoir l'accès, jusqu'à sa prochaine
  * connexion.
@@ -16,5 +16,9 @@ export default defineNitroPlugin(() => {
     const db = useBase()
     session.user!.acces = accesDuCompte(db, id) ?? 'aucun'
     session.user!.admin = estAdministrateur(event, db, id)
+    const profil = profilDuCompte(db, id)
+    session.user!.parcours = profil.parcours
+    session.user!.prenom = profil.prenom
+    session.user!.nom = profil.nom
   })
 })

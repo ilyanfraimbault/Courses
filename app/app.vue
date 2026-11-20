@@ -2,6 +2,7 @@
 import { fr } from '@nuxt/ui/locale'
 
 const { seo } = useAppConfig()
+const route = useRoute()
 
 // L'arbre complet, tel quel. La barre latérale n'en montre qu'une matière à la
 // fois (voir `useSommaire`) ; la recherche et les fils d'Ariane, eux, ont besoin
@@ -54,9 +55,11 @@ provide('navigation', navigation)
       </NuxtLayout>
     </UMain>
 
-    <AppFooter />
+    <!-- L'accueil tient dans l'écran, sans défiler : le pied de page n'y a pas sa place. -->
+    <AppFooter v-if="route.path !== '/'" />
 
     <ConnexionModale />
+    <ProfilFenetre />
 
     <ClientOnly>
       <LazyUContentSearch

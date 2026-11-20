@@ -149,7 +149,7 @@ export default defineEventHandler(async (event): Promise<VueAdministration> => {
   })
 
   parCompte<{ uid: number, n: number }>(`
-    SELECT utilisateur_id AS uid, COUNT(*) AS n FROM controle GROUP BY utilisateur_id
+    SELECT auteur_id AS uid, COUNT(*) AS n FROM controle_classe WHERE auteur_id IS NOT NULL GROUP BY auteur_id
   `, (u, l) => { u.controles = l.n })
 
   parCompte<{ uid: number, total: number, faites: number }>(`
@@ -171,7 +171,8 @@ export default defineEventHandler(async (event): Promise<VueAdministration> => {
       UNION ALL SELECT utilisateur_id, t FROM qcm_tentative
       UNION ALL SELECT q.utilisateur_id, c.t FROM qcm_compose_copie c JOIN qcm_compose q ON q.id = c.compose_id
       UNION ALL SELECT utilisateur_id, maj FROM qcm_compose
-      UNION ALL SELECT utilisateur_id, maj FROM controle
+      UNION ALL SELECT auteur_id, maj FROM controle_classe WHERE auteur_id IS NOT NULL
+      UNION ALL SELECT utilisateur_id, maj FROM note
       UNION ALL SELECT utilisateur_id, cree_le FROM todo
       UNION ALL SELECT utilisateur_id, fait_le FROM todo WHERE fait_le IS NOT NULL
     ) GROUP BY uid

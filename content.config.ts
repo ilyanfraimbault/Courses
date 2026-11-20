@@ -19,6 +19,11 @@ export default defineContentConfig({
         matiere: z.string().optional(),
         ordre: z.number().optional(),
         icone: z.string().optional(),
+        // Sur la page d'index d'une matière seulement : le code de la matière du
+        // programme de l'école qu'elle enseigne (« s5-ethical-hacking », voir
+        // `server/utils/programme.ts`). C'est ce qui relie le cours aux notes,
+        // aux contrôles et au parcours. Absent : matière hors programme.
+        programme: z.string().optional(),
         // Rempli au build par le hook `content:file:afterParse` de nuxt.config.ts.
         // Ne pas l'écrire à la main dans un frontmatter : il serait écrasé.
         questions: z.number().optional(),

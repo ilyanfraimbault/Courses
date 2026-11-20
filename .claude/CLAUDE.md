@@ -2,9 +2,10 @@
 
 Cahier de révisions personnel, rangé par année puis par matière : fiches de
 cours, exercices corrigés et QCM, un mode quiz qui pioche dans leurs questions,
-des QCM qu'on compose soi-même à partir d'elles, des contrôles avec leur
-feuille de route, la révision espacée de ce qui est su, avec suivi de
-progression, to-do et tableau de bord. Nuxt 4, Nuxt UI, Nuxt Content, SQLite, déployé en
+des QCM qu'on compose soi-même à partir d'elles, l'agenda des contrôles tenu
+par la classe, la révision espacée de ce qui est su, un tableau des moyennes
+sur le programme de l'école, avec suivi de progression, to-do et un tableau de
+bord pour accueil. Nuxt 4, Nuxt UI, Nuxt Content, SQLite, déployé en
 conteneur sur un VPS Hostinger.
 
 Le contenu est en **français**, l'interface est en français, et **le code aussi**
@@ -166,12 +167,22 @@ chapitre**, une case « le reste » servant au besoin de solde. Le point de cour
 survit sous la section, invisible dans la liste : c'est lui que « Mes domaines »
 désigne par lien, et il s'affiche alors nommé.
 
-**Un contrôle ne stocke ni questions ni feuille de route.** Une date, une
-matière, un programme dans la nomenclature du quiz — et c'est tout. Ce qui est
-su, ce qui reste et comment l'étaler d'ici au jour J se recalculent à chaque
-lecture depuis `reussite` et `faute`, dans le fuseau de l'élève. La journée se
-découpe sur ce qu'il restait **ce matin**, pour que la finir ne fasse pas
-glisser demain dedans. Voir `docs/controles.md`.
+**Un contrôle est une date dans l'agenda de la classe.** Une matière, un jour,
+ceux qu'il concerne (toute la classe ou un parcours), et, s'il est connu, un
+programme fait de **chemins** du cours — chapitre, fiche, `/fiche#bloc` — dont
+les intitulés se relisent dans le contenu. Rien n'y est calculé : ni feuille de
+route, ni séance. Un élève le pose pour tous ; seuls son auteur et
+l'administration le changent, et un contrôle de l'autre parcours n'existe pas
+(404). Voir `docs/controles.md`.
+
+**Une matière se désigne par son code.** La table `matiere`, semée depuis le
+programme de l'école (`server/utils/programme.ts`), porte UE, coefficient et
+parcours ; notes et contrôles retiennent le code (« s5-ethical-hacking »), qui
+ne se recalcule jamais. Le lien va du cours vers la table : `programme:` dans le
+frontmatter de l'index de la matière — un camarade n'a qu'un fichier à écrire.
+Sans code, une matière du cours est hors programme et commune. Le **parcours**
+(DL/SR) se relit en base à chaque requête, jamais dans la session ni le corps.
+Voir `docs/matieres.md`.
 
 **La révision espacée ne s'écrit pas, elle se déduit.** Palier et échéance
 d'une question se rejouent à chaque lecture depuis `reussite`, `faute`,
@@ -191,7 +202,10 @@ est appliqué en base, pas au client. Une règle vit à un seul endroit.
 **Les données sont cadrées par utilisateur.** Toute requête passe par
 `idUtilisateur(event)`, qui lit la session scellée — jamais le corps de la
 requête. Seules les routes `/api/admin/*` lisent au delà du compte connecté, et
-leur première ligne est `exigerAdministrateur(event)`. Voir `docs/comptes.md`.
+leur première ligne est `exigerAdministrateur(event)`. Une exception, voulue :
+les **contrôles**, l'agenda de la classe, se lisent d'un compte à l'autre — le
+parcours relu en base décide de ce qu'on voit, l'auteur relu en base de ce
+qu'on change. Voir `docs/comptes.md` et `docs/controles.md`.
 
 **Lire demande un compte accepté.** Le site est celui de la classe : quiz,
 progression et révisions ne s'ouvrent qu'à un compte accepté. Le **texte** des
@@ -275,7 +289,8 @@ node scripts/verifier-comptes.mjs   # inscription, connexion, isolation entre co
 node scripts/verifier-api.mjs       # progression, QCM, to-do, export
 pnpm verif:quiz                     # banque, filtres, file du quiz, isolation
 pnpm verif:quiz:rendu               # le quiz dans un vrai navigateur (Playwright)
-pnpm verif:controles                # feuille de route, séance du jour, examen blanc
+pnpm verif:controles                # agenda partagé : parcours, auteur, validation
+pnpm verif:matieres                 # programme semé, parcours, moyennes
 pnpm verif:revisions                # paliers, échéances, séance de révisions
 pnpm verif:clotures                 # clore, ce qui en sort, rouvrir, isolation
 ```
@@ -300,12 +315,12 @@ par le skill `importer-cours` (`.claude/skills/importer-cours/`). Aujourd'hui : 
 - `docs/domaines.md` — la progression rangée par point de cours : d'où viennent
   les domaines, ce que les deux segments d'une barre veulent dire, et pourquoi
   le relevé porte les 2142 questions et non les seules 1379 du quiz.
-- `docs/controles.md` — les contrôles : le programme, la feuille de route et
-  son découpage, l'examen blanc, le fuseau de l'élève.
-- `docs/revisions.md` — la révision espacée, déduite de l'histoire, et
-  l'accueil « Aujourd'hui ».
-- `docs/clotures.md` — clore une matière, un chapitre ou une fiche, et la
-  séance du jour restreinte à quelques chapitres.
+- `docs/controles.md` — les contrôles : l'agenda de la classe, qui voit et qui
+  change, le programme par chemins du cours, et la conversion des anciens.
+- `docs/matieres.md` — le programme de l'école en base, le lien avec le cours,
+  les parcours DL/SR et le tableau des moyennes.
+- `docs/revisions.md` — la révision espacée, déduite de l'histoire.
+- `docs/clotures.md` — clore une matière, un chapitre ou une fiche.
 - `docs/mes-qcm.md` — les QCM composés : pourquoi en base plutôt qu'en fichier,
   ce qu'ils empruntent aux fiches, et les règles tenues au serveur.
 - `docs/comptes.md` — comptes, hachage, isolation des données.

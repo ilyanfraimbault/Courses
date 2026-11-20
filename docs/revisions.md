@@ -55,34 +55,17 @@ voulu — c'est là qu'une question arrive sans son contexte, comme au contrôle
 
 ## Où ça se voit
 
-**L'accueil** (`/`) s'appelle désormais « Aujourd'hui ». En tête, la liste de ce
-qu'il y a à faire, et rien d'autre :
-
-- ce que chaque contrôle demande aujourd'hui ;
-- pour chaque matière qui n'est pas close, **une séance** — un seul bouton, qui
-  pose la dette, puis ce qui est à revoir, puis du neuf jusqu'à vingt.
-
-Dette, révisions et neuf ne font pas trois lignes : l'élève n'a pas à arbitrer
-entre « reprendre », « réviser » et « avancer », l'ordre est connu. La séance est
-plafonnée à vingt questions — les paliers font monter le compte juste après un
-contrôle, et l'afficher en entier faisait de l'accueil une liste de reproches ;
-la dette et les révisions qui débordent glissent à demain, et la ligne le dit.
-
-Le neuf — les questions jamais trouvées ni ratées — **comble** la séance, il ne
-la précède jamais. Sans lui, une matière pas encore commencée n'avait pas de
-séance du tout : rien à reprendre, rien à revoir, donc rien à proposer, et la
-seule façon d'y entrer était d'aller chercher le quiz soi-même. Il n'a pas
-d'échéance, si bien que celui qui ne tient pas dans les vingt places
-n'« attend » pas demain : la ligne ne le compte pas dans le reste. Seule une
-matière entièrement sue, sans rien de dû aujourd'hui, n'a pas de séance. Le compte brut se lit sur « Mes domaines ».
-« Choisir » restreint la séance à quelques chapitres ou parties du cours, et ce
-qui est clos n'y revient pas — voir `docs/clotures.md`.
-
-Une journée vide le dit, avec ce qui reviendra demain. Dessous, l'avancement,
-sous le titre « Où j'en suis ».
+**L'accueil** (`/`) ne l'annonce plus. Il portait la séance du jour — la dette,
+puis ce qui revient, puis du neuf, vingt questions au plus — avec les
+contrôles, l'avancement et les matières, et c'était trop : on arrivait sur le
+site sans savoir où regarder. Il est devenu un tableau de bord (l'agenda, la
+moyenne, la progression par matière), sans séance. Une séance se
+lancera depuis sa matière, là où l'on sait sur quoi on travaille. **D'ici là,
+les révisions dues n'ont plus d'entrée** : `/quiz` ne propose que les questions
+ratées, et le calcul des échéances tourne sans que rien ne l'affiche.
 
 **Le quiz** reçoit deux tamis de plus, `aRevoir` et `nouvelles`, comme
-`nonAcquises` : ils ne se cochent pas à l'écran, c'est l'accueil qui ouvre ces
+`nonAcquises` : ils ne se cochent pas à l'écran, c'était l'accueil qui ouvrait ces
 séances. Demandés avec `erreurs`, ils s'y **additionnent** au lieu de s'y
 croiser, et le tirage sert les tas dans l'ordre — la dette, puis les révisions,
 puis le neuf. Le rang seul ne suffirait pas : le tirage tourne de thème en

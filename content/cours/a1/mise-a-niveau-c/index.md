@@ -4,6 +4,7 @@ description: Le cours de mise à niveau en C, séance par séance — des bases 
 annee: A1
 matiere: Mise à niveau en C
 icone: i-simple-icons-c
+programme: s5-langage-fonctionnel
 ---
 
 Le cours tient en cinq jeux de diapos, un par séance de TP. Chacun devient ici un chapitre : une **fiche de cours** qui en garde tout le contenu — sans les animations, mais avec chaque exemple déroulé ligne par ligne dans la mémoire — et un **entraînement** écrit pour le site, qui fait faire les trois gestes du cours :

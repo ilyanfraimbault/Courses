@@ -19,11 +19,15 @@ export default defineEventHandler(async (event): Promise<CatalogueQuiz> => {
   // séance du jour puisse se restreindre à quelques chapitres en sachant ce
   // qu'elle y trouvera. `?fuseau=` : la journée est celle de l'élève, comme
   // partout.
-  return composerCatalogue(
+  const catalogue = composerCatalogue(
     banque,
     questionsEnDette(db, uid),
     questionsARevoir(db, uid, banque, maintenantPour(event).fin),
     cheminsClos(db, uid),
     questionsTrouvees(db, uid)
   )
+  // Les matières de l'autre parcours n'y figurent pas : on ne se fait pas
+  // interroger sur un cours qu'on ne suit pas.
+  const masques = await coursMasques(event, db, parcoursDuCompte(db, uid))
+  return masques.size ? { ...catalogue, matieres: catalogue.matieres.filter(m => !masques.has(m.cle)) } : catalogue
 })

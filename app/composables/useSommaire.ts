@@ -61,6 +61,18 @@ export function useSommaire() {
   const navigation = inject<Ref<ContentNavigationItem[]>>('navigation', ref([]))
   const route = useRoute()
   const { liste, closPar } = useClotures()
+  // Les matières de l'autre parcours sortent de la liste des matières. Lu au
+  // client seulement, comme les clôtures : le HTML servi reste le même pour
+  // tous. Relu quand le parcours change.
+  const autorise = useAccesAccorde()
+  const { parcours } = useProfil()
+  const { data: masquees } = useFetch<string[]>('/api/matieres/masquees', {
+    key: 'matieres-masquees',
+    server: false,
+    immediate: autorise.value,
+    watch: [parcours, autorise],
+    default: () => []
+  })
 
   const brut = computed<Sommaire>(() => {
     const arbre = navigation.value ?? []
@@ -81,7 +93,7 @@ export function useSommaire() {
       liens: annees.map(annee => ({
         ...annee,
         children: annee.children?.length
-          ? enfants(annee).map(({ children: _enfants, ...m }) => m)
+          ? enfants(annee).filter(m => !masquees.value.includes(m.path)).map(({ children: _enfants, ...m }) => m)
           : undefined
       }))
     }
