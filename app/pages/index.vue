@@ -1,546 +1,449 @@
 <script setup lang="ts">
-import type { ResumeControle } from '~~/shared/types/controles'
-import type { CatalogueQuiz, FiltreQuiz, QuestionQuiz, SessionQuiz } from '~~/shared/types/quiz'
-import type { Revisions } from '~~/shared/types/revisions'
-import { niveauxDuChemin } from '~~/shared/utils/niveaux'
-
-definePageMeta({ layout: 'cours' })
-
-const comptes = useComptesQuestions()
-const resume = useResumeProgression()
-const { closPar } = useClotures()
+import type { TreeItem } from '@nuxt/ui'
+import { getLocalTimeZone, today, type DateValue } from '@internationalized/date'
+import type { ActiviteJour } from '~~/shared/types/activite'
+import type { Controle } from '~~/shared/types/controles'
+import type { CompteProgression, ProgressionDomaines } from '~~/shared/types/domaines'
+import { PARCOURS, type MesNotes } from '~~/shared/types/matieres'
+import { ecrireMoyenne, moyenneSemestre, semestreCourant } from '~~/shared/utils/moyennes'
 
 /**
- * Le plafond d'une séance du jour. Les paliers de la révision espacée font
- * monter le compte juste après une période de bachotage — trente-trois à
- * revoir le lendemain d'un contrôle —, et l'afficher tel quel transforme
- * l'accueil en liste de reproches. On en pose vingt, le reste glisse à demain.
- */
-const TAILLE_SEANCE = 20
-
-/**
- * Les contrôles à venir, en tête de page : c'est ce qui dit quoi faire
- * aujourd'hui. Données du compte, donc lues au montage seulement.
- */
-const { data: controles } = await useLazyFetch<ResumeControle[]>('/api/controles', {
-  server: false,
-  query: { fuseau: fuseauLocal() }
-})
-const prochains = computed(() => (controles.value ?? []).filter(c => c.joursRestants >= 0).slice(0, 3))
-
-/** Ce qui revient aujourd'hui dans la révision espacée, matière par matière. */
-const { data: revisions } = await useLazyFetch<Revisions>('/api/revisions', {
-  server: false,
-  query: { fuseau: fuseauLocal() }
-})
-
-/**
- * La liste du jour : ce qu'un contrôle demande, et une séance par matière qui
- * n'est pas close. Rien d'autre — c'est la page qu'on ouvre pour savoir quoi
- * faire, pas pour tout voir.
+ * L'accueil : le tableau de bord de l'élève, sur un seul écran.
  *
- * La dette, les révisions et le neuf ne font qu'une séance, pas trois boutons :
- * l'élève n'a pas à arbitrer, l'ordre est connu — la dette d'abord, puis ce qui
- * revient, puis de quoi avancer pour finir les vingt places. Sans le neuf, une
- * matière pas encore commencée n'aurait jamais de séance, faute de rien à
- * reprendre ni à revoir. Seule une matière entièrement sue et sans échéance
- * aujourd'hui n'en a pas. Le compte brut reste lisible sur « Mes domaines ».
+ * Ce qu'un élève cherche en arrivant, dans l'ordre : qui est connecté et dans
+ * quel parcours ; ce qui arrive — le prochain contrôle ; où il en est — sa
+ * moyenne, et ce qu'il a trouvé dans chaque matière ; et l'agenda, avec ce
+ * qu'il a fait tel jour. Pas de sommaire à gauche : on n'est dans aucun cours,
+ * et chaque matière est à un clic depuis sa barre.
+ *
+ * Tout tient dans la hauteur de l'écran sur un ordinateur : les deux cartes du
+ * bas prennent ce qui reste et défilent en elles-mêmes si besoin, jamais la
+ * page. Sur un téléphone, les blocs s'empilent.
+ *
+ * Données du compte : lues au montage seulement, et la page rendue côté client
+ * — « aujourd'hui » n'est pas le même jour pour le serveur en UTC et pour
+ * l'élève.
  */
-const taches = computed(() => {
-  const liste: { cle: string, icone: string, titre: string, detail: string, action: string, controle?: number, matiere?: string, seance?: Record<string, unknown> }[] = []
-  for (const c of prochains.value) {
-    if (!c.aujourdhui) continue
-    const consigne = consigneDuJour(c)
-    if (consigne === 'Journée libre' || consigne === 'Programme su') continue
-    liste.push({
-      cle: `controle-${c.id}`,
-      icone: 'i-lucide-calendar-check',
-      titre: c.titre,
-      detail: `${consigne} · ${echeance(c.joursRestants)}`,
-      action: 'Ouvrir',
-      controle: c.id
-    })
-  }
-  for (const m of revisions.value?.matieres ?? []) {
-    const dette = Math.min(m.enDette, TAILLE_SEANCE)
-    const revoir = Math.min(m.aRevoir, TAILLE_SEANCE - dette)
-    const neuves = Math.min(m.nouvelles, TAILLE_SEANCE - dette - revoir)
-    // Le neuf qui ne tient pas dans la séance n'« attend » pas : il n'a pas
-    // d'échéance. Seules la dette et les révisions glissent à demain.
-    const reste = m.enDette + m.aRevoir - dette - revoir
-    const total = dette + revoir + neuves
-    if (!total) continue
-    const morceaux: string[] = []
-    if (dette) morceaux.push(`${dette} ratée${dette > 1 ? 's' : ''} à retrouver`)
-    if (revoir) morceaux.push(`${revoir} à revoir`)
-    if (neuves) morceaux.push(`${neuves} nouvelle${neuves > 1 ? 's' : ''}`)
-    liste.push({
-      cle: `seance-${m.cle}`,
-      icone: 'i-lucide-zap',
-      titre: `Ta séance · ${total} question${total > 1 ? 's' : ''}`,
-      detail: `${m.titre} · ${morceaux.join(', puis ')}${reste ? ` · ${reste} de plus attendront demain` : ''}`,
-      action: 'Lancer',
-      matiere: m.cle,
-      seance: { matiere: m.cle, erreurs: dette > 0, aRevoir: revoir > 0, nouvelles: neuves > 0, taille: total }
-    })
-  }
-  return liste
+definePageMeta({ layout: false })
+
+const fuseau = fuseauLocal()
+const { user } = useUserSession()
+const { demande: modifierProfil } = useProfil()
+
+const { data: controles, refresh: relireControles } = useLazyFetch<Controle[]>('/api/controles', { server: false, query: { fuseau } })
+const { data: activite } = useLazyFetch<{ jours: string[] }>('/api/activite', { server: false, query: { fuseau } })
+const { data: progression } = useLazyFetch<ProgressionDomaines>('/api/progression/domaines', { server: false })
+const { data: notes } = useLazyFetch<MesNotes>('/api/notes', { server: false })
+
+// —— Qui est là
+
+const prenom = computed(() => user.value?.prenom || user.value?.pseudo || '')
+const nomComplet = computed(() => [user.value?.prenom, user.value?.nom].filter(Boolean).join(' ') || user.value?.pseudo || '')
+const parcours = computed(() => user.value?.parcours ? PARCOURS[user.value.parcours] : null)
+const salut = new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour'
+const aujourdhuiTexte = (() => {
+  const t = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return t.charAt(0).toUpperCase() + t.slice(1)
+})()
+
+// —— Les trois chiffres du bandeau
+
+const aVenir = computed(() => (controles.value ?? []).filter(c => c.joursRestants >= 0))
+const prochain = computed(() => aVenir.value[0] ?? null)
+
+const semestre = semestreCourant()
+const moyenne = computed(() => {
+  const s = notes.value?.semestres.find(x => x.semestre === semestre)
+  return s ? moyenneSemestre(s.ues) : null
 })
 
-/** Ce qui reviendra demain, pour qu'une journée vide ne donne pas l'impression d'avoir fini. */
-const demain = computed(() => (revisions.value?.matieres ?? []).reduce((n, m) => n + m.demain, 0))
-const prochaineRevision = computed(() =>
-  (revisions.value?.matieres ?? []).map(m => m.prochaine).filter((j): j is string => !!j).sort()[0] ?? null)
-
-const lancement = ref<string | null>(null)
-const erreurSeance = ref<string | null>(null)
-
-/** Ouvre la séance d'une tâche et y envoie. Le fuseau part avec : l'échéance se compte chez l'élève. */
-async function lancer(cle: string, corps: Record<string, unknown>) {
-  if (lancement.value) return
-  lancement.value = cle
-  erreurSeance.value = null
-  try {
-    const taille = Math.min(60, Math.max(5, Number(corps.taille) || 5))
-    const { session } = await $fetch<{ session: SessionQuiz, question: QuestionQuiz | null }>('/api/quiz/session', {
-      method: 'POST',
-      query: { fuseau: fuseauLocal() },
-      body: { themes: [], sections: [], ...corps, taille }
-    })
-    await navigateTo(`/quiz/${session.id}`)
-  } catch (e) {
-    erreurSeance.value = (e as { data?: { statusMessage?: string } })?.data?.statusMessage || 'La séance n\'a pas pu démarrer.'
-    lancement.value = null
-  }
+function pourcentage(c: CompteProgression) {
+  return c.questions ? Math.round(100 * c.acquises / c.questions) : 0
 }
+
+// —— Mes matières : la barre de « Mes domaines », matière par matière
 
 /**
- * Choisir les chapitres de la séance du jour.
- *
- * Le choix vaut pour une séance, il ne se retient pas : ce qui doit durer,
- * c'est la clôture. Le catalogue n'est lu qu'à la première ouverture — la
- * plupart des visites lancent la séance telle quelle.
+ * Deux segments, comme sur « Mes domaines » : ce qui est tombé juste du
+ * premier coup, puis ce qu'il a fallu reprendre. La piste nue est ce qui n'a
+ * jamais été trouvé.
  */
-const { data: catalogue, execute: lireCatalogue } = useLazyFetch<CatalogueQuiz>('/api/quiz/catalogue', {
-  server: false,
-  immediate: false,
-  query: { fuseau: fuseauLocal() }
-})
-const choix = ref<FiltreQuiz | null>(null)
-const choixOuvert = computed({
-  get: () => !!choix.value,
-  set: (ouvert: boolean) => { if (!ouvert) choix.value = null }
-})
-const matiereChoisie = computed(() => catalogue.value?.matieres.find(m => m.cle === choix.value?.matiere) ?? null)
-const filtreJour = useTemplateRef<{ disponibles: number, urgentes: number }>('filtreJour')
-const tailleChoisie = computed(() => Math.min(TAILLE_SEANCE, filtreJour.value?.disponibles ?? 0))
-
-async function choisir(matiere: string) {
-  choix.value = { matiere, themes: [], sections: [], notions: [], erreurs: true, aRevoir: true, nouvelles: true }
-  await lireCatalogue()
+function segments(c: CompteProgression) {
+  const sures = Math.max(0, c.acquises - c.hesitantes)
+  return [
+    { value: sures, color: 'success' as const },
+    { value: c.hesitantes, color: 'warning' as const, ui: sures ? { segment: 'border-s-2 border-(--ui-bg)' } : undefined }
+  ]
 }
 
-function lancerChoix() {
-  const f = choix.value
-  if (!f || !tailleChoisie.value) return
-  lancer(`choix-${f.matiere}`, { ...f, taille: tailleChoisie.value })
+function detail(c: CompteProgression) {
+  const base = `${c.acquises} trouvée${c.acquises > 1 ? 's' : ''} sur ${c.questions}`
+  return c.hesitantes ? `${base}, dont ${c.hesitantes} après une faute` : base
 }
+
+// —— L'agenda
+
+const controlesParJour = computed(() => {
+  const parJour = new Map<string, Controle[]>()
+  for (const c of controles.value ?? []) parJour.set(c.jour, [...(parJour.get(c.jour) ?? []), c])
+  return parJour
+})
+const joursTravailles = computed(() => new Set(activite.value?.jours ?? []))
+
+const jour = shallowRef<DateValue>(today(getLocalTimeZone()))
+const jourChoisi = computed(() => jour.value?.toString() ?? '')
+const estAujourdhui = computed(() => jourChoisi.value === today(getLocalTimeZone()).toString())
+const controlesDuJour = computed(() => controlesParJour.value.get(jourChoisi.value) ?? [])
+const travailleLeJour = computed(() => joursTravailles.value.has(jourChoisi.value))
+
+/** Le détail d'un jour ne se lit que pour un jour marqué : la plupart des clics tombent sur un jour vide. */
+const { data: detailJour, status: statutDetail, execute: lireDetail } = useLazyFetch<ActiviteJour>(
+  () => `/api/activite/${jourChoisi.value}`,
+  { server: false, query: { fuseau }, immediate: false, watch: false }
+)
+watch([jourChoisi, travailleLeJour], () => {
+  if (travailleLeJour.value && detailJour.value?.jour !== jourChoisi.value) lireDetail()
+}, { immediate: true })
+
+function pluriel(n: number) {
+  return `${n} question${n > 1 ? 's' : ''}`
+}
+
+/** Matière › chapitre › fiche › exercice, tout replié : un sommaire, qu'on déplie. */
+const arbre = computed<TreeItem[]>(() => (detailJour.value?.jour === jourChoisi.value ? detailJour.value.matieres : []).map(m => ({
+  cle: `m:${m.chemin}`,
+  label: m.titre,
+  compte: m.questions,
+  icon: 'i-lucide-book-open',
+  children: m.chapitres.map(c => ({
+    cle: `c:${m.chemin}:${c.chemin}`,
+    label: c.titre,
+    compte: c.questions,
+    icon: 'i-lucide-folder',
+    children: c.fiches.map(f => ({
+      cle: `f:${f.chemin}`,
+      label: f.titre,
+      compte: f.questions,
+      icon: 'i-lucide-file-text',
+      children: f.exercices.map(x => ({
+        cle: `x:${f.chemin}#${x.bloc}`,
+        label: x.titre,
+        compte: x.questions,
+        icon: 'i-lucide-pencil-line',
+        onSelect: () => navigateTo(f.chemin)
+      }))
+    }))
+  }))
+})))
 
 const titreDuJour = computed(() => {
-  const jour = revisions.value?.aujourdhui
-  if (!jour) return ''
-  const texte = jourLong(jour)
+  if (!jourChoisi.value) return ''
+  if (estAujourdhui.value) return 'Aujourd\'hui'
+  const texte = jourLong(jourChoisi.value)
   return texte.charAt(0).toUpperCase() + texte.slice(1)
 })
 
-/**
- * Toutes les pages du contenu : les fiches qui portent des questions, et les
- * pages d'index qui nomment les années et les matières.
- */
-const { data: pages } = await useAsyncData('cours-tableau-de-bord', async () => {
-  const lignes = await queryCollection('cours')
-    .select('path', 'title', 'description', 'type', 'ordre', 'icone', 'questions')
-    .all()
-  return lignes.map(l => ({ ...l, chemin: cheminCanonique(l.path) }))
-}, { default: () => [] })
+/** Les contrôles à venir, hors ceux du jour affiché juste au-dessus. */
+const suivants = computed(() => aVenir.value.filter(c => c.jour !== jourChoisi.value).slice(0, 4))
 
-const parChemin = computed(() => new Map(pages.value.map(p => [p.chemin, p])))
-// Ce qui est clos sort de l'accueil : de l'avancement, des matières, de
-// « Reprendre ici ». Le sommaire, lui, le garde grisé.
-const fiches = computed(() => pages.value.filter(p => (p.questions ?? 0) > 0 && !closPar(p.chemin)))
-
-function part(f: { chemin: string, questions?: number | null }) {
-  const total = comptes.value[f.chemin] ?? f.questions ?? 0
-  const reussies = Math.min(resume.value[f.chemin]?.reussies ?? 0, total)
-  return { total, reussies }
+function couleurEcheance(n: number) {
+  return n <= 2 ? 'error' as const : n <= 7 ? 'warning' as const : 'neutral' as const
 }
 
-const avancement = computed(() => {
-  let total = 0
-  let reussies = 0
-  for (const f of fiches.value) {
-    const p = part(f)
-    total += p.total
-    reussies += p.reussies
-  }
-  return { total, reussies, pourcentage: total ? Math.round(100 * reussies / total) : 0 }
-})
-
-/**
- * L'avancement matière par matière, dans l'ordre du sommaire.
- *
- * Un pourcentage de tout le site mêlerait deux cours qui n'ont rien à voir :
- * c'est matière par matière qu'on sait où on en est. Le chiffre global reste en
- * tête, pour la vue d'ensemble.
- */
-const matieres = computed(() => {
-  const groupes = new Map<string, {
-    cle: string
-    titre: string
-    anneeChemin: string | null
-    ordre: number
-    total: number
-    reussies: number
-  }>()
-  for (const f of fiches.value) {
-    const { annee, matiere } = niveauxDuChemin(f.chemin)
-    if (!matiere) continue
-    const page = parChemin.value.get(matiere)
-    const groupe = groupes.get(matiere) ?? {
-      cle: matiere,
-      titre: page?.title ?? matiere,
-      anneeChemin: annee,
-      ordre: page?.ordre ?? 999,
-      total: 0,
-      reussies: 0
-    }
-    const p = part(f)
-    groupe.total += p.total
-    groupe.reussies += p.reussies
-    groupes.set(matiere, groupe)
-  }
-  return [...groupes.values()].sort((a, b) =>
-    (a.anneeChemin ?? '').localeCompare(b.anneeChemin ?? '')
-    || a.ordre - b.ordre
-    || a.titre.localeCompare(b.titre, 'fr'))
-})
-
-/** « Remise à niveau en maths » pour une fiche : ce qui distingue deux « Exercices » de deux cours. */
-function matiereDe(chemin: string): string | null {
-  const matiere = niveauxDuChemin(chemin).matiere
-  return matiere ? parChemin.value.get(matiere)?.title ?? null : null
+/** Écrites en entier : Tailwind ne génère pas une classe composée à la volée. */
+function texteEcheance(n: number) {
+  return { error: 'text-error', warning: 'text-warning', neutral: 'text-highlighted' }[couleurEcheance(n)]
 }
 
-/** Où reprendre : la fiche touchée le plus récemment, finie ou non. */
-const reprendre = computed(() => {
-  const candidates = fiches.value
-    .map(f => ({ f, etat: resume.value[f.chemin] }))
-    .filter(({ etat }) => etat?.maj)
-    .sort((a, b) => (b.etat!.maj ?? 0) - (a.etat!.maj ?? 0))
-  return candidates[0] ?? null
-})
+const planifier = ref(false)
 
-function pourcentage(g: { total: number, reussies: number }) {
-  return g.total ? Math.round(100 * g.reussies / g.total) : 0
-}
-
-useSeoMeta({ title: 'Aujourd\'hui' })
+useSeoMeta({ title: 'Accueil' })
 </script>
 
 <template>
-  <UPage>
-    <UPageHeader
-      title="Aujourd'hui"
-      :description="titreDuJour || 'Ce que tes contrôles demandent, ce qui revient, ce qui est en dette.'"
-    />
-
-    <UPageBody>
-      <!-- La liste du jour. Branchée sur les données, pas sur leur chargement :
-           le rendu serveur et le premier rendu client coïncident. -->
-      <section class="mb-10">
-        <UAlert
-          v-if="erreurSeance"
-          class="mb-3"
-          color="error"
-          variant="subtle"
-          icon="i-lucide-circle-alert"
-          :title="erreurSeance"
-        />
-        <div
-          v-if="taches.length"
-          class="flex flex-col gap-2"
-        >
-          <div
-            v-for="t in taches"
-            :key="t.cle"
-            class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-default px-4 py-3"
-          >
-            <UIcon
-              :name="t.icone"
-              class="size-5 shrink-0 text-primary"
-            />
-            <span class="min-w-0 flex-1">
-              <span class="block font-medium text-highlighted">{{ t.titre }}</span>
-              <span class="block text-xs text-muted">{{ t.detail }}</span>
-            </span>
-            <UButton
-              v-if="t.controle"
-              size="sm"
-              variant="subtle"
-              trailing-icon="i-lucide-arrow-right"
-              :label="t.action"
-              :to="`/mes-controles/${t.controle}`"
-            />
-            <template v-else-if="t.seance">
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="ghost"
-                icon="i-lucide-list-filter"
-                label="Choisir"
-                @click="choisir(t.matiere!)"
-              />
-              <UButton
-                size="sm"
-                icon="i-lucide-play"
-                :label="t.action"
-                :loading="lancement === t.cle"
-                @click="lancer(t.cle, t.seance)"
-              />
-            </template>
+  <UContainer class="flex flex-col gap-4 py-4 lg:h-[calc(100dvh-var(--ui-header-height))] lg:overflow-hidden">
+    <ClientOnly>
+      <!-- Le bandeau : qui, et les trois chiffres qui comptent. -->
+      <header class="flex flex-col gap-4 lg:flex-row lg:items-center">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
+          <UAvatar
+            :alt="nomComplet"
+            size="xl"
+          />
+          <div class="min-w-0">
+            <h1 class="m-0 truncate text-xl font-semibold text-highlighted sm:text-2xl">
+              {{ salut }} {{ prenom }}
+            </h1>
+            <p class="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+              <span>{{ aujourdhuiTexte }}</span>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 hover:text-highlighted"
+                title="Mon profil"
+                @click="modifierProfil = true"
+              >
+                <UBadge
+                  v-if="parcours"
+                  :label="parcours.court"
+                  variant="subtle"
+                  size="sm"
+                />
+                {{ parcours?.long ?? 'Choisir son parcours' }}
+              </button>
+            </p>
           </div>
         </div>
-        <div
-          v-else-if="revisions && controles"
-          class="rounded-lg border border-dashed border-default px-4 py-5 text-center"
-        >
-          <UIcon
-            name="i-lucide-coffee"
-            class="size-6 text-dimmed"
-          />
-          <p class="mt-2 mb-0 font-medium text-highlighted">
-            Rien à travailler aujourd'hui
-          </p>
-          <p class="mx-auto mt-1 mb-0 max-w-md text-sm text-muted">
-            <template v-if="demain">
-              {{ demain }} question{{ demain > 1 ? 's' : '' }} reviendr{{ demain > 1 ? 'ont' : 'a' }} demain.
-            </template>
-            <template v-else-if="prochaineRevision">
-              Prochaine révision le {{ jourLong(prochaineRevision) }}.
-            </template>
-            Une question trouvée revient d'elle-même au bout d'un jour, puis de trois, de sept… tant que tu la retrouves.
-          </p>
-        </div>
-        <div
-          v-else
-          class="flex flex-col gap-2"
-        >
-          <USkeleton class="h-14 w-full" />
-          <USkeleton class="h-14 w-full" />
-        </div>
-      </section>
 
-      <UModal
-        v-model:open="choixOuvert"
-        title="Sur quoi travailler aujourd'hui ?"
-        description="Coche les chapitres ou les parties du cours. La séance y prend la dette, puis ce qui revient, puis du neuf."
-        :ui="{ content: 'sm:max-w-2xl' }"
-      >
-        <template #body>
-          <UAlert
-            v-if="erreurSeance && choix"
-            class="mb-3"
-            color="error"
-            variant="subtle"
-            icon="i-lucide-circle-alert"
-            :title="erreurSeance"
-          />
-          <QuizFiltre
-            v-if="matiereChoisie && choix"
-            ref="filtreJour"
-            v-model="choix"
-            :catalogue="matiereChoisie"
-            mode="jour"
-          />
-          <div
-            v-else
-            class="flex flex-col gap-2"
+        <div class="grid grid-cols-3 gap-2 lg:w-[34rem]">
+          <ULink
+            :to="prochain ? `/controles/${prochain.id}` : '/controles'"
+            class="flex min-w-0 flex-col rounded-lg border border-default px-3 py-2 transition-colors hover:border-primary/60"
           >
-            <USkeleton class="h-10 w-full" />
-            <USkeleton class="h-10 w-full" />
-            <USkeleton class="h-10 w-full" />
-          </div>
-        </template>
-        <template #footer>
-          <div class="flex w-full flex-wrap items-center justify-end gap-2">
+            <span class="text-xs text-muted">Prochain contrôle</span>
+            <template v-if="prochain">
+              <span
+                class="text-lg font-semibold tabular-nums"
+                :class="texteEcheance(prochain.joursRestants)"
+              >{{ prochain.joursRestants === 0 ? 'Aujourd\'hui' : `J-${prochain.joursRestants}` }}</span>
+              <span class="truncate text-xs text-muted">{{ prochain.matiereTitre ?? prochain.titre }}</span>
+            </template>
+            <template v-else>
+              <span class="text-lg font-semibold text-dimmed">—</span>
+              <span class="truncate text-xs text-muted">Rien de prévu</span>
+            </template>
+          </ULink>
+          <ULink
+            to="/mes-moyennes"
+            class="flex min-w-0 flex-col rounded-lg border border-default px-3 py-2 transition-colors hover:border-primary/60"
+          >
+            <span class="text-xs text-muted">Moyenne S{{ semestre }}</span>
             <span
-              v-if="(filtreJour?.urgentes ?? 0) > TAILLE_SEANCE"
-              class="me-auto text-xs text-muted"
-            >
-              {{ TAILLE_SEANCE }} aujourd'hui, le reste attendra demain.
-            </span>
+              class="text-lg font-semibold tabular-nums"
+              :class="moyenne === null ? 'text-dimmed' : moyenne >= 10 ? 'text-success' : 'text-error'"
+            >{{ ecrireMoyenne(moyenne) }}</span>
+            <span class="truncate text-xs text-muted">{{ moyenne === null ? 'À renseigner' : 'sur 20' }}</span>
+          </ULink>
+          <ULink
+            to="/mes-domaines"
+            class="flex min-w-0 flex-col rounded-lg border border-default px-3 py-2 transition-colors hover:border-primary/60"
+          >
+            <span class="text-xs text-muted">Questions trouvées</span>
+            <span class="text-lg font-semibold tabular-nums text-highlighted">{{ progression ? `${pourcentage(progression.total)} %` : '…' }}</span>
+            <span class="truncate text-xs text-muted tabular-nums">{{ progression ? `${progression.total.acquises} sur ${progression.total.questions}` : '' }}</span>
+          </ULink>
+        </div>
+      </header>
+
+      <div class="grid min-h-0 flex-1 gap-4 lg:grid-cols-12">
+        <!-- L'agenda : le calendrier, et le jour qu'on y choisit. -->
+        <section class="flex min-h-0 flex-col rounded-lg border border-default lg:col-span-7">
+          <div class="flex items-center gap-2 border-b border-default px-4 py-2">
+            <h2 class="m-0 flex-1 text-sm font-semibold text-highlighted">
+              Agenda
+            </h2>
             <UButton
+              icon="i-lucide-calendar-plus"
+              label="Planifier un contrôle"
+              size="xs"
+              color="neutral"
+              variant="subtle"
+              @click="planifier = true"
+            />
+          </div>
+          <div class="grid min-h-0 flex-1 gap-4 p-3 sm:grid-cols-[auto_minmax(0,1fr)]">
+            <div class="flex flex-col items-center gap-2">
+              <UCalendar
+                v-model="jour"
+                locale="fr-FR"
+                size="sm"
+                :week-starts-on="1"
+                :year-controls="false"
+                :fixed-weeks="false"
+              >
+                <template #day="{ day }">
+                  <span class="relative flex size-full items-center justify-center">
+                    {{ day.day }}
+                    <span
+                      v-if="controlesParJour.has(day.toString()) || joursTravailles.has(day.toString())"
+                      class="absolute inset-x-0 -bottom-1 flex justify-center gap-0.5"
+                    >
+                      <span
+                        v-if="controlesParJour.has(day.toString())"
+                        class="size-1 rounded-full bg-error"
+                      />
+                      <span
+                        v-if="joursTravailles.has(day.toString())"
+                        class="size-1 rounded-full bg-success"
+                      />
+                    </span>
+                  </span>
+                </template>
+              </UCalendar>
+              <div class="flex items-center gap-3 text-xs text-muted">
+                <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-error" />Contrôle</span>
+                <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-success" />Travaillé</span>
+              </div>
+            </div>
+
+            <div class="flex min-h-0 min-w-0 flex-col gap-3 overflow-y-auto">
+              <div>
+                <h3 class="m-0 text-sm font-medium text-highlighted">
+                  {{ titreDuJour }}
+                </h3>
+                <div
+                  v-if="controlesDuJour.length"
+                  class="mt-2 flex flex-col gap-1.5"
+                >
+                  <ULink
+                    v-for="c in controlesDuJour"
+                    :key="c.id"
+                    :to="`/controles/${c.id}`"
+                    class="group flex items-center gap-2 rounded-md border border-error/40 bg-error/5 px-2.5 py-1.5"
+                  >
+                    <UIcon
+                      name="i-lucide-calendar-check"
+                      class="size-4 shrink-0 text-error"
+                    />
+                    <span class="min-w-0 flex-1 truncate text-sm font-medium text-highlighted group-hover:text-primary">{{ c.titre }}</span>
+                  </ULink>
+                </div>
+                <template v-if="travailleLeJour">
+                  <UTree
+                    v-if="arbre.length"
+                    class="mt-1"
+                    size="sm"
+                    color="neutral"
+                    :items="arbre"
+                    :get-key="(item: TreeItem) => item.cle"
+                  >
+                    <template #item-label="{ item }">
+                      <span class="truncate">{{ item.label }}</span>
+                      <span class="ms-2 shrink-0 text-xs text-dimmed tabular-nums">{{ pluriel(item.compte) }}</span>
+                    </template>
+                  </UTree>
+                  <div
+                    v-else-if="statutDetail === 'pending' || statutDetail === 'idle'"
+                    class="mt-2 flex flex-col gap-2"
+                  >
+                    <USkeleton class="h-5 w-2/3" />
+                    <USkeleton class="h-5 w-1/2" />
+                  </div>
+                </template>
+                <p
+                  v-if="!controlesDuJour.length && !travailleLeJour"
+                  class="m-0 mt-1 text-sm text-muted"
+                >
+                  {{ estAujourdhui ? 'Rien pour l\'instant.' : 'Rien ce jour-là.' }}
+                </p>
+              </div>
+
+              <div v-if="suivants.length">
+                <h3 class="m-0 text-xs font-medium tracking-wide text-dimmed uppercase">
+                  À venir
+                </h3>
+                <ul class="m-0 mt-1.5 flex list-none flex-col gap-1 p-0">
+                  <li
+                    v-for="c in suivants"
+                    :key="c.id"
+                  >
+                    <ULink
+                      :to="`/controles/${c.id}`"
+                      class="group flex items-center gap-2 text-sm"
+                    >
+                      <UBadge
+                        :label="c.joursRestants === 0 ? 'Auj.' : `J-${c.joursRestants}`"
+                        :color="couleurEcheance(c.joursRestants)"
+                        variant="subtle"
+                        size="sm"
+                        class="w-12 justify-center tabular-nums"
+                      />
+                      <span class="min-w-0 flex-1 truncate group-hover:text-primary">{{ c.titre }}</span>
+                    </ULink>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mes matières : la barre de chacune, qui mène à son cours. -->
+        <section class="flex min-h-0 flex-col rounded-lg border border-default lg:col-span-5">
+          <div class="flex items-center gap-2 border-b border-default px-4 py-2">
+            <h2 class="m-0 flex-1 text-sm font-semibold text-highlighted">
+              Mes matières
+            </h2>
+            <UButton
+              to="/mes-domaines"
+              trailing-icon="i-lucide-chevron-right"
+              label="Mes domaines"
+              size="xs"
               color="neutral"
               variant="ghost"
-              label="Annuler"
-              @click="choix = null"
-            />
-            <UButton
-              icon="i-lucide-play"
-              :label="tailleChoisie ? `Lancer · ${tailleChoisie} question${tailleChoisie > 1 ? 's' : ''}` : 'Rien à travailler ici'"
-              :disabled="!tailleChoisie"
-              :loading="!!lancement?.startsWith('choix-')"
-              @click="lancerChoix"
             />
           </div>
-        </template>
-      </UModal>
-
-      <div
-        v-if="prochains.length"
-        class="mb-8"
-      >
-        <div class="flex items-center gap-2">
-          <h2 class="m-0 flex-1 text-lg font-medium text-highlighted">
-            Tes prochains contrôles
-          </h2>
-          <UButton
-            to="/mes-controles"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            trailing-icon="i-lucide-chevron-right"
-            label="Tous"
-          />
-        </div>
-        <div class="mt-3 flex flex-col gap-2">
-          <ULink
-            v-for="c in prochains"
-            :key="c.id"
-            :to="`/mes-controles/${c.id}`"
-            class="group flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-default px-4 py-3 transition-colors hover:border-primary/60 hover:bg-elevated/50"
+          <div
+            v-if="progression"
+            class="flex min-h-0 flex-1 flex-col gap-3 p-3"
           >
-            <UIcon
-              name="i-lucide-calendar-check"
-              class="size-5 shrink-0 text-primary"
+            <div class="flex items-center gap-3 text-xs text-muted tabular-nums">
+              <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-success" />Du premier coup</span>
+              <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-warning" />Après une faute</span>
+              <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-accented" />Jamais trouvées</span>
+            </div>
+            <ul class="m-0 flex min-h-0 flex-1 list-none flex-col gap-1 overflow-y-auto p-0">
+              <li
+                v-for="m in progression.matieres"
+                :key="m.cle"
+              >
+                <ULink
+                  :to="m.chemin ?? `/mes-domaines?matiere=${encodeURIComponent(m.cle)}`"
+                  :title="detail(m)"
+                  class="group flex flex-col gap-1.5 rounded-md px-2 py-1.5 transition-colors hover:bg-elevated/60"
+                >
+                  <span class="flex items-center gap-2">
+                    <UIcon
+                      :name="m.icone || 'i-lucide-book-open'"
+                      class="size-4 shrink-0 text-dimmed group-hover:text-primary"
+                    />
+                    <span class="min-w-0 flex-1 truncate text-sm text-highlighted">{{ m.titre }}</span>
+                    <span class="shrink-0 text-xs text-muted tabular-nums">{{ pourcentage(m) }} %</span>
+                  </span>
+                  <UProgressGroup
+                    size="xs"
+                    :max="m.questions || 1"
+                    :items="segments(m)"
+                  />
+                </ULink>
+              </li>
+            </ul>
+          </div>
+          <div
+            v-else
+            class="flex flex-col gap-3 p-3"
+          >
+            <USkeleton
+              v-for="i in 5"
+              :key="i"
+              class="h-9 w-full"
             />
-            <span class="min-w-0 flex-1">
-              <span class="block font-medium text-highlighted group-hover:text-primary">{{ c.titre }}</span>
-              <span class="block text-xs text-muted">
-                {{ consigneDuJour(c) }} · prêt à {{ partSue(c.etat) }} %
-              </span>
-            </span>
-            <UBadge
-              :color="c.joursRestants <= 2 ? 'error' : c.joursRestants <= 7 ? 'warning' : 'neutral'"
-              variant="subtle"
-              :label="echeance(c.joursRestants)"
-            />
-          </ULink>
-        </div>
+          </div>
+        </section>
       </div>
-      <p
-        v-else-if="controles"
-        class="mb-8 text-sm text-muted"
-      >
-        Un contrôle en vue ?
-        <ULink
-          to="/mes-controles/nouveau"
-          class="text-primary"
-        >Déclare-le</ULink>, et le site te dira chaque jour quoi réviser d'ici là.
-      </p>
 
-      <h2 class="m-0 text-lg font-medium text-highlighted">
-        Où j'en suis
-      </h2>
-      <p class="mt-1 mb-3 text-sm text-muted">
-        {{ avancement.reussies }} question{{ avancement.reussies > 1 ? 's' : '' }} trouvée{{ avancement.reussies > 1 ? 's' : '' }}
-        sur {{ avancement.total }}, toutes matières confondues.
-      </p>
-      <UProgress
-        size="md"
-        :color="avancement.pourcentage === 100 ? 'success' : 'primary'"
-        :model-value="avancement.reussies"
-        :max="avancement.total || 1"
+      <ControlePlanifier
+        v-model:open="planifier"
+        :jour="jourChoisi"
+        @enregistre="relireControles()"
       />
 
-      <div class="mt-8">
-        <h2 class="text-lg font-medium text-highlighted">
-          Tes matières
-        </h2>
-        <!-- Une ligne par matière : le titre, le score, une barre. Les actions
-             (quiz, QCM composé) ont leurs pages ; les répéter ici sur chaque
-             matière faisait de l'accueil une grille de boutons. -->
-        <div class="mt-3 flex flex-col gap-2">
-          <ULink
-            v-for="matiere in matieres"
-            :key="matiere.cle"
-            :to="matiere.cle"
-            class="group block rounded-lg border border-default px-4 py-3 transition-colors hover:border-primary/60 hover:bg-elevated/50"
-          >
-            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span class="min-w-0 flex-1 text-sm font-medium text-highlighted group-hover:text-primary">{{ matiere.titre }}</span>
-              <span class="shrink-0 text-sm text-muted tabular-nums">
-                {{ matiere.reussies }} / {{ matiere.total }} · {{ pourcentage(matiere) }} %
-              </span>
-            </div>
-            <UProgress
-              class="mt-2"
-              size="xs"
-              :color="pourcentage(matiere) === 100 ? 'success' : 'primary'"
-              :model-value="matiere.reussies"
-              :max="matiere.total || 1"
-            />
-          </ULink>
+      <template #fallback>
+        <USkeleton class="h-16 w-full" />
+        <div class="grid flex-1 gap-4 lg:grid-cols-12">
+          <USkeleton class="h-80 lg:col-span-7" />
+          <USkeleton class="h-80 lg:col-span-5" />
         </div>
-      </div>
-
-      <div
-        v-if="reprendre"
-        class="mt-8"
-      >
-        <h2 class="text-lg font-medium text-highlighted">
-          Reprendre ici
-        </h2>
-        <CarteLien
-          class="mt-3"
-          :to="reprendre.f.chemin"
-          :titre="reprendre.f.title"
-          :description="reprendre.f.description"
-          :type="reprendre.f.type"
-          :meta="matiereDe(reprendre.f.chemin) ?? undefined"
-        />
-      </div>
-
-      <div class="mt-8 flex flex-wrap items-center gap-2">
-        <UButton
-          to="/cours"
-          icon="i-lucide-library"
-          label="Ouvrir le sommaire"
-          color="neutral"
-          variant="subtle"
-        />
-        <UButton
-          to="/quiz"
-          icon="i-lucide-zap"
-          label="Lancer un quiz"
-          color="primary"
-          variant="subtle"
-        />
-        <UButton
-          to="/mes-qcm"
-          icon="i-lucide-list-plus"
-          label="Mes QCM"
-          color="neutral"
-          variant="subtle"
-        />
-        <UButton
-          to="/mes-domaines"
-          icon="i-lucide-target"
-          label="Voir mes domaines"
-          color="neutral"
-          variant="subtle"
-        />
-      </div>
-    </UPageBody>
-  </UPage>
+      </template>
+    </ClientOnly>
+  </UContainer>
 </template>

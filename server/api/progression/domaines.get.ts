@@ -100,8 +100,12 @@ export default defineEventHandler(async (event): Promise<ProgressionDomaines> =>
   interface CumulChapitre { total: Cumul, domaines: Map<string, Cumul> }
   const parMatiere = new Map<string, { total: Cumul, chapitres: Map<string, CumulChapitre> }>()
 
+  // L'autre parcours n'est pas le sien : il ne compte pas dans « où j'en suis ».
+  const masques = await coursMasques(event, db, parcoursDuCompte(db, uid))
+
   for (const entree of banque.entrees) {
     if (entreeClose(entree, clos)) continue
+    if (entree.matiere && masques.has(entree.matiere)) continue
     const cleMatiere = entree.matiere ?? 'divers'
     const theme = entree.theme ?? 'divers'
 

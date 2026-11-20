@@ -104,7 +104,7 @@ function chiffres(u: UtilisateurAdministration) {
         : 'jamais au quiz'
     },
     { icone: 'i-lucide-list-checks', texte: `${u.qcm.copies} copie${u.qcm.copies > 1 ? 's' : ''} de QCM · ${u.qcm.composes} composé${u.qcm.composes > 1 ? 's' : ''}` },
-    { icone: 'i-lucide-calendar-check', texte: `${u.controles} contrôle${u.controles > 1 ? 's' : ''}` },
+    { icone: 'i-lucide-calendar-check', texte: `${u.controles} contrôle${u.controles > 1 ? 's' : ''} planifié${u.controles > 1 ? 's' : ''}` },
     { icone: 'i-lucide-square-check', texte: `to-do ${u.todo.faites} / ${u.todo.total}` }
   ]
 }

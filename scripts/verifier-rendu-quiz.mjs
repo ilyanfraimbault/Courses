@@ -78,6 +78,10 @@ for (let essai = 0; essai < 20 && !(await inscrire.isEnabled()); essai++) {
 await inscrire.click()
 await page.waitForURL(u => !u.pathname.includes('inscription'), { timeout: 20000 })
 verifier('compte créé et connecté', true, page.url())
+// Un compte neuf arrive sur la fenêtre « Bienvenue », qu'on ne ferme pas sans
+// répondre : on remplit le profil par l'API, la page suivante le lira dans la
+// session.
+await page.request.put(BASE + '/api/compte/profil', { data: { prenom: 'Rendu', nom: 'Quiz', parcours: 'dl' } })
 
 console.log('\n— Page de préparation')
 await page.goto(BASE + '/quiz')

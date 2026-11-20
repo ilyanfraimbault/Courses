@@ -353,6 +353,13 @@ export default defineNuxtConfig({
     // Exposé en direct, cet en-tête est contrôlé par le client.
     trustProxy: false
   },
+  // Les contrôles étaient personnels, sous « /mes-controles » ; ils sont
+  // devenus l'agenda de la classe. Les anciens liens mènent à l'agenda — pas au
+  // contrôle même : la conversion a renuméroté les contrôles.
+  routeRules: {
+    '/mes-controles': { redirect: '/controles' },
+    '/mes-controles/**': { redirect: '/controles' }
+  },
 
   experimental: {
     asyncContext: true

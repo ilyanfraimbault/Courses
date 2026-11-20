@@ -37,6 +37,23 @@ l'entraînement `list-checks`, un QCM `circle-check-big` ou une icône à lui.
 Année (`content/cours/a2/index.md`), matière, chapitre : un frontmatter sans
 `type`, un paragraphe, et des cartes.
 
+L'index d'une **matière** porte en plus `programme:`, le code de la matière du
+programme de l'école qu'elle enseigne — un code de `server/utils/programme.ts`,
+recopié tel quel, jamais inventé :
+
+```md
+---
+title: Probabilités et statistiques
+annee: A1
+matiere: Probabilités et statistiques
+icone: i-lucide-dice-5
+programme: s5-probabilites-statistiques
+---
+```
+
+Une matière qui n'est pas au programme n'en a pas : elle reste visible de
+tous, sans note ni coefficient.
+
 ```md
 ::carte-lien{to="/cours/a1/remise-a-niveau-maths/nombres-complexes/cours" titre="Le cours" description="Forme algébrique, opérations, second degré…" type="cours" meta="8 sections"}
 ::

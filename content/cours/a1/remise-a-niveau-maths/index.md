@@ -4,6 +4,7 @@ description: Quatre chapitres — le cours, les exercices corrigés, les révisi
 annee: A1
 matiere: Remise à niveau en maths
 icone: i-lucide-sigma
+programme: remise-a-niveau-maths
 ---
 
 Chaque chapitre se décline en plusieurs fiches, et chaque lien ci-dessous porte une pastille qui dit laquelle :

@@ -4,6 +4,7 @@ description: "Le module d'ethical hacking : le premier cours, la reconnaissance,
 annee: A1
 matiere: Ethical hacking
 icone: i-lucide-shield-half
+programme: s5-ethical-hacking
 ---
 
 Le module de Nicolas Vieux tient en trois volets : dix jeux de diapos, un TD sur **TryHackMe** et des TP sur **Vulnhub**. L'examen du **17 novembre** est un QCM d'environ soixante questions **en anglais** — une quinzaine de définitions et quarante-cinq questions à choix —, une seule réponse par question, **+1** pour une bonne réponse, **−1** pour une réponse fausse ou absente : on répond donc toujours. Il porte sur tout, mais surtout sur le premier cours.

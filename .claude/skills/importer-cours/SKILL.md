@@ -94,11 +94,18 @@ confirmation :
 
 - « L'année est-elle **A1** (`a1`) ? »
 - Matière existante : « Ce chapitre va-t-il dans la matière existante
-  **« Réseaux et protocoles »** ? ». Matière nouvelle : « Le nom de la matière
-  est-il **« Structures de données et algorithmique »** ? (dossier
-  `structures-donnees-algorithmique`) » — le nom du prof, celui qu'on lit sur
-  l'emploi du temps, en proposition principale ; une variante plus courte en
-  seconde.
+  **« Réseaux et protocoles »** ? ». Matière nouvelle : la proposer **dans le
+  programme de l'école** — la liste des matières, semestre par semestre, est
+  dans `server/utils/programme.ts`. « Ce cours est-il celui de
+  **« Probabilités et statistiques »** (S5, 5.1 MATH) ? », avec en seconde
+  option la matière voisine la plus plausible ; si le cours n'est dans aucune
+  (une remise à niveau, un module ajouté), « Other » permet de taper son nom :
+  elle sera alors hors programme. Le nom du dossier suit l'intitulé retenu
+  (`probabilites-statistiques`), et la page d'index de la matière écrit le
+  **code** de la matière du programme en frontmatter (`programme:
+  s5-probabilites-statistiques`, voir `syntaxe.md`) — c'est ce qui relie le
+  cours aux moyennes, aux contrôles et au parcours DL/SR. Sans code, la
+  matière est hors programme et commune aux deux parcours.
 - « Le chapitre est-il **« 3. Tables de hachage et récursion »** ? (dossier
   `3.tables-de-hachage-et-recursion`) » — le numéro suit les chapitres déjà
   présents, ou celui que le prof donne.

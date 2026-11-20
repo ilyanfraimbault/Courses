@@ -61,17 +61,25 @@ vérifie que le serveur la fait tourner. Secrets et amorçage : `docs/deploiemen
   point de cours n'y a plus de case, il arrive par ce lien et s'y affiche nommé.
   Voir `docs/domaines.md`.
 
-- **Contrôles** (`/mes-controles`) : une date, une matière, un programme coché sur
-  le plan du cours, et une feuille de route recalculée à chaque lecture — ce qu'il
-  reste à apprendre découpé en journées d'environ dix questions, l'examen blanc
-  (un QCM composé de vingt questions) l'avant-veille, la dette la veille. La
-  séance du jour ne pose que ce qui n'est pas su. Voir `docs/controles.md`.
+- **Contrôles** (`/controles`) : l'agenda de la classe. Un élève planifie un
+  contrôle — date, matière, toute la classe ou un parcours, programme facultatif
+  coché sur l'arbre du cours jusqu'à l'exercice — et il apparaît dans le
+  calendrier de tous ceux qu'il concerne ; seul l'auteur le change. Les anciens
+  contrôles personnels ont été convertis (v11). Voir `docs/controles.md`.
+- **Accueil** : le tableau de bord de l'élève, sur un seul écran et sans le
+  sommaire : « Bonjour Prénom » et son parcours ; trois chiffres — le prochain
+  contrôle (J-n), la moyenne du semestre, la part des questions trouvées ;
+  l'agenda — contrôles en rouge, jours travaillés en vert, et pour le jour
+  choisi ce qu'on y a fait, matière › chapitre › fiche › exercice, puis les
+  contrôles à venir ; et la barre de « Mes domaines » de chaque matière, qui
+  mène à son cours. La séance du jour en est partie : elle doit revenir **depuis la
+  matière** (pas encore fait — les révisions dues n'ont pas d'entrée d'ici là).
+- **Programme, parcours, moyennes** : les matières du programme INFRES 19 en
+  base (S5 à S10, DL et SR), le parcours choisi au premier passage avec un badge
+  dans l'en-tête, et `/mes-moyennes`, qui calcule UE et semestre. Voir
+  `docs/matieres.md`.
 - **Révision espacée** : une question sue revient à 1, 3, 7, 16, 35 et 90 jours,
-  déduite de l'histoire sans table à elle. L'accueil s'appelle « Aujourd'hui » et
-  commence par ce qu'il y a à faire : la consigne de chaque contrôle, et une
-  seule séance par matière non close — la dette, puis les révisions, puis du
-  neuf, vingt questions au plus, un seul bouton, et « Choisir » pour la restreindre à quelques
-  chapitres. Voir `docs/revisions.md`.
+  déduite de l'histoire sans table à elle. Voir `docs/revisions.md`.
 - **Clôtures** : une matière, un chapitre ou une fiche se clôt ; ce qui est clos
   sort de la progression, des révisions et des séances sur toute la matière, et
   reste grisé dans le sommaire. Voir `docs/clotures.md`.
@@ -139,6 +147,16 @@ Une fois le domaine en main : un enregistrement `A` vers `72.62.29.225`, puis
 changement de code.
 
 ## Dette et points ouverts
+
+- **La séance depuis la matière** : l'accueil ne lance plus de séance (dette,
+  révisions, neuf) ; elle doit revenir sur la page de chaque matière. D'ici là,
+  `/quiz` ne pose que les questions ratées : les révisions dues n'ont plus
+  d'entrée.
+- **Restes de l'ancien modèle de contrôles** : la table `controle` (v7) est
+  gardée intacte après sa conversion en `controle_classe` (v11) — à supprimer
+  par une migration une fois la conversion validée en production. Les modes
+  `programme` et `jour` de `QuizFiltre`, et `consigneDuJour` / `partSue` dans
+  `app/utils/controles.ts`, n'ont plus d'appelant.
 
 **Les commandes à taper ne vont pas au quiz.** Les 322 questions `commande`
 de Docker se corrigent sur leur fiche, en base et dans la dette, mais le quiz,

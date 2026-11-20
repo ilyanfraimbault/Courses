@@ -1,12 +1,9 @@
-/**
- * Supprime un contrôle. Son examen blanc reste dans « Mes QCM » : c'est un QCM
- * composé comme un autre, avec ses copies — et ce qu'il a fait gagner est dans
- * la progression des fiches, qui n'appartient à aucun contrôle.
- */
+/** Retirer un contrôle de l'agenda : son auteur ou l'administration. */
 export default defineEventHandler(async (event) => {
   const uid = await idUtilisateur(event)
-  const resultat = useBase().prepare('DELETE FROM controle WHERE id = ? AND utilisateur_id = ?')
-    .run(idControle(event), uid)
-  if (!resultat.changes) throw createError({ statusCode: 404, statusMessage: 'contrôle introuvable' })
+  const db = useBase()
+  const actuel = await lireControle(event, db, lecteur(event, db, uid), idControle(event))
+  if (!actuel.modifiable) throw createError({ statusCode: 403, statusMessage: 'seul son auteur peut retirer ce contrôle' })
+  db.prepare('DELETE FROM controle_classe WHERE id = ?').run(actuel.id)
   return { ok: true }
 })

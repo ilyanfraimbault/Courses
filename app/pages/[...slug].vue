@@ -66,6 +66,8 @@ const natureCloture = computed<NatureCloture | null>(() => {
   return null
 })
 
+const planifier = ref(false)
+
 useSeoMeta({
   title: page.value.title,
   description: page.value.description
@@ -104,8 +106,24 @@ useSeoMeta({
       />
       <div
         v-if="natureCloture !== 'fiche'"
-        class="mt-4 flex justify-end"
+        class="mt-4 flex justify-end gap-2"
       >
+        <!-- Un contrôle se planifie depuis sa matière : elle est déjà choisie. -->
+        <template v-if="natureCloture === 'matiere'">
+          <UButton
+            icon="i-lucide-calendar-plus"
+            label="Planifier un contrôle"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+            @click="planifier = true"
+          />
+          <ControlePlanifier
+            v-model:open="planifier"
+            :matiere="page.programme ?? routePath"
+            @enregistre="id => navigateTo(`/controles/${id}`)"
+          />
+        </template>
         <ClotureBouton
           :chemin="routePath"
           :nature="natureCloture"

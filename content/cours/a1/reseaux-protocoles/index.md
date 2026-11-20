@@ -4,6 +4,7 @@ description: Le cours de réseaux en trois parties — l'introduction, l'adressa
 annee: A1
 matiere: Réseaux et protocoles
 icone: i-lucide-network
+programme: s5-reseaux-protocoles-1
 ---
 
 Le cours tient en trois jeux de diapos — plus de deux cents en tout. Chaque partie devient ici un chapitre : une **fiche de cours** qui n'en garde que l'essentiel, des **exercices d'application** et un **QCM**. Les exercices et les QCM ne viennent pas des diapos : ils sont écrits pour le site, sur leurs exemples — le réseau de l'école `159.31.0.0/16`, le WiFi EMA, le routeur R1, le réseau Neutron.

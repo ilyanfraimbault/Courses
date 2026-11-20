@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { dirname } from 'node:path'
 import { mkdirSync } from 'node:fs'
 import { appliquerSchema } from './schema.ts'
+import { semerProgramme } from './programme.ts'
 
 /**
  * Ouvre la base et met le schéma à jour.
@@ -25,6 +26,9 @@ export function ouvrirBase(fichier: string): DatabaseSync {
   db.exec('PRAGMA busy_timeout = 5000')
 
   appliquerSchema(db)
+  // Après le schéma, à chaque ouverture : ce qui manque du programme s'ajoute,
+  // rien de ce qui existe n'est réécrit.
+  semerProgramme(db)
 
   return db
 }

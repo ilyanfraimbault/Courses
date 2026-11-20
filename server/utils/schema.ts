@@ -414,6 +414,138 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (utilisateur_id, chemin, bloc, label),
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE
   ) STRICT, WITHOUT ROWID;
+  `,
+
+  // v11 — le programme de l'école, les parcours, les notes, et des contrôles
+  // tenus par la classe.
+  //
+  // Les matières n'existaient que dans l'arborescence du contenu. Elles ont
+  // désormais une table, semée au démarrage depuis le programme officiel
+  // (`server/utils/programme.ts`) : UE, coefficient, ECTS, parcours. C'est elle
+  // que retiennent les notes et les contrôles, par **code** — une matière qui
+  // n'a pas encore de cours sur le site (l'anglais, les probabilités) peut
+  // avoir un contrôle et une note.
+  //
+  // Le parcours (DL ou SR) se choisit une fois, au premier passage. NULL veut
+  // dire « pas encore choisi », et c'est ce qui ouvre la fenêtre de choix.
+  //
+  // Un contrôle n'est plus une feuille de route personnelle : c'est une date
+  // dans l'agenda de la classe, posée par un élève pour tous ceux qu'elle
+  // concerne. L'ancienne table reste en place, intacte : la conversion se
+  // relit, et rien n'est perdu si elle doit être refaite. La note et le barème
+  // n'y passent pas — ils étaient à un élève, l'agenda est à tous.
+  `
+  CREATE TABLE ue (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    semestre INTEGER NOT NULL,
+    -- « 5.1 MATH », tel que l'école l'écrit. Le même code revient d'un
+    -- parcours à l'autre à partir du S7, avec un contenu différent.
+    code     TEXT    NOT NULL,
+    intitule TEXT    NOT NULL,
+    ects     REAL    NOT NULL,
+    parcours TEXT CHECK (parcours IN ('dl', 'sr')),
+    ordre    INTEGER NOT NULL
+  ) STRICT;
+
+  CREATE UNIQUE INDEX ue_unique ON ue (semestre, code, COALESCE(parcours, ''));
+
+  CREATE TABLE matiere (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- L'identité de la matière, figée : « s5-ethical-hacking ». Une page de
+    -- matière du cours la désigne par ce code (\`programme:\` en frontmatter).
+    code      TEXT    NOT NULL UNIQUE,
+    intitule  TEXT    NOT NULL,
+    -- NULL : hors programme — une remise à niveau, ou une matière ajoutée
+    -- depuis le site. Elle n'entre dans aucune moyenne.
+    ue_id     INTEGER REFERENCES ue(id),
+    -- NULL : la matière existe au programme mais ne compte pas.
+    coef      REAL,
+    heures    INTEGER,
+    ordre     INTEGER NOT NULL DEFAULT 0,
+    cree_par  INTEGER REFERENCES utilisateur(id) ON DELETE SET NULL,
+    cree_le   INTEGER NOT NULL
+  ) STRICT;
+
+  ALTER TABLE utilisateur ADD COLUMN parcours TEXT CHECK (parcours IN ('dl', 'sr'));
+
+  -- Une moyenne par matière, telle que l'élève la saisit. Les moyennes d'UE et
+  -- de semestre ne s'écrivent pas : elles se recalculent à l'affichage.
+  CREATE TABLE note (
+    utilisateur_id INTEGER NOT NULL,
+    matiere_id     INTEGER NOT NULL,
+    valeur         REAL    NOT NULL CHECK (valeur >= 0 AND valeur <= 20),
+    maj            INTEGER NOT NULL,
+    PRIMARY KEY (utilisateur_id, matiere_id),
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE CASCADE,
+    FOREIGN KEY (matiere_id) REFERENCES matiere(id) ON DELETE CASCADE
+  ) STRICT, WITHOUT ROWID;
+
+  CREATE TABLE controle_classe (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- Qui l'a posé : lui seul, avec l'administration, peut le changer.
+    auteur_id  INTEGER REFERENCES utilisateur(id) ON DELETE SET NULL,
+    titre      TEXT    NOT NULL,
+    -- Le code de la matière (table \`matiere\`).
+    matiere    TEXT    NOT NULL,
+    jour       TEXT    NOT NULL,
+    -- À qui il s'adresse. NULL : toute la classe.
+    parcours   TEXT CHECK (parcours IN ('dl', 'sr')),
+    -- Ce sur quoi il porte, s'il est connu : un tableau JSON de chemins —
+    -- chapitres, fiches, ou « /fiche#bloc » pour un exercice. Des identités
+    -- seulement : les intitulés se relisent dans le contenu.
+    programme  TEXT    NOT NULL DEFAULT '[]',
+    -- Ce que le contenu ne sait pas dire : « documents autorisés », « tout le
+    -- chapitre 3 sauf les preuves ».
+    precisions TEXT,
+    cree_le    INTEGER NOT NULL,
+    maj        INTEGER NOT NULL
+  ) STRICT;
+
+  CREATE INDEX controle_classe_par_jour ON controle_classe (jour);
+
+  -- Les contrôles personnels deviennent des contrôles de la classe. Deux élèves
+  -- qui avaient déclaré le même (même matière, même jour) n'en font qu'un : le
+  -- premier déclaré. Les chapitres du programme passent tels quels ; une
+  -- section du cours (« /fiche#ancre ») devient sa fiche, la nomenclature des
+  -- sections n'existant plus.
+  INSERT INTO controle_classe (auteur_id, titre, matiere, jour, parcours, programme, precisions, cree_le, maj)
+  SELECT
+    c.utilisateur_id,
+    c.titre,
+    CASE c.matiere
+      WHEN '/cours/a1/ethical-hacking' THEN 's5-ethical-hacking'
+      WHEN '/cours/a1/mathematiques-ingenieur' THEN 's5-mathematiques-ingenieur'
+      WHEN '/cours/a1/mise-a-niveau-c' THEN 's5-langage-fonctionnel'
+      WHEN '/cours/a1/remise-a-niveau-maths' THEN 'remise-a-niveau-maths'
+      WHEN '/cours/a1/reseaux-protocoles' THEN 's5-reseaux-protocoles-1'
+      WHEN '/cours/a1/structures-donnees-algorithmique' THEN 's5-structures-donnees-algorithmique'
+      WHEN '/cours/a1/virtualisation-conteneurisation' THEN 's5-virtualisation-conteneurisation'
+      ELSE c.matiere
+    END,
+    c.jour,
+    NULL,
+    COALESCE((
+      SELECT json_group_array(v) FROM (
+        SELECT value AS v FROM json_each(c.programme, '$.themes')
+        UNION
+        SELECT substr(value, 1, instr(value, '#') - 1) FROM json_each(c.programme, '$.sections') WHERE instr(value, '#') > 1
+      )
+    ), '[]'),
+    NULL,
+    c.cree_le,
+    c.maj
+  FROM controle c
+  WHERE c.id = (SELECT MIN(d.id) FROM controle d WHERE d.matiere = c.matiere AND d.jour = c.jour);
+  `,
+
+  // v12 — le prénom et le nom.
+  //
+  // Le pseudo sert à se connecter ; l'accueil, lui, salue quelqu'un. Ils se
+  // demandent au premier passage, avec le parcours, dans la même fenêtre — et
+  // aident l'administration à savoir qui demande l'accès. NULL : pas encore dit.
+  `
+  ALTER TABLE utilisateur ADD COLUMN prenom TEXT;
+  ALTER TABLE utilisateur ADD COLUMN nom TEXT;
   `
 ]
 
