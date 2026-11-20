@@ -1,10 +1,14 @@
 import type { MatiereAdministration, UtilisateurAdministration, VueAdministration } from '~~/shared/types/administration'
+import { estParcours } from '~~/shared/types/matieres'
 
 /**
  * Tous les comptes et où ils en sont, en une requête.
  *
- * C'est la seule route du site qui lit au delà du compte connecté, d'où la
- * garde `exigerAdministrateur` en première ligne. Chaque table est lue **une**
+ * Comme toute route `/api/admin/*`, elle lit au delà du compte connecté, d'où
+ * la garde `exigerAdministrateur` en première ligne. Le détail d'un compte —
+ * son arbre de progression, ses jours, ses séances — se lit à part, à la
+ * demande (`/api/admin/utilisateurs/:id`) : il relit toute l'histoire du
+ * compte, ce qu'on ne fait pas pour chaque ligne du tableau. Chaque table est lue **une**
  * fois, groupée par compte, plutôt qu'une série de requêtes par utilisateur :
  * le coût ne grandit pas avec le nombre d'inscrits.
  *
@@ -54,10 +58,13 @@ export default defineEventHandler(async (event): Promise<VueAdministration> => {
   const admins = pseudosAdministrateurs(event)
 
   const comptes = db.prepare(`
-    SELECT id, pseudo, pseudo_replie, cree_le, acces, demande_le, demande_message FROM utilisateur
+    SELECT id, pseudo, pseudo_replie, prenom, nom, parcours, cree_le, acces, demande_le, demande_message FROM utilisateur
   `).all() as {
     id: number
     pseudo: string
+    prenom: string | null
+    nom: string | null
+    parcours: string | null
     pseudo_replie: string
     cree_le: number
     acces: UtilisateurAdministration['acces']
@@ -70,6 +77,9 @@ export default defineEventHandler(async (event): Promise<VueAdministration> => {
     vue.set(c.id, {
       id: c.id,
       pseudo: c.pseudo,
+      prenom: c.prenom,
+      nom: c.nom,
+      parcours: estParcours(c.parcours) ? c.parcours : null,
       // Comme `estAdministrateur` : un pseudo listé sans accès n'administre rien.
       admin: c.acces === 'accorde' && admins.has(c.pseudo_replie),
       acces: c.acces,
@@ -78,6 +88,7 @@ export default defineEventHandler(async (event): Promise<VueAdministration> => {
       inscritLe: c.cree_le,
       derniereActivite: null,
       acquises: 0,
+      acquisesSemaine: 0,
       parMatiere: {},
       fichesOuvertes: 0,
       enDette: 0,
@@ -97,13 +108,15 @@ export default defineEventHandler(async (event): Promise<VueAdministration> => {
     }
   }
 
+  const ilYaUneSemaine = Date.now() - 7 * 24 * 60 * 60 * 1000
   for (const r of db.prepare(`
-    SELECT utilisateur_id AS uid, chemin, bloc, label FROM reussite
-  `).all() as { uid: number, chemin: string, bloc: string, label: string }[]) {
+    SELECT utilisateur_id AS uid, chemin, bloc, label, premiere FROM reussite
+  `).all() as { uid: number, chemin: string, bloc: string, label: string, premiere: number }[]) {
     const u = vue.get(Number(r.uid))
     const matiere = matiereDe.get(composerIdentite(r.chemin, r.bloc, r.label))
     if (!u || !matiere) continue
     u.acquises += 1
+    if (r.premiere >= ilYaUneSemaine) u.acquisesSemaine += 1
     u.parMatiere[matiere] = (u.parMatiere[matiere] ?? 0) + 1
   }
 

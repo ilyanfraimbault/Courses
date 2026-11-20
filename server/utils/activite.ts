@@ -48,7 +48,7 @@ function eclater(id: string): { chemin: string, bloc: string } | null {
 }
 
 /** Le dernier segment d'un chemin, lisible à défaut de titre. */
-function nomDuChemin(chemin: string): string {
+export function nomDuChemin(chemin: string): string {
   const segment = chemin.split('/').filter(Boolean).pop() ?? chemin
   return segment.replace(/^\d+\./, '').replace(/-/g, ' ')
 }
@@ -59,10 +59,18 @@ function nomDuChemin(chemin: string): string {
  * une question ratée puis retrouvée dans la même séance n'en fait qu'une.
  */
 export function activiteEntre(db: DatabaseSync, uid: number, banque: Banque, debut: number, fin: number): ActiviteMatiere[] {
-  const parId = new Map(banque.entrees.map(e => [e.id, e]))
   const touchees = new Set<string>()
   for (const g of gestes(db, uid, banque)) if (g.t >= debut && g.t < fin) touchees.add(g.id)
+  return rangerActivite(touchees, banque)
+}
 
+/**
+ * Range des identités de questions comme le cours : matière › chapitre ›
+ * fiche › exercice. À part de la lecture de l'histoire pour que
+ * l'administration, qui découpe toute l'histoire d'un compte jour par jour,
+ * ne la relise pas une fois par jour.
+ */
+export function rangerActivite(touchees: Iterable<string>, banque: Banque, parId = new Map(banque.entrees.map(e => [e.id, e]))): ActiviteMatiere[] {
   const matieres = new Map<string, ActiviteMatiere & { chapitresParCle: Map<string, ActiviteChapitre & { fichesParChemin: Map<string, ActiviteFiche> }> }>()
 
   for (const id of touchees) {
