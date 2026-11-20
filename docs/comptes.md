@@ -137,9 +137,22 @@ session et 403 hors de la liste. Le drapeau `admin` que voit le navigateur est
 posé à chaque lecture de la session (`server/plugins/session-administration.ts`)
 et ne fait qu'afficher l'entrée de menu.
 
-L'administration voit des **comptes** — questions trouvées par matière, fautes
-en dette, séances de quiz, copies, contrôles, to-do, dernière activité — et
-jamais le détail des réponses de personne.
+L'administration voit ce que chaque compte **fait**, jamais ce qu'il
+**répond**. La page `/admin` est un tableau (`UTable`) : une ligne par compte,
+avec son parcours, ses questions trouvées, sa dette, son quiz et sa dernière
+activité, triable, filtrable par parcours et cherchable par nom. Déplier une
+ligne lit `GET /api/admin/utilisateurs/:id`, à la demande — il relit toute
+l'histoire du compte, ce qu'on ne fait pas pour chaque ligne : l'arbre de sa
+progression jusqu'à l'exercice (trouvé, raté, en dette, dernier passage), ses
+jours de travail, ses séances de quiz et copies de QCM avec leur score, ce
+qu'il a clos et les contrôles qu'il a posés. Le détail ne répète pas ce que dit
+déjà la ligne.
+
+Ce qui ne sort pas : la réponse retenue d'une question trouvée
+(`reussite.reponse`), le code écrit sous une question (`reponse_ecrite`), et
+les notes de « Mes moyennes », dont on ne montre que le nombre. Le contrôle
+`verifier-comptes.mjs` vérifie que ni la liste ni le détail n'en portent, et que
+la somme de l'arbre retombe sur les questions trouvées de la ligne.
 
 Un piège à connaître : le rôle suit un pseudo. Un pseudo listé qui n'a pas
 encore de compte peut être pris par le premier venu muni du code

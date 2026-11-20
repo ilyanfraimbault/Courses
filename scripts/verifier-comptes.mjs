@@ -162,6 +162,17 @@ check('le compte d\'alice porte ses réussites et son drapeau', fiche?.admin ===
   JSON.stringify({ admin: fiche?.admin, acquises: fiche?.acquises }))
 check('aucun détail de réponse ne sort', !JSON.stringify(vue.corps ?? {}).includes('"reponse"'))
 
+// Le détail d'un compte, lu quand on déplie sa ligne : même garde que la liste.
+check('détail d\'un compte sans session → 401', (await anon(`/api/admin/utilisateurs/${fiche?.id}`)).statut === 401)
+check('détail d\'un compte hors de la liste → 403', (await bob(`/api/admin/utilisateurs/${fiche?.id}`)).statut === 403)
+check('détail d\'un compte inconnu → 404', (await alice('/api/admin/utilisateurs/999999')).statut === 404)
+const detail = await alice(`/api/admin/utilisateurs/${fiche?.id}?fuseau=Europe/Paris`)
+const trouveesArbre = (detail.corps?.progression ?? []).reduce((s, m) => s + m.trouvees, 0)
+check('le détail retombe sur la ligne : mêmes questions trouvées', detail.statut === 200 && trouveesArbre === fiche?.acquises,
+  JSON.stringify({ statut: detail.statut, arbre: trouveesArbre, ligne: fiche?.acquises }))
+check('le détail ne dit pas non plus ce qui a été répondu',
+  !JSON.stringify(detail.corps ?? {}).includes('"reponse"') && !JSON.stringify(detail.corps ?? {}).includes('"texte"'))
+
 check('la session d\'alice se lit administratrice', (await alice('/api/_auth/session')).corps?.user?.admin === true)
 check('celle de bob, non', (await bob('/api/_auth/session')).corps?.user?.admin === false)
 
